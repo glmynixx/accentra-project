@@ -14,8 +14,7 @@ import {
   ChevronRight,
   Users,
   GraduationCap,
-  CheckCircle2,
-  XCircle,
+  Layers,
 } from "lucide-react";
 
 import Sidebar from "../components/layout/sidebar";
@@ -605,7 +604,7 @@ export default function StudentManagement() {
           group-hover:scale-105
         "
       >
-        <CheckCircle2 size={21} />
+        <UserCheck size={21} />
       </div>
 
       <div className="min-w-0">
@@ -674,7 +673,7 @@ export default function StudentManagement() {
           group-hover:scale-105
         "
       >
-        <XCircle size={21} />
+        <UserX size={21} />
       </div>
 
       <div className="min-w-0">
@@ -743,7 +742,7 @@ export default function StudentManagement() {
         group-hover:scale-105
       "
     >
-      <GraduationCap size={21} />
+      <Layers size={21} />
     </div>
 
     <div className="min-w-0">

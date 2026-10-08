@@ -6,8 +6,6 @@ import {
   Eye,
   Pencil,
   Trash2,
-  CheckCircle2,
-  XCircle,
   Users,
   GraduationCap,
   UserCheck,
@@ -619,7 +617,7 @@ export default function SectionManagement() {
           group-hover:scale-105
         "
       >
-        <CheckCircle2 size={21} />
+        <UserCheck size={21} />
       </div>
 
       <div className="min-w-0">
@@ -684,7 +682,7 @@ export default function SectionManagement() {
           group-hover:scale-105
         "
       >
-        <XCircle size={21} />
+        <UserX size={21} />
       </div>
 
       <div className="min-w-0">
