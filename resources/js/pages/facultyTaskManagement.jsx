@@ -1,0 +1,1308 @@
+import { useMemo, useState } from "react";
+import {
+    Search,
+    Plus,
+    Eye,
+    Pencil,
+    Trash2,
+    X,
+    ChevronLeft,
+    ChevronRight,
+    ClipboardList,
+    CheckCircle2,
+    FileText,
+    Ban,
+    Upload,
+    CalendarDays,
+    BookOpen,
+    Send,
+    RotateCcw,
+    RefreshCw,
+} from "lucide-react";
+
+import FacultyLayout from "../components/layout/facultyLayout";
+
+import {
+  initialTasks as initialTasks,
+  
+} from "../assets/data/facultyData";
+
+const emptyForm = {
+    title: "",
+    topic: "",
+    section: "",
+    due: "",
+    points: "100",
+    status: "Draft",
+    description: "",
+    instructions: "",
+    dateCreated: new Date().toISOString().slice(0, 10),
+};
+
+const sections = [
+    "BSAIS 11CA",
+    "BSAIS 21CA",
+    "BSAIS 31CA",
+    "BSAIS 41CA",
+    "BSEN 11CE",
+    "BSEN 21CE",
+    "BSEN 31CE",
+    "BSEN 41CE",
+];
+
+const inputClass =
+    "w-full rounded-xl border border-[#C9D6E4] bg-white px-3.5 py-2.5 text-sm text-[#243A52] outline-none transition-all placeholder:text-[#9AA8B7] focus:border-[#294B70] focus:ring-2 focus:ring-[#294B70]/10 disabled:cursor-not-allowed disabled:bg-[#E7EDF3]";
+
+const labelClass = "mb-1.5 block text-xs font-semibold text-[#526579]";
+
+const buttonSecondary =
+    "inline-flex items-center justify-center gap-2 rounded-xl border border-[#C9D6E3] bg-white px-4 py-2.5 text-sm font-semibold text-[#526579] shadow-sm transition-all hover:bg-[#E7EDF3] hover:text-[#243A52]";
+
+const buttonPrimary =
+    "inline-flex items-center justify-center gap-2 rounded-xl bg-[#1B3553] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-[#142A43] hover:shadow-md active:scale-[0.98]";
+
+// Date formatting
+function formatDate(date) {
+    if (!date) return "—";
+
+    const parsedDate = new Date(`${date}T00:00:00`);
+
+    if (Number.isNaN(parsedDate.getTime())) return date;
+
+    return parsedDate.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+    });
+}
+
+// Status badge 
+function StatusBadge({ status }) {
+    const styles = {
+        Active: "border-[#B9D9C8] bg-[#F0F8F3] text-[#267653]",
+        Draft: "border-[#D7C7A8] bg-[#FAF5E9] text-[#8A6A25]",
+        Completed: "border-[#BFD2E5] bg-[#EEF4F9] text-[#294B70]",
+        Cancelled: "border-[#E2BFC3] bg-[#FBEEF0] text-[#A94A55]",
+    };
+
+    const dots = {
+        Active: "bg-[#31805E]",
+        Draft: "bg-[#B18A37]",
+        Completed: "bg-[#426B94]",
+        Cancelled: "bg-[#A94A55]",
+    };
+
+    return (
+        <span
+            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold ${
+                styles[status] || "border-[#CBD3DC] bg-white text-[#647181]"
+            }`}
+        >
+            <span
+                className={`h-1.5 w-1.5 rounded-full ${
+                    dots[status] || "bg-[#7C8794]"
+                }`}
+            />
+            {status}
+        </span>
+    );
+}
+
+// Summary cards 
+function SummaryCard({
+    title,
+    value,
+    description,
+    icon: Icon,
+    gradient,
+    borderColor,
+    accentColor,
+    iconBackground,
+    bars,
+}) {
+    return (
+        <div
+            className={`group relative min-w-0 overflow-hidden rounded-2xl border ${borderColor} bg-gradient-to-br ${gradient} p-5 shadow-[0_5px_22px_rgba(27,53,83,0.10)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_30px_rgba(27,53,83,0.16)]`}
+        >
+            <div className="absolute right-5 top-5 flex h-9 items-end gap-1 opacity-70">
+                {bars.map((bar, index) => (
+                    <span
+                        key={index}
+                        className={`w-1.5 rounded-full ${bar}`}
+                    />
+                ))}
+            </div>
+
+            <div
+                className={`absolute bottom-0 left-0 h-1 w-full ${accentColor}`}
+            />
+
+            <div className="relative flex items-center gap-4">
+                <div
+                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${iconBackground} text-white shadow-[0_4px_10px_rgba(27,53,83,0.16)] transition-transform duration-200 group-hover:scale-105`}
+                >
+                    <Icon size={21} />
+                </div>
+
+                <div className="min-w-0">
+                    <span className="block text-xs font-bold text-[#526579]">
+                        {title}
+                    </span>
+                    <span className="mt-1 block text-2xl font-bold tracking-tight text-[#142A43]">
+                        {value}
+                    </span>
+                    <span className="mt-1 block text-[11px] text-[#738396]">
+                        {description}
+                    </span>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// Modal for viewing task details or creating and editing task entries.
+function TaskModal({
+    mode,
+    task,
+    formData,
+    setFormData,
+    onClose,
+    onSubmit,
+    onEdit,
+}) {
+    const isView = mode === "view";
+    const isAdd = mode === "add";
+
+    const updateField = (event) => {
+        const { name, value } = event.target;
+
+        setFormData((previous) => ({
+            ...previous,
+            [name]: value,
+        }));
+    };
+
+    if (!mode) return null;
+
+    if (isView && task) {
+        const details = [
+            ["Task Title", task.title],
+            ["Topic", task.topic],
+            ["Assigned Section", task.section],
+            ["Due Date", formatDate(task.due)],
+            ["Total Points", `${task.points ?? 100} points`],
+            ["Date Created", formatDate(task.dateCreated)],
+        ];
+
+        return (
+            <div
+                className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-[#0C1C2D]/60 p-4 backdrop-blur-sm"
+                onMouseDown={onClose}
+            >
+                <div
+                    className="my-auto w-full max-w-3xl overflow-hidden rounded-2xl border border-[#B8C9DA] bg-white shadow-[0_25px_70px_rgba(10,30,50,0.30)]"
+                    onMouseDown={(event) => event.stopPropagation()}
+                >
+                    <div className="bg-gradient-to-br from-[#142A43] via-[#1B3553] to-[#294B70] px-6 py-6">
+                        <div className="flex items-start justify-between gap-4">
+                            <div className="flex min-w-0 items-center gap-4">
+                                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-white/25 bg-white/15 text-white">
+                                    <ClipboardList size={27} />
+                                </div>
+
+                                <div className="min-w-0">
+                                    <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#C8D8E8]">
+                                        Task Information
+                                    </span>
+                                    <h2 className="mt-1 break-words text-xl font-bold text-white">
+                                        {task.title}
+                                    </h2>
+                                    <span className="mt-1.5 inline-block rounded-md bg-white/10 px-2 py-1 text-xs font-semibold text-[#D8E4EF]">
+                                        TSK-{String(task.id).padStart(3, "0")}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <button
+                                type="button"
+                                aria-label="Close"
+                                onClick={onClose}
+                                className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/20 bg-white/10 text-white hover:bg-white/20"
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="bg-[#EEF2F6] px-6 py-6">
+                        <h3 className="text-sm font-bold text-[#1B3553]">
+                            Task & Academic Details
+                        </h3>
+                        <p className="mb-4 mt-0.5 text-xs text-[#738396]">
+                            Information about this task and its requirements
+                        </p>
+
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            {details.map(([label, value]) => (
+                                <div
+                                    key={label}
+                                    className="rounded-xl border border-[#C9D6E3] bg-white px-4 py-3.5"
+                                >
+                                    <span className="block text-[10px] font-bold uppercase tracking-[0.08em] text-[#53677D]">
+                                        {label}
+                                    </span>
+                                    <strong className="mt-1 block break-words text-sm font-semibold text-[#243A52]">
+                                        {value || "—"}
+                                    </strong>
+                                </div>
+                            ))}
+
+                            <div className="rounded-xl border border-[#C9D6E3] bg-white px-4 py-3.5">
+                                <span className="block text-[10px] font-bold uppercase tracking-[0.08em] text-[#53677D]">
+                                    Task Status
+                                </span>
+                                <div className="mt-2">
+                                    <StatusBadge status={task.status} />
+                                </div>
+                            </div>
+
+                            <div className="rounded-xl border border-[#C9D6E3] bg-white px-4 py-3.5">
+                                <span className="block text-[10px] font-bold uppercase tracking-[0.08em] text-[#53677D]">
+                                    Description
+                                </span>
+                                <p className="mt-1 break-words text-sm leading-6 text-[#243A52]">
+                                    {task.description || "No description provided."}
+                                </p>
+                            </div>
+
+                            <div className="rounded-xl border border-[#C9D6E3] bg-white px-4 py-3.5 sm:col-span-2">
+                                <span className="block text-[10px] font-bold uppercase tracking-[0.08em] text-[#53677D]">
+                                    Instructions
+                                </span>
+                                <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-[#243A52]">
+                                    {task.instructions || "No additional instructions."}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex justify-end gap-2 border-t border-[#DCE4EC] bg-white px-5 py-4 max-[480px]:flex-col">
+                        <button
+                            type="button"
+                            onClick={() => onEdit(task)}
+                            className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#BFD2E5] bg-[#EEF4F9] px-4 py-2.5 text-sm font-semibold text-[#294B70] hover:bg-[#DCE8F2]"
+                        >
+                            <Pencil size={16} />
+                            Edit Task
+                        </button>
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="inline-flex items-center justify-center rounded-xl bg-[#1B3553] px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#142A43] active:scale-[0.98]"
+                        >
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-[#142A43]/40 px-4 py-6 backdrop-blur-sm"
+            onMouseDown={onClose}
+        >
+            <div
+                className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-[#C9D5E2] bg-white shadow-[0_20px_60px_rgba(27,53,83,0.20)]"
+                onMouseDown={(event) => event.stopPropagation()}
+            >
+                <div className="flex items-center justify-between bg-gradient-to-r from-[#1B3553] via-[#294B70] to-[#365C7E] px-5 py-5">
+                    <div>
+                        <span className="inline-flex rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white/80">
+                            Task Management
+                        </span>
+                        <h2 className="mt-2 text-lg font-bold text-white">
+                            {isAdd ? "Create Task" : "Edit Task"}
+                        </h2>
+                        <p className="mt-0.5 text-xs text-white/65">
+                            {isAdd
+                                ? "Create a new academic task for a section."
+                                : "Update the task details and requirements."}
+                        </p>
+                    </div>
+
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        aria-label="Close"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-white/70 hover:bg-white/10 hover:text-white"
+                    >
+                        <X size={18} />
+                    </button>
+                </div>
+
+                <form onSubmit={onSubmit}>
+                    <div className="grid grid-cols-1 gap-4 px-5 py-5 sm:grid-cols-2">
+                        <div className="sm:col-span-2">
+                            <label htmlFor="task-title" className={labelClass}>
+                                Task Title
+                            </label>
+                            <input
+                                id="task-title"
+                                name="title"
+                                value={formData.title}
+                                onChange={updateField}
+                                placeholder="Enter task title"
+                                required
+                                className={inputClass}
+                            />
+                        </div>
+
+                        <div>
+                            <label htmlFor="task-topic" className={labelClass}>
+                                Topic
+                            </label>
+                            <input
+                                id="task-topic"
+                                name="topic"
+                                value={formData.topic}
+                                onChange={updateField}
+                                placeholder="e.g. Journal Entries"
+                                required
+                                className={inputClass}
+                            />
+                        </div>
+
+                        <div>
+                            <label htmlFor="task-section" className={labelClass}>
+                                Assigned Section
+                            </label>
+                            <select
+                                id="task-section"
+                                name="section"
+                                value={formData.section}
+                                onChange={updateField}
+                                required
+                                className={inputClass}
+                            >
+                                <option value="">Select section</option>
+                                {sections.map((section) => (
+                                    <option key={section} value={section}>
+                                        {section}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label htmlFor="task-due" className={labelClass}>
+                                Due Date
+                            </label>
+                            <input
+                                id="task-due"
+                                type="date"
+                                name="due"
+                                value={formData.due}
+                                onChange={updateField}
+                                required
+                                className={inputClass}
+                            />
+                        </div>
+
+                        <div>
+                            <label htmlFor="task-points" className={labelClass}>
+                                Total Points
+                            </label>
+                            <input
+                                id="task-points"
+                                type="number"
+                                name="points"
+                                value={formData.points}
+                                onChange={updateField}
+                                min="1"
+                                required
+                                className={inputClass}
+                            />
+                        </div>
+
+                        <div className="sm:col-span-2">
+                            <label
+                                htmlFor="task-description"
+                                className={labelClass}
+                            >
+                                Description
+                            </label>
+                            <textarea
+                                id="task-description"
+                                name="description"
+                                value={formData.description}
+                                onChange={updateField}
+                                placeholder="Describe the task..."
+                                rows={3}
+                                required
+                                className={`${inputClass} resize-y`}
+                            />
+                        </div>
+
+                        <div className="sm:col-span-2">
+                            <label
+                                htmlFor="task-instructions"
+                                className={labelClass}
+                            >
+                                Instructions (Optional)
+                            </label>
+                            <textarea
+                                id="task-instructions"
+                                name="instructions"
+                                value={formData.instructions}
+                                onChange={updateField}
+                                placeholder="Add instructions for students..."
+                                rows={3}
+                                className={`${inputClass} resize-y`}
+                            />
+                        </div>
+
+                        <div className="sm:col-span-2">
+                            <label htmlFor="task-status" className={labelClass}>
+                                Task Status
+                            </label>
+                            <select
+                                id="task-status"
+                                name="status"
+                                value={formData.status}
+                                onChange={updateField}
+                                className={inputClass}
+                            >
+                                <option value="Draft">Draft</option>
+                                <option value="Active">Active</option>
+                            </select>
+                            <p className="mt-1.5 text-[11px] text-[#7A8999]">
+                                Draft tasks are not yet published to students.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 border-t border-[#DCE4EC] bg-[#F5F7FA] px-5 py-4 max-[480px]:flex-col">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className={buttonSecondary}
+                        >
+                            Cancel
+                        </button>
+                        <button type="submit" className={buttonPrimary}>
+                            {isAdd ? <Plus size={16} /> : <CheckCircle2 size={16} />}
+                            {isAdd ? "Create Task" : "Save Changes"}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+}
+
+// Confirmation prompt
+function ConfirmModal({ type, task, onClose, onConfirm }) {
+    if (!type || !task) return null;
+
+    const isDelete = type === "delete";
+    const isPublish = type === "publish";
+
+    const title = isDelete
+        ? "Delete Task?"
+        : isPublish
+          ? "Publish Task?"
+          : "Cancel Task?";
+
+    const accent = isDelete
+        ? {
+              bg: "bg-[#FBEEF0]",
+              icon: "bg-[#A94A55]",
+              border: "border-[#E2BFC3]",
+              button: "bg-[#A94A55] hover:bg-[#8E3742]",
+          }
+        : isPublish
+          ? {
+                bg: "bg-[#EEF4F9]",
+                icon: "bg-[#294B70]",
+                border: "border-[#BFD2E5]",
+                button: "bg-[#1B3553] hover:bg-[#142A43]",
+            }
+          : {
+                bg: "bg-[#FAF5E9]",
+                icon: "bg-[#8A6A25]",
+                border: "border-[#D7C7A8]",
+                button: "bg-[#8A6A25] hover:bg-[#70551E]",
+            };
+
+    const actionText = isDelete
+        ? "Delete Task"
+        : isPublish
+          ? "Publish Task"
+          : "Cancel Task";
+
+    return (
+        <div
+            className="fixed inset-0 z-[110] flex items-center justify-center bg-[#142A43]/40 px-4 py-6 backdrop-blur-sm"
+            onMouseDown={onClose}
+        >
+            <div
+                className={`w-full max-w-sm overflow-hidden rounded-2xl border ${accent.border} bg-white shadow-[0_20px_60px_rgba(27,53,83,0.20)]`}
+                onMouseDown={(event) => event.stopPropagation()}
+            >
+                <div className={`${accent.bg} px-5 py-5`}>
+                    <div
+                        className={`flex h-11 w-11 items-center justify-center rounded-xl ${accent.icon} text-white shadow-sm`}
+                    >
+                        {isDelete ? (
+                            <Trash2 size={21} />
+                        ) : isPublish ? (
+                            <Send size={21} />
+                        ) : (
+                            <Ban size={21} />
+                        )}
+                    </div>
+
+                    <h2 className="mt-4 text-base font-bold text-[#243A52]">
+                        {title}
+                    </h2>
+
+                    <p className="mt-2 text-sm leading-6 text-[#526579]">
+                        {isDelete
+                            ? "Are you sure you want to delete"
+                            : isPublish
+                              ? "Publish"
+                              : "Are you sure you want to cancel"}{" "}
+                        <strong className="font-semibold text-[#243A52]">
+                            {task.title}
+                        </strong>
+                        {isDelete
+                            ? "? This action cannot be undone."
+                            : isPublish
+                              ? "? Students in the assigned section will be able to see it."
+                              : "? Students will no longer be able to access this task."}
+                    </p>
+                </div>
+
+                <div
+                    className={`flex justify-end gap-2 border-t ${accent.border} bg-white px-5 py-4`}
+                >
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className={buttonSecondary}
+                    >
+                        Keep Task
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={onConfirm}
+                        className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md ${accent.button}`}
+                    >
+                        {actionText}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// Main task management dashboard for creating, filtering, viewing, and updating faculty assignments.
+export default function TaskManagement() {
+    const [tasks, setTasks] = useState(initialTasks);
+    const [searchValue, setSearchValue] = useState("");
+    const [statusFilter, setStatusFilter] = useState("All Status");
+    const [sectionFilter, setSectionFilter] = useState("All Sections");
+    const [currentPage, setCurrentPage] = useState(1);
+    const [modalType, setModalType] = useState(null);
+    const [selectedTask, setSelectedTask] = useState(null);
+    const [confirmType, setConfirmType] = useState(null);
+    const [confirmTask, setConfirmTask] = useState(null);
+    const [formData, setFormData] = useState(emptyForm);
+
+    const itemsPerPage = 5;
+
+    const counts = useMemo(
+        () => ({
+            total: tasks.length,
+            active: tasks.filter((task) => task.status === "Active").length,
+            drafts: tasks.filter((task) => task.status === "Draft").length,
+            completed: tasks.filter((task) => task.status === "Completed").length,
+        }),
+        [tasks],
+    );
+
+    const filteredTasks = useMemo(() => {
+        const search = searchValue.trim().toLowerCase();
+
+        return tasks.filter((task) => {
+            const matchesSearch =
+                !search ||
+                [
+                    task.title,
+                    task.topic,
+                    task.section,
+                    task.description,
+                    `TSK-${String(task.id).padStart(3, "0")}`,
+                ].some((value) =>
+                    String(value || "").toLowerCase().includes(search),
+                );
+
+            const matchesStatus =
+                statusFilter === "All Status" || task.status === statusFilter;
+
+            const matchesSection =
+                sectionFilter === "All Sections" ||
+                task.section === sectionFilter;
+
+            return matchesSearch && matchesStatus && matchesSection;
+        });
+    }, [tasks, searchValue, statusFilter, sectionFilter]);
+
+    const totalPages = Math.max(
+        1,
+        Math.ceil(filteredTasks.length / itemsPerPage),
+    );
+
+    const safePage = Math.min(currentPage, totalPages);
+
+    const paginatedTasks = filteredTasks.slice(
+        (safePage - 1) * itemsPerPage,
+        safePage * itemsPerPage,
+    );
+
+    const closeModal = () => {
+        setModalType(null);
+        setSelectedTask(null);
+    };
+
+    const openAddModal = () => {
+        setSelectedTask(null);
+        setFormData({
+            ...emptyForm,
+            due: "",
+            dateCreated: new Date().toISOString().slice(0, 10),
+        });
+        setModalType("add");
+    };
+
+    const openEditModal = (task) => {
+        setSelectedTask(task);
+        setFormData({
+            ...emptyForm,
+            ...task,
+            points: String(task.points ?? 100),
+        });
+        setModalType("edit");
+    };
+
+    const handleSubmit = (event) => {
+        event.preventDefault();
+
+        if (
+            tasks.some(
+                (task) =>
+                    task.title.trim().toLowerCase() ===
+                        formData.title.trim().toLowerCase() &&
+                    task.section === formData.section &&
+                    task.id !== selectedTask?.id,
+            )
+        ) {
+            window.alert(
+                "A task with this title already exists for this section.",
+            );
+            return;
+        }
+
+        if (modalType === "add") {
+            const newTask = {
+                ...formData,
+                id: Math.max(0, ...tasks.map((task) => task.id)) + 1,
+                title: formData.title.trim(),
+                points: Number(formData.points) || 100,
+                dateCreated: new Date().toISOString().slice(0, 10),
+            };
+
+            setTasks((previous) => [newTask, ...previous]);
+            setCurrentPage(1);
+        } else if (modalType === "edit" && selectedTask) {
+            setTasks((previous) =>
+                previous.map((task) =>
+                    task.id === selectedTask.id
+                        ? {
+                              ...task,
+                              ...formData,
+                              title: formData.title.trim(),
+                              points: Number(formData.points) || 100,
+                          }
+                        : task,
+                ),
+            );
+        }
+
+        closeModal();
+    };
+
+    const openConfirm = (type, task) => {
+        setConfirmType(type);
+        setConfirmTask(task);
+    };
+
+    const closeConfirm = () => {
+        setConfirmType(null);
+        setConfirmTask(null);
+    };
+
+    const handleConfirmAction = () => {
+        if (!confirmTask || !confirmType) return;
+
+        if (confirmType === "delete") {
+            setTasks((previous) =>
+                previous.filter((task) => task.id !== confirmTask.id),
+            );
+        }
+
+        if (confirmType === "publish") {
+            setTasks((previous) =>
+                previous.map((task) =>
+                    task.id === confirmTask.id
+                        ? { ...task, status: "Active" }
+                        : task,
+                ),
+            );
+        }
+
+        if (confirmType === "cancel") {
+            setTasks((previous) =>
+                previous.map((task) =>
+                    task.id === confirmTask.id
+                        ? { ...task, status: "Cancelled" }
+                        : task,
+                ),
+            );
+        }
+
+        closeConfirm();
+    };
+
+    const clearFilters = () => {
+        setSearchValue("");
+        setStatusFilter("All Status");
+        setSectionFilter("All Sections");
+        setCurrentPage(1);
+    };
+
+    const hasFilters =
+        searchValue !== "" ||
+        statusFilter !== "All Status" ||
+        sectionFilter !== "All Sections";
+
+    const handleSearch = (value) => {
+        setSearchValue(value);
+        setCurrentPage(1);
+    };
+
+    return (
+       <FacultyLayout
+    activeMenu="Task Management"
+    showPageInfo={false}
+    showSearch={false}
+        >
+            <div className="mx-auto w-full max-w-[1600px]">
+                <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+                    <div className="min-w-0">
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-[#BFD2E5] bg-[#E2EAF2] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#294B70]">
+                            Academic Management
+                        </span>
+
+                        <h1 className="mt-3 text-2xl font-bold tracking-tight text-[#1B3553] sm:text-3xl">
+                            Task Management
+                        </h1>
+
+                        <p className="mt-1 text-sm text-[#738396]">
+                            Create academic tasks, manage deadlines, and monitor task status.
+                        </p>
+                    </div>
+
+                    <button
+                        type="button"
+                        onClick={openAddModal}
+                        className={`${buttonPrimary} shrink-0`}
+                    >
+                        <Plus size={17} />
+                        Create Task
+                    </button>
+                </div>
+
+                
+              <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                  <SummaryCard
+                      title="Total Tasks"
+                      value={counts.total}
+                      description="All created tasks"
+                      icon={ClipboardList}
+                      gradient="from-[#E2EAF2] via-[#EDF2F7] to-white"
+                      borderColor="border-[#AFC1D4]"
+                      accentColor="bg-[#1B3553]/20"
+                      iconBackground="bg-[#1B3553]"
+                      bars={[
+                          "h-3 bg-[#AFC1D4]",
+                          "h-5 bg-[#8FA9C1]",
+                          "h-8 bg-[#6F8CA8]",
+                          "h-6 bg-[#AFC1D4]",
+                      ]}
+                  />
+
+                  <SummaryCard
+                      title="Active Tasks"
+                      value={counts.active}
+                      description="Currently published"
+                      icon={RefreshCw}
+                      gradient="from-[#E3F0EA] via-[#EFF6F2] to-white"
+                      borderColor="border-[#B9D5C8]"
+                      accentColor="bg-[#31805E]/30"
+                      iconBackground="bg-[#31795B]"
+                      bars={[
+                          "h-3 bg-[#B9D9C8]",
+                          "h-5 bg-[#8FC1A7]",
+                          "h-7 bg-[#5E9C7A]",
+                          "h-9 bg-[#31795B]",
+                      ]}
+                  />
+
+                  <SummaryCard
+                      title="Draft Tasks"
+                      value={counts.drafts}
+                      description="Not yet published"
+                      icon={FileText}
+                      gradient="from-[#E6EAF0] via-[#F0F3F6] to-white"
+                      borderColor="border-[#C8D0D9]"
+                      accentColor="bg-[#64748B]/25"
+                      iconBackground="bg-[#5E6C7C]"
+                      bars={[
+                          "h-8 bg-[#CBD3DC]",
+                          "h-5 bg-[#AAB4BF]",
+                          "h-6 bg-[#7C8794]",
+                          "h-3 bg-[#5E6C7C]",
+                      ]}
+                  />
+
+                  <SummaryCard
+                      title="Completed Tasks"
+                      value={counts.completed}
+                      description="Marked as completed"
+                      icon={CheckCircle2}
+                      gradient="from-[#DFE8F2] via-[#EAF0F6] to-white"
+                      borderColor="border-[#AFC2D8]"
+                      accentColor="bg-[#294B70]/30"
+                      iconBackground="bg-[#294B70]"
+                      bars={[
+                          "h-4 bg-[#AFC2D8]",
+                          "h-7 bg-[#7898B8]",
+                          "h-5 bg-[#52789D]",
+                          "h-9 bg-[#294B70]",
+                      ]}
+                  />
+              </div>
+
+                <section className="overflow-hidden rounded-2xl border border-[#C9D6E3] bg-white shadow-[0_5px_20px_rgba(27,53,83,0.06)]">
+                    <div className="flex flex-col gap-3 border-b border-[#C9D6E3] bg-gradient-to-r from-[#F8FAFC] to-[#EEF3F8] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <h2 className="text-base font-bold text-[#1B3553]">
+                                Task List
+                            </h2>
+                            <p className="mt-0.5 text-xs text-[#738396]">
+                                View and manage all academic tasks
+                            </p>
+                        </div>
+
+                        <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-[#C9D6E3] bg-white px-3 py-1.5 text-xs font-semibold text-[#526579]">
+                            <ClipboardList size={14} />
+                            {filteredTasks.length}{" "}
+                            {filteredTasks.length === 1 ? "task" : "tasks"}
+                        </span>
+                    </div>
+
+                    <div className="border-b border-[#DCE4EC] bg-[#F7F9FB] px-5 py-4">
+                        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(220px,1fr)_190px_190px_auto]">
+                            <div className="relative min-w-0">
+                                <Search
+                                    size={17}
+                                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8292A3]"
+                                />
+                                <input
+                                    type="text"
+                                    value={searchValue}
+                                    onChange={(event) =>
+                                        handleSearch(event.target.value)
+                                    }
+                                    placeholder="Search tasks..."
+                                    className="w-full rounded-xl border border-[#C9D6E4] bg-white py-2.5 pl-10 pr-4 text-sm text-[#243A52] outline-none placeholder:text-[#9AA8B7] focus:border-[#294B70] focus:ring-2 focus:ring-[#294B70]/10"
+                                />
+                            </div>
+
+                            <select
+                                value={sectionFilter}
+                                onChange={(event) => {
+                                    setSectionFilter(event.target.value);
+                                    setCurrentPage(1);
+                                }}
+                                className={inputClass}
+                                aria-label="Filter by section"
+                            >
+                                {["All Sections", ...sections].map((section) => (
+                                    <option key={section} value={section}>
+                                        {section}
+                                    </option>
+                                ))}
+                            </select>
+
+                            <select
+                                value={statusFilter}
+                                onChange={(event) => {
+                                    setStatusFilter(event.target.value);
+                                    setCurrentPage(1);
+                                }}
+                                className={inputClass}
+                                aria-label="Filter by status"
+                            >
+                                {[
+                                    "All Status",
+                                    "Active",
+                                    "Draft",
+                                    "Completed",
+                                    "Cancelled",
+                                ].map((status) => (
+                                    <option key={status} value={status}>
+                                        {status}
+                                    </option>
+                                ))}
+                            </select>
+
+                        </div>
+                    </div>
+
+                    <div className="w-full overflow-x-auto">
+                        <table className="w-full min-w-[1000px] border-collapse text-left">
+                            <thead>
+                                <tr className="border-b border-[#C9D6E3] bg-[#E7EDF3]">
+                                    {[
+                                        "Task",
+                                        "Topic",
+                                        "Section",
+                                        "Due Date",
+                                        "Points",
+                                        "Status",
+                                        "Actions",
+                                    ].map((heading) => (
+                                        <th
+                                            key={heading}
+                                            className="whitespace-nowrap px-5 py-3.5 text-[10px] font-bold uppercase tracking-[0.09em] text-[#53677D]"
+                                        >
+                                            {heading}
+                                        </th>
+                                    ))}
+                                </tr>
+                            </thead>
+
+                            <tbody className="divide-y divide-[#E5EBF1]">
+                                {paginatedTasks.map((task) => (
+                                    <tr
+                                        key={task.id}
+                                        className="group transition-colors hover:bg-[#F7F9FC]"
+                                    >
+                                        <td className="px-5 py-4">
+                                            <div className="flex min-w-0 items-center gap-3">
+                                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#C9D6E3] bg-[#EEF4F9] text-[#294B70]">
+                                                    <BookOpen size={18} />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="max-w-[260px] truncate text-sm font-semibold text-[#243A52]">
+                                                        {task.title}
+                                                    </p>
+                                                    <p className="mt-1 text-[11px] text-[#8292A3]">
+                                                        TSK-
+                                                        {String(task.id).padStart(
+                                                            3,
+                                                            "0",
+                                                        )}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </td>
+
+                                        <td className="px-5 py-4 text-sm text-[#526579]">
+                                            {task.topic || "—"}
+                                        </td>
+
+                                        <td className="px-5 py-4">
+                                            <span className="inline-flex whitespace-nowrap rounded-lg border border-[#D5DFE9] bg-[#F5F8FB] px-2.5 py-1.5 text-xs font-semibold text-[#526579]">
+                                                {task.section}
+                                            </span>
+                                        </td>
+
+                                        <td className="px-5 py-4">
+                                            <div className="flex items-center gap-2 whitespace-nowrap text-sm text-[#526579]">
+                                                <CalendarDays
+                                                    size={15}
+                                                    className="text-[#8292A3]"
+                                                />
+                                                {formatDate(task.due)}
+                                            </div>
+                                        </td>
+
+                                        <td className="px-5 py-4 text-sm font-semibold text-[#526579]">
+                                            {task.points ?? 100}
+                                        </td>
+
+                                        <td className="px-5 py-4">
+                                            <StatusBadge status={task.status} />
+                                        </td>
+
+                                       {/* Actions */}
+                                        <td className="px-5 py-4">
+                                            <div className="flex items-center gap-1.5">
+                                                <button
+                                                    type="button"
+                                                    title="View task"
+                                                    aria-label={`View ${task.title}`}
+                                                    onClick={() => {
+                                                        setSelectedTask(task);
+                                                        setModalType("view");
+                                                    }}
+                                                    className="flex h-8 w-8 items-center justify-center rounded-lg border  border-[#BFCFDF]
+                                                      bg-[#E6EDF4]
+                                                      text-[#1B3553]
+                                                      transition-all
+                                                      duration-200
+                                                      hover:border-[#91A9C0]
+                                                      hover:bg-[#D5E1EC]
+                                                      hover:text-[#142A43]"
+                                                                >
+                                                    <Eye size={15} />
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    title="Edit task"
+                                                    aria-label={`Edit ${task.title}`}
+                                                    onClick={() =>
+                                                        openEditModal(task)
+                                                    }
+                                                    className="flex h-8 w-8 items-center justify-center rounded-lg border  border-blue-200
+                                                        bg-blue-50
+                                                        text-blue-600
+                                                        transition-all
+                                                        duration-200
+                                                        hover:bg-blue-100
+                                                        hover:text-blue-700"
+                                                   >
+                                                    <Pencil size={15} />
+                                                </button>
+
+                                                {task.status === "Draft" && (
+                                                    <button
+                                                        type="button"
+                                                        title="Publish task"
+                                                        aria-label={`Publish ${task.title}`}
+                                                        onClick={() =>
+                                                            openConfirm(
+                                                                "publish",
+                                                                task,
+                                                            )
+                                                        }
+                                                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#B9D9C8] bg-white text-[#267653] hover:bg-[#F0F8F3]"
+                                                    >
+                                                        <Upload size={15} />
+                                                    </button>
+                                                )}
+
+                                                {task.status === "Active" && (
+                                                    <button
+                                                        type="button"
+                                                        title="Cancel task"
+                                                        aria-label={`Cancel ${task.title}`}
+                                                        onClick={() =>
+                                                            openConfirm(
+                                                                "cancel",
+                                                                task,
+                                                            )
+                                                        }
+                                                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#D7C7A8] bg-white text-[#8A6A25] hover:bg-[#FAF5E9]"
+                                                    >
+                                                        <Ban size={15} />
+                                                    </button>
+                                                )}
+
+                                                <button
+                                                    type="button"
+                                                    title="Delete task"
+                                                    aria-label={`Delete ${task.title}`}
+                                                    onClick={() =>
+                                                        openConfirm(
+                                                            "delete",
+                                                            task,
+                                                        )
+                                                    }
+                                                    className="flex h-8 w-8 items-center justify-center rounded-lg border  border-red-200
+                                                        bg-red-50
+                                                        text-red-500
+                                                        transition-all
+                                                        duration-200
+                                                        hover:bg-red-100
+                                                        hover:text-red-600
+                                                        active:scale-95"
+                                                >
+                                                    <Trash2 size={15} />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+
+                                {paginatedTasks.length === 0 && (
+                                    <tr>
+                                        <td
+                                            colSpan={7}
+                                            className="px-5 py-16 text-center"
+                                        >
+                                            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-[#C9D6E3] bg-[#EEF4F9] text-[#8292A3]">
+                                                {hasFilters ? (
+                                                    <Search size={23} />
+                                                ) : (
+                                                    <ClipboardList size={23} />
+                                                )}
+                                            </div>
+
+                                            <h3 className="mt-4 text-sm font-bold text-[#243A52]">
+                                                {hasFilters
+                                                    ? "No matching tasks found"
+                                                    : "No tasks available"}
+                                            </h3>
+
+                                            <p className="mx-auto mt-1 max-w-sm text-xs leading-5 text-[#8292A3]">
+                                                {hasFilters
+                                                    ? "Try changing your search or filters to find a task."
+                                                    : "Create a task to start managing academic activities."}
+                                            </p>
+
+                                            {hasFilters ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={clearFilters}
+                                                    className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-[#294B70] hover:text-[#1B3553]"
+                                                >
+                                                    <RotateCcw size={14} />
+                                                    Clear filters
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    type="button"
+                                                    onClick={openAddModal}
+                                                    className={`${buttonPrimary} mt-4`}
+                                                >
+                                                    <Plus size={15} />
+                                                    Create Task
+                                                </button>
+                                            )}
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div className="flex flex-col gap-3 border-t border-[#DCE4EC] bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="text-xs text-[#738396]">
+                            Showing{" "}
+                            <strong className="font-semibold text-[#243A52]">
+                                {filteredTasks.length === 0
+                                    ? 0
+                                    : (safePage - 1) * itemsPerPage + 1}
+                            </strong>{" "}
+                            to{" "}
+                            <strong className="font-semibold text-[#243A52]">
+                                {Math.min(
+                                    safePage * itemsPerPage,
+                                    filteredTasks.length,
+                                )}
+                            </strong>{" "}
+                            of{" "}
+                            <strong className="font-semibold text-[#243A52]">
+                                {filteredTasks.length}
+                            </strong>{" "}
+                            tasks
+                        </p>
+
+                        <div className="flex items-center gap-1.5">
+                            <button
+                                type="button"
+                                aria-label="Previous page"
+                                disabled={safePage <= 1}
+                                onClick={() =>
+                                    setCurrentPage((page) =>
+                                        Math.max(1, page - 1),
+                                    )
+                                }
+                                className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#C9D6E3] bg-white text-[#526579] hover:bg-[#EEF4F9] disabled:cursor-not-allowed disabled:opacity-40"
+                            >
+                                <ChevronLeft size={17} />
+                            </button>
+
+                            {Array.from(
+                                { length: totalPages },
+                                (_, index) => index + 1,
+                            ).map((page) => (
+                                <button
+                                    key={page}
+                                    type="button"
+                                    onClick={() => setCurrentPage(page)}
+                                    className={`flex h-9 min-w-9 items-center justify-center rounded-lg border px-2.5 text-xs font-semibold ${
+                                        page === safePage
+                                            ? "border-[#1B3553] bg-[#1B3553] text-white shadow-sm"
+                                            : "border-[#C9D6E3] bg-white text-[#526579] hover:bg-[#EEF4F9]"
+                                    }`}
+                                >
+                                    {page}
+                                </button>
+                            ))}
+
+                            <button
+                                type="button"
+                                aria-label="Next page"
+                                disabled={safePage >= totalPages}
+                                onClick={() =>
+                                    setCurrentPage((page) =>
+                                        Math.min(totalPages, page + 1),
+                                    )
+                                }
+                                className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#C9D6E3] bg-white text-[#526579] hover:bg-[#EEF4F9] disabled:cursor-not-allowed disabled:opacity-40"
+                            >
+                                <ChevronRight size={17} />
+                            </button>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <TaskModal
+                mode={modalType}
+                task={selectedTask}
+                formData={formData}
+                setFormData={setFormData}
+                onClose={closeModal}
+                onSubmit={handleSubmit}
+                onEdit={openEditModal}
+            />
+
+            <ConfirmModal
+                type={confirmType}
+                task={confirmTask}
+                onClose={closeConfirm}
+                onConfirm={handleConfirmAction}
+            />
+        </FacultyLayout>
+    );
+} 

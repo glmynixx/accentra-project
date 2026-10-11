@@ -87,4 +87,213 @@ export const faculty = [
     status: "Active",
     dateAdded: "September 25, 2026",
   },
+]
+  export const facultyDashboardSections = [
+  {
+    name: "11CA",
+    program: "BSAIS",
+    year: "1st Year",
+    students: 42,
+    status: "Active",
+  },
+  {
+    name: "21CA",
+    program: "BSAIS",
+    year: "2nd Year",
+    students: 38,
+    status: "Active",
+  },
+  {
+    name: "31CE",
+    program: "BSEN",
+    year: "3rd Year",
+    students: 35,
+    status: "Active",
+  },
+  {
+    name: "41CE",
+    program: "BSEN",
+    year: "4th Year",
+    students: 29,
+    status: "Active",
+  },
+];
+
+export const facultyDashboardTasks = [
+  {
+    id: 1,
+    title: "Journal Entry",
+    section: "11CA",
+    deadline: "2026-10-15T23:59",
+    status: "Active",
+  },
+  {
+    id: 2,
+    title: "Adjusting Entries",
+    section: "21CA",
+    deadline: "2026-10-16T23:59",
+    status: "Active",
+  },
+  {
+    id: 3,
+    title: "Financial Statement Activity",
+    section: "31CE",
+    deadline: "2026-10-18T23:59",
+    status: "Draft",
+  },
+];
+
+export const facultyDashboardSubmissions = [
+  {
+    student: "Alex Santos",
+    task: "Journal Entry",
+    section: "11CA",
+    date: "Oct 10, 2026",
+    status: "Pending Review",
+  },
+  {
+    student: "Jamie Reyes",
+    task: "Adjusting Entries",
+    section: "21CA",
+    date: "Oct 10, 2026",
+    status: "Submitted",
+  },
+  {
+    student: "Taylor Cruz",
+    task: "Journal Entry",
+    section: "41CE",
+    date: "Oct 9, 2026",
+    status: "Reviewed",
+  },
+];
+
+export const facultyDashboardDeadlines = [
+  {
+    title: "Journal Entry",
+    section: "BSEN 31CE",
+    deadline: "2026-10-15T23:59",
+    status: "Upcoming",
+  },
+  {
+    title: "Adjusting Entries",
+    section: "BSAIS 21CA",
+    deadline: "2026-10-11T23:59",
+    status: "Due Soon",
+  },
+  {
+    title: "Financial Statement Activity",
+    section: "BSAIS 11CA",
+    deadline: "2026-10-08T23:59",
+    status: "Overdue",
+  },
+];
+
+export const initialContent = [
+    {
+        id: 1,
+        title: "Introduction to Accounting",
+        topic: "Accounting Basics",
+        section: "BSAIS 11CA",
+        type: "Lesson",
+        date: "Oct 5, 2026",
+        status: "Published",
+        attachment: null,
+    },
+    {
+        id: 2,
+        title: "Journalizing Transactions",
+        topic: "Journal Entries",
+        section: "BSAIS 21CA",
+        type: "Learning Material",
+        date: "Oct 7, 2026",
+        status: "Published",
+        attachment: null,
+    },
+    {
+        id: 3,
+        title: "Adjusting Entries Guide",
+        topic: "Adjustments",
+        section: "BSEN 11CE",
+        type: "Document",
+        date: "Oct 9, 2026",
+        status: "Draft",
+        attachment: null,
+    },
+    {
+        id: 4,
+        title: "Financial Statements",
+        topic: "Financial Reporting",
+        section: "BSEN 21CE",
+        type: "Lesson",
+        date: "Oct 10, 2026",
+        status: "Published",
+        attachment: null,
+    },
+];
+
+export const initialTasks = [
+    {
+        id: 1,
+        title: "Journal Entries Exercise",
+        topic: "Journal Entries",
+        section: "BSAIS 11CA",
+        due: "2026-10-20",
+        points: 100,
+        status: "Active",
+        description: "Complete the assigned journal entries exercise.",
+        instructions:
+            "Show your solutions and ensure total debits equal total credits.",
+        dateCreated: "2026-10-01",
+    },
+    {
+        id: 2,
+        title: "Chart of Accounts Activity",
+        topic: "Chart of Accounts",
+        section: "BSAIS 21CA",
+        due: "2026-10-23",
+        points: 50,
+        status: "Draft",
+        description: "Prepare a chart of accounts for the given business.",
+        instructions: "Classify each account according to its account type.",
+        dateCreated: "2026-10-02",
+    },
+    {
+        id: 3,
+        title: "General Ledger Practice",
+        topic: "General Ledger",
+        section: "BSEN 31CE",
+        due: "2026-10-25",
+        points: 100,
+        status: "Active",
+        description:
+            "Record transactions in the appropriate general ledger accounts.",
+        instructions: "Review each transaction before posting.",
+        dateCreated: "2026-10-03",
+    },
+    {
+        id: 4,
+        title: "Accounting Fundamentals Quiz",
+        topic: "Accounting Fundamentals",
+        section: "BSEN 21CE",
+        due: "2026-10-05",
+        points: 30,
+        status: "Completed",
+        description: "Answer the accounting fundamentals quiz.",
+        instructions: "Answer all questions.",
+        dateCreated: "2026-09-25",
+    },
+    {
+        id: 5,
+        title: "Trial Balance Activity",
+        topic: "Trial Balance",
+        section: "BSAIS 41CA",
+        due: "2026-10-28",
+        points: 75,
+        status: "Draft",
+        description:
+            "Prepare a trial balance using the provided balances.",
+        instructions:
+            "Check that the debit and credit totals are equal.",
+        dateCreated: "2026-10-04",
+    },
 ];

@@ -130,21 +130,15 @@ export default function Dashboard() {
         />
 
         {/* PAGE CONTENT*/}
-
         <div className="mt-5 min-w-0 space-y-5">
-          {/* STATISTICS*/}
 
           <div className="min-w-0">
             <StatsGrid stats={stats} />
           </div>
 
-          {/*  RECENT USERS */}
-
           <div className="min-w-0">
             <RecentUsers users={filteredUsers} />
           </div>
-
-          {/* SECTION + ACTIVITIES*/}
 
           <section
             className="

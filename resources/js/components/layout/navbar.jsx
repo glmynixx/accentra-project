@@ -1,3 +1,4 @@
+
 import Icon from "../common/icon";
 
 export default function Navbar({
@@ -6,28 +7,22 @@ export default function Navbar({
   onSearchChange,
   showPageInfo = true,
   showSearch = true,
+  profileName = "Admin",
+  profileRole = "Administrator",
+  avatarText = "AD",
+  pageTitle = "Dashboard",
+  welcomeText = "Welcome back, Admin!",
+  searchPlaceholder = "Search users, sections...",
 }) {
   return (
     <header
       className="
-        sticky
-        top-0
-        z-30
-        mb-6
-        flex
-        min-h-[72px]
-        items-center
-        justify-between
-        gap-5
-        rounded-2xl
-        border
-        border-[#263B55]
-        bg-[#142A43]
-        px-5
-        py-3.5
+        sticky top-0 z-30 mb-6
+        flex min-h-[72px] items-center justify-between gap-5
+        rounded-2xl border border-[#263B55]
+        bg-[#142A43] px-5 py-3.5
         shadow-[0_6px_24px_rgba(15,35,60,0.16)]
-        transition-all
-        duration-300
+        transition-all duration-300
         max-[900px]:gap-3
         max-[600px]:px-4
       "
@@ -35,11 +30,7 @@ export default function Navbar({
       {/* Left Side */}
       <div
         className="
-          flex
-          min-w-0
-          flex-1
-          items-center
-          gap-5
+          flex min-w-0 flex-1 items-center gap-5
           max-[900px]:gap-3
         "
       >
@@ -47,23 +38,12 @@ export default function Navbar({
         <button
           type="button"
           className="
-            hidden
-            h-10
-            w-10
-            shrink-0
-            items-center
-            justify-center
-            rounded-xl
-            border
-            border-[#3A506A]
-            bg-white/[0.08]
-            text-[#C7D2E0]
-            transition-all
-            duration-200
-            hover:bg-white/[0.14]
-            hover:text-white
-            active:scale-95
-            max-[768px]:flex
+            hidden h-10 w-10 shrink-0
+            items-center justify-center rounded-xl
+            border border-[#3A506A] bg-white/[0.08]
+            text-[#C7D2E0] transition-all duration-200
+            hover:bg-white/[0.14] hover:text-white
+            active:scale-95 max-[768px]:flex
           "
           aria-label="Open menu"
           onClick={onMenuToggle}
@@ -76,25 +56,20 @@ export default function Navbar({
           <div className="min-w-0 shrink-0">
             <h1
               className="
-                text-xl
-                font-bold
-                tracking-tight
-                text-white
+                text-xl font-bold tracking-tight text-white
                 max-[600px]:text-lg
               "
             >
-              Dashboard
+              {pageTitle}
             </h1>
 
             <p
               className="
-                mt-0.5
-                text-xs
-                text-[#8FA3BA]
+                mt-0.5 text-xs text-[#8FA3BA]
                 max-[600px]:hidden
               "
             >
-              Welcome back, Admin!
+              {welcomeText}
             </p>
           </div>
         )}
@@ -103,21 +78,11 @@ export default function Navbar({
         {showSearch && (
           <div
             className="
-              flex
-              h-10
-              min-w-0
-              max-w-[420px]
-              flex-1
-              items-center
-              gap-2.5
-              rounded-xl
-              border
-              border-[#3A506A]
-              bg-[#0F2239]/60
-              px-3.5
-              text-[#8FA3BA]
-              transition-all
-              duration-200
+              flex h-10 min-w-0 max-w-[420px] flex-1
+              items-center gap-2.5 rounded-xl
+              border border-[#3A506A] bg-[#0F2239]/60
+              px-3.5 text-[#8FA3BA]
+              transition-all duration-200
               focus-within:border-[#6FA58F]/60
               focus-within:bg-[#0F2239]
               focus-within:ring-4
@@ -136,16 +101,11 @@ export default function Navbar({
               onChange={(event) =>
                 onSearchChange?.(event.target.value)
               }
-              placeholder="Search users, sections..."
-              aria-label="Search users and sections"
+              placeholder={searchPlaceholder}
+              aria-label="Search"
               className="
-                min-w-0
-                flex-1
-                border-0
-                bg-transparent
-                text-sm
-                text-white
-                outline-none
+                min-w-0 flex-1 border-0 bg-transparent
+                text-sm text-white outline-none
                 placeholder:text-[#71869E]
               "
             />
@@ -154,33 +114,16 @@ export default function Navbar({
       </div>
 
       {/* Right Side */}
-      <div
-        className="
-          flex
-          shrink-0
-          items-center
-          gap-3
-        "
-      >
+      <div className="flex shrink-0 items-center gap-3">
         {/* Notification */}
         <button
           type="button"
           className="
-            relative
-            flex
-            h-10
-            w-10
-            items-center
-            justify-center
-            rounded-xl
-            border
-            border-[#3A506A]
-            bg-white/[0.08]
-            text-[#AFC0D2]
-            transition-all
-            duration-200
-            hover:bg-white/[0.14]
-            hover:text-white
+            relative flex h-10 w-10 items-center
+            justify-center rounded-xl border
+            border-[#3A506A] bg-white/[0.08]
+            text-[#AFC0D2] transition-all duration-200
+            hover:bg-white/[0.14] hover:text-white
             active:scale-95
           "
           aria-label="Notifications"
@@ -192,31 +135,19 @@ export default function Navbar({
 
           <span
             className="
-              absolute
-              right-2
-              top-2
-              h-2
-              w-2
-              rounded-full
-              border-2
-              border-[#142A43]
+              absolute right-2 top-2 h-2 w-2
+              rounded-full border-2 border-[#142A43]
               bg-[#6FA58F]
             "
           />
         </button>
 
-        {/* Admin Profile */}
+        {/* User Profile */}
         <div
           className="
-            flex
-            cursor-pointer
-            items-center
-            gap-2.5
-            rounded-xl
-            px-2
-            py-1.5
-            transition-colors
-            duration-200
+            flex cursor-pointer items-center gap-2.5
+            rounded-xl px-2 py-1.5
+            transition-colors duration-200
             hover:bg-white/[0.08]
             max-[600px]:px-0
           "
@@ -224,66 +155,42 @@ export default function Navbar({
           {/* Avatar */}
           <div
             className="
-              flex
-              h-9
-              w-9
-              shrink-0
-              items-center
-              justify-center
-              rounded-full
-              bg-[#36534E]
-              text-xs
-              font-bold
-              text-white
+              flex h-9 w-9 shrink-0 items-center
+              justify-center rounded-full bg-[#36534E]
+              text-xs font-bold text-white
               shadow-[0_4px_12px_rgba(0,0,0,0.18)]
-              ring-2
-              ring-white/10
+              ring-2 ring-white/10
             "
           >
-            AD
+            {avatarText}
           </div>
 
-          {/* Admin Details */}
+          {/* User Details */}
           <div
             className="
-              flex
-              min-w-0
-              flex-col
+              flex min-w-0 flex-col
               max-[600px]:hidden
             "
           >
-            <span
-              className="
-                text-sm
-                font-semibold
-                text-white
-              "
-            >
-              Admin
+            <span className="text-sm font-semibold text-white">
+              {profileName}
             </span>
 
             <span
               className="
-                mt-0.5
-                text-[10px]
-                font-medium
-                uppercase
-                tracking-wide
-                text-[#71869E]
+                mt-0.5 text-[10px] font-medium
+                uppercase tracking-wide text-[#71869E]
               "
             >
-              Administrator
+              {profileRole}
             </span>
           </div>
 
           <Icon
             name="chevron-down"
             className="
-              h-4
-              w-4
-              text-[#71869E]
-              transition-colors
-              duration-200
+              h-4 w-4 text-[#71869E]
+              transition-colors duration-200
               group-hover:text-white
               max-[600px]:hidden
             "

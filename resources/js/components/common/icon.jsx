@@ -3,6 +3,7 @@ import {
   ChevronDown,
   GraduationCap,
   Layers3,
+  Layers,
   LayoutDashboard,
   LayoutList,
   LogOut,
@@ -23,8 +24,15 @@ import {
   Trash2,
   UserRoundX,
   UserX,
+  Users,
   X,
   NotebookTabs,
+  ClipboardList,
+  FileClock,
+  CalendarClock,
+  Files,
+  FolderCheck,
+  ChartNoAxesColumn,
 } from "lucide-react";
 
 const icons = {
@@ -53,7 +61,15 @@ const icons = {
   "user-round-x": UserRoundX,
   "user-x": UserX,
   x: X,
+  "users": Users,
+  "layers": Layers,
   "notebook-tabs": NotebookTabs,
+  "clipboard-list": ClipboardList,
+  "file-clock": FileClock,
+  "calendar-clock": CalendarClock,
+  "files": Files,
+  "folder-check": FolderCheck,
+  "chart-no-axes-column": ChartNoAxesColumn,
 };
 
 export default function Icon({

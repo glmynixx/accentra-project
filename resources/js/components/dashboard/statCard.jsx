@@ -5,6 +5,7 @@ export default function StatCard({
   value,
   icon,
   variant = "navy",
+  compact = false,
 }) {
   const variants = {
     navy: {
@@ -12,61 +13,42 @@ export default function StatCard({
       background:
         "bg-gradient-to-br from-[#E2EAF2] via-[#EDF2F7] to-white",
       bottom: "bg-[#1B3553]/20",
-
-      // SAME AS FACULTY MANAGEMENT — TOTAL FACULTY
       iconBg: "bg-[#1B3553]",
       iconColor: "text-white",
-      iconShadow:
-        "shadow-[0_5px_12px_rgba(27,53,83,0.20)]",
-
+      iconShadow: "shadow-[0_5px_12px_rgba(27,53,83,0.20)]",
       label: "text-[#50647A]",
       number: "text-[#142A43]",
     },
-
     green: {
       border: "border-[#B9D5C8]",
       background:
         "bg-gradient-to-br from-[#E3F0EA] via-[#EFF6F2] to-white",
       bottom: "bg-[#31805E]/30",
-
-      // SAME AS FACULTY MANAGEMENT — ACTIVE ACCOUNTS
       iconBg: "bg-[#31795B]",
       iconColor: "text-white",
-      iconShadow:
-        "shadow-[0_5px_12px_rgba(49,121,91,0.18)]",
-
+      iconShadow: "shadow-[0_5px_12px_rgba(49,121,91,0.18)]",
       label: "text-[#587363]",
       number: "text-[#142A43]",
     },
-
     blue: {
       border: "border-[#AFC2D8]",
       background:
         "bg-gradient-to-br from-[#DFE8F2] via-[#EAF0F6] to-white",
       bottom: "bg-[#294B70]/30",
-
-      // SAME AS FACULTY MANAGEMENT — ASSIGNED FACULTY
       iconBg: "bg-[#294B70]",
       iconColor: "text-white",
-      iconShadow:
-        "shadow-[0_5px_12px_rgba(41,75,112,0.20)]",
-
+      iconShadow: "shadow-[0_5px_12px_rgba(41,75,112,0.20)]",
       label: "text-[#50677F]",
       number: "text-[#142A43]",
     },
-
     teal: {
       border: "border-[#B7D1CE]",
       background:
         "bg-gradient-to-br from-[#DFECEA] via-[#EDF5F3] to-white",
       bottom: "bg-[#36534E]/30",
-
-      // DARK TEAL + WHITE, MATCHING THE FACULTY CARD TREATMENT
       iconBg: "bg-[#36534E]",
       iconColor: "text-white",
-      iconShadow:
-        "shadow-[0_5px_12px_rgba(54,83,78,0.20)]",
-
+      iconShadow: "shadow-[0_5px_12px_rgba(54,83,78,0.20)]",
       label: "text-[#58716D]",
       number: "text-[#142A43]",
     },
@@ -84,7 +66,7 @@ export default function StatCard({
         border
         ${style.border}
         ${style.background}
-        p-6
+        ${compact ? "p-6" : "p-7"}
         shadow-[0_5px_22px_rgba(27,53,83,0.10)]
         transition-all
         duration-300
@@ -104,18 +86,20 @@ export default function StatCard({
         `}
       />
 
-      <div className="relative flex items-center gap-5">
-
+      <div
+        className={`relative flex items-center ${
+          compact ? "gap-4" : "gap-5"
+        }`}
+      >
         {/* Icon */}
         <div
           className={`
             flex
-            h-14
-            w-14
             shrink-0
             items-center
             justify-center
             rounded-xl
+            ${compact ? "h-13 w-13" : "h-15 w-15"}
             ${style.iconBg}
             ${style.iconColor}
             ${style.iconShadow}
@@ -126,7 +110,7 @@ export default function StatCard({
         >
           <Icon
             name={icon}
-            className="h-6 w-6"
+            className={compact ? "h-7 w-7" : "h-8 w-8"}
           />
         </div>
 
@@ -149,19 +133,16 @@ export default function StatCard({
             className={`
               mt-1
               block
-              text-3xl
               font-bold
               tracking-tight
+              ${compact ? "text-4xl" : "text-4xl"}
               ${style.number}
             `}
           >
             {value}
           </strong>
         </div>
-
       </div>
     </div>
   );
 }
-
-
