@@ -57,7 +57,7 @@ export default function RecentUsers({ users }) {
 
                 return (
                   <tr
-                    key={user.id}
+                    key={`${user.role}-${user.id}`}
                     className="
                       border-b
                       border-[#E5EBF1]

@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { usePage, router } from "@inertiajs/react";
 
 import {
   Search,
@@ -20,12 +21,39 @@ import Sidebar from "../components/layout/sidebar";
 import Navbar from "../components/layout/navbar";
 import MobileOverlay from "../components/layout/mobileOverlay";
 
-import { sections as initialSections } from "../assets/data/sectionData";
 
 export default function SectionManagement() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeMenu, setActiveMenu] = useState("Sections");
-  const [sections, setSections] = useState(initialSections);
+
+  const mapSection = (section) => ({
+    databaseId: section.id,
+    id: `SEC-${String(section.id).padStart(4, "0")}`,
+    name: section.section_name,
+    program: section.course,
+    yearLevel: section.year_level,
+    schoolYear: section.school_year,
+    facultyId: section.faculty_id ?? "",
+    facultyAssigned: section.faculty?.name || "Unassigned",
+    students: Number(section.students_count ?? 0),
+    status: section.status,
+    dateCreated: section.created_at,
+    lastUpdated: section.updated_at,
+});
+
+    const {
+      sections: databaseSections = [],
+      availableFaculty = [],
+      } = usePage().props;
+
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [activeMenu, setActiveMenu] = useState("Sections");
+
+    const [sections, setSections] = useState(() =>
+        databaseSections.map(mapSection)
+    );
+
+    useEffect(() => {
+        setSections(databaseSections.map(mapSection));
+    }, [databaseSections]);
 
   const [searchValue, setSearchValue] = useState("");
   const [programFilter, setProgramFilter] = useState("");
@@ -39,14 +67,17 @@ export default function SectionManagement() {
   const [currentPage, setCurrentPage] = useState(1);
   const sectionsPerPage = 5;
 
-  const [formData, setFormData] = useState({
+  
+const [formData, setFormData] = useState({
     name: "",
     program: "",
     yearLevel: "",
+    schoolYear: "2026-2027",
     facultyAssigned: "",
     students: 0,
     status: "Active",
-  });
+    facultyId: "",
+});
 
   /* =========================
      HELPERS
@@ -180,19 +211,23 @@ export default function SectionManagement() {
      MODALS
   ========================= */
 
-  const openAddModal = () => {
+  
+const openAddModal = () => {
     setFormData({
-      name: "",
-      program: "",
-      yearLevel: "",
-      facultyAssigned: "",
-      students: 0,
-      status: "Active",
+        name: "",
+        program: "",
+        yearLevel: "",
+        schoolYear: "2026-2027",
+        facultyAssigned: "",
+        students: 0,
+        status: "Active",
+        facultyId: "",
     });
 
     setSelectedSection(null);
     setModalType("add");
-  };
+};
+
 
   const openViewModal = (section) => {
     setSelectedSection(section);
@@ -203,16 +238,18 @@ export default function SectionManagement() {
     setSelectedSection(section);
 
     setFormData({
-      name: section.name,
-      program: section.program,
-      yearLevel: section.yearLevel,
-      facultyAssigned: section.facultyAssigned,
-      students: section.students,
-      status: section.status,
+        name: section.name,
+        program: section.program,
+        yearLevel: section.yearLevel,
+        schoolYear: section.schoolYear || "2026-2027",
+        facultyAssigned: section.facultyAssigned,
+        students: section.students,
+        status: section.status,
+        facultyId: section.facultyId ?? "",
     });
 
     setModalType("edit");
-  };
+};
 
   const closeModal = () => {
     setModalType(null);
@@ -232,102 +269,115 @@ export default function SectionManagement() {
     }));
   };
 
-  const handleSubmit = (event) => {
+  
+const handleSubmit = (event) => {
     event.preventDefault();
 
-    if (modalType === "add") {
-      const newSection = {
-        id: `SEC-2026-${String(sections.length + 1).padStart(3, "0")}`,
-        name: formData.name,
-        program: formData.program,
-        yearLevel: formData.yearLevel,
-        facultyAssigned: formData.facultyAssigned || "Unassigned",
-        facultyId: null,
-        students: Number(formData.students || 0),
+    const payload = {
+        section_name: formData.name,
+        course: formData.program,
+        year_level: formData.yearLevel,
+        school_year: formData.schoolYear,
         status: formData.status,
-        dateCreated: "October 3, 2026",
-        lastUpdated: "October 3, 2026",
-      };
+        faculty_id: formData.facultyId
+        ? Number(formData.facultyId)
+        : null,
+    };
 
-      setSections((current) => [newSection, ...current]);
+    const options = {
+        preserveScroll: true,
+
+        onSuccess: () => {
+            closeModal();
+        },
+
+        onError: (errors) => {
+            console.error("Section validation errors:", errors);
+            alert(Object.values(errors).join("\n"));
+        },
+    };
+
+    if (modalType === "add") {
+        router.post("/sections", payload, options);
+    } else if (
+        modalType === "edit" &&
+        selectedSection?.databaseId
+    ) {
+        router.put(
+            `/sections/${selectedSection.databaseId}`,
+            payload,
+            options
+        );
     }
-
-    if (modalType === "edit" && selectedSection) {
-      setSections((current) =>
-        current.map((section) =>
-          section.id === selectedSection.id
-            ? {
-                ...section,
-                name: formData.name,
-                program: formData.program,
-                yearLevel: formData.yearLevel,
-                facultyAssigned:
-                  formData.facultyAssigned || "Unassigned",
-                students: Number(formData.students || 0),
-                status: formData.status,
-                lastUpdated: "October 3, 2026",
-              }
-            : section
-        )
-      );
-    }
-
-    closeModal();
-  };
+};
 
   /* =========================
      STATUS
   ========================= */
 
-  const toggleSectionStatus = (section) => {
+  
+const toggleSectionStatus = (section) => {
+    if (!section?.databaseId) return;
+
     const newStatus =
-      section.status === "Active" ? "Inactive" : "Active";
+        section.status === "Active" ? "Inactive" : "Active";
 
-    setSections((current) =>
-      current.map((item) =>
-        item.id === section.id
-          ? {
-              ...item,
-              status: newStatus,
-              lastUpdated: "October 3, 2026",
-            }
-          : item
-      )
-    );
-
-    setSelectedSection((current) =>
-      current?.id === section.id
-        ? {
-            ...current,
+    router.patch(
+        `/sections/${section.databaseId}/status`,
+        {
             status: newStatus,
-            lastUpdated: "October 3, 2026",
-          }
-        : current
+        },
+        {
+            preserveScroll: true,
+
+            onSuccess: () => {
+                setSelectedSection((current) =>
+                    current?.databaseId === section.databaseId
+                        ? { ...current, status: newStatus }
+                        : current
+                );
+            },
+
+            onError: (errors) => {
+                console.error("Section status error:", errors);
+                alert(
+                    Object.values(errors).join("\n") ||
+                    "Unable to update section status."
+                );
+            },
+        }
     );
-  };
+};
+
 
   /* =========================
      DELETE
   ========================= */
 
-  const confirmDelete = () => {
-    if (!deleteSection) return;
-
-    setSections((current) =>
-      current.filter(
-        (section) => section.id !== deleteSection.id
-      )
-    );
-
-    setDeleteSection(null);
-
-    if (
-      paginatedSections.length === 1 &&
-      safeCurrentPage > 1
-    ) {
-      setCurrentPage((page) => Math.max(1, page - 1));
+  
+const confirmDelete = () => {
+    if (!deleteSection?.databaseId) {
+        console.error("Missing database ID:", deleteSection);
+        alert("Cannot delete: Section database ID is missing.");
+        return;
     }
-  };
+
+    console.log("Deleting section:", deleteSection.databaseId);
+
+    router.delete(`/sections/${deleteSection.databaseId}`, {
+        preserveScroll: true,
+
+        onSuccess: () => {
+            console.log("Section deleted successfully");
+            setDeleteSection(null);
+        },
+
+        onError: (errors) => {
+            console.error("Delete failed:", errors);
+            alert("Unable to delete section.");
+        },
+    });
+};
 
   /* =========================
      FILTER RESET
@@ -2191,7 +2241,7 @@ export default function SectionManagement() {
                     rounded-xl
                     border
                     border-[#C5D4E2]
-                    bg-gradient-to-r
+                    bg-linear-to-r
                     from-[#DCE6F0]
                     to-[#F2F5F8]
                     px-4
@@ -2321,14 +2371,22 @@ export default function SectionManagement() {
                       Faculty Assigned
                     </label>
 
-                    <input
-                      type="text"
-                      name="facultyAssigned"
-                      value={formData.facultyAssigned}
+                    
+                  <select
+                      name="facultyId"
+                      value={formData.facultyId ?? ""}
                       onChange={handleFormChange}
-                      placeholder="Enter faculty name"
                       className={inputClass}
-                    />
+                  >
+                      <option value="">Unassigned</option>
+
+                      {availableFaculty.map((member) => (
+                          <option key={member.id} value={member.id}>
+                              {member.faculty_number} - {member.name}
+                          </option>
+                      ))}
+                  </select>
+
                   </div>
 
                   {/* STUDENTS */}
@@ -2369,8 +2427,26 @@ export default function SectionManagement() {
                       </option>
                     </select>
                   </div>
+
+                  <div>
+    <label className="mb-2 block text-sm font-semibold text-[#526579]">
+        School Year
+    </label>
+
+    <input
+        type="text"
+        name="schoolYear"
+        value={formData.schoolYear}
+        onChange={handleFormChange}
+        placeholder="e.g. 2026-2027"
+        required
+        className={inputClass}
+    />
+</div>
                 </div>
               </div>
+
+              
 
               {/* FORM FOOTER */}
               <div

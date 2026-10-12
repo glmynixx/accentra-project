@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { usePage } from "@inertiajs/react";
 
 import Sidebar from "../components/layout/sidebar";
 import Navbar from "../components/layout/navbar";
@@ -8,18 +9,81 @@ import StatsGrid from "../components/dashboard/statsGrid";
 import RecentUsers from "../components/dashboard/recentUsers";
 import SectionList from "../components/dashboard/sectionList";
 import RecentActivities from "../components/dashboard/recentActivities";
-
 import {
-  activities,
-  sections,
-  stats,
-  users,
+    stats as staticStats,
 } from "../assets/data/dashboardData";
 
 export default function Dashboard() {
+  
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState("Dashboard");
   const [searchValue, setSearchValue] = useState("");
+  
+  const {
+    stats: dashboardStats = {},
+    recentUsers = [],
+    sectionEnrollment = [],
+    recentActivities = [],
+} = usePage().props;
+const activities = recentActivities;
+console.log("DASHBOARD SECTIONS:", sectionEnrollment);
+
+
+
+
+const users = useMemo(() => {
+    return recentUsers.map((user) => ({
+        ...user,
+        initials: user.name
+            ? user.name
+                  .trim()
+                  .split(/\s+/)
+                  .slice(0, 2)
+                  .map((part) => part[0])
+                  .join("")
+                  .toUpperCase()
+            : "?",
+    }));
+}, [recentUsers]);
+
+  console.log("DASHBOARD DATA FROM LARAVEL:", dashboardStats);
+
+
+
+const stats = useMemo(() => {
+    const databaseValues = {
+        "Total Users": dashboardStats.totalUsers ?? 0,
+        "Faculty": dashboardStats.totalFaculty ?? 0,
+        "Students": dashboardStats.totalStudents ?? 0,
+        "Sections": dashboardStats.totalSections ?? 0,
+    };
+
+    return staticStats.map((stat) => ({
+        ...stat,
+        value: databaseValues[stat.label] ?? stat.value,
+    }));
+}, [
+    dashboardStats.totalUsers,
+    dashboardStats.totalFaculty,
+    dashboardStats.totalStudents,
+    dashboardStats.totalSections,
+]);
+
+
+const sections = useMemo(() => {
+    return sectionEnrollment.map((section) => ({
+        id: section.id,
+        name: section.section_name,
+        program: section.course,
+        year: section.year_level,
+        adviser: section.faculty?.name ?? "Unassigned",
+        students: Number(section.students_count ?? 0),
+        status: section.status,
+    }));
+}, [sectionEnrollment]);
+
+
+
 
   /* FILTER USERS */
 
@@ -48,27 +112,30 @@ export default function Dashboard() {
 
   /* FILTER SECTIONS */
 
-  const filteredSections = useMemo(() => {
+  
+const filteredSections = useMemo(() => {
     const query = searchValue.trim().toLowerCase();
 
     if (!query) {
-      return sections;
+        return sections;
     }
 
     return sections.filter((section) =>
-      [
-        section.name,
-        section.program,
-        section.year,
-        section.adviser,
-        section.students,
-        section.status,
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(query)
+        [
+            section.name,
+            section.program,
+            section.year,
+            section.adviser,
+            section.students,
+            section.status,
+        ]
+            .map((value) => String(value ?? ""))
+            .join(" ")
+            .toLowerCase()
+            .includes(query)
     );
-  }, [searchValue]);
+}, [searchValue, sections]);
+
 
   /* MENU HANDLER */
 
@@ -101,24 +168,24 @@ export default function Dashboard() {
 
       <main
         className="
-          ml-[250px]
+          ml-62.5
           min-h-screen
           w-[calc(100%-250px)]
           min-w-0
-          px-[30px]
-          py-[25px]
+          px-7.5
+          py-6.25
           transition-all
           duration-300
 
-          max-[1100px]:px-[24px]
+          max-[1100px]:px-6
 
           max-[768px]:ml-0
           max-[768px]:w-full
-          max-[768px]:px-[18px]
-          max-[768px]:py-[18px]
+          max-[768px]:px-4.5
+          max-[768px]:py-4.5
 
-          max-[480px]:px-[14px]
-          max-[480px]:py-[14px]
+          max-[480px]:px-3.5
+          max-[480px]:py-3.5
         "
       >
         {/* NAVBAR */}

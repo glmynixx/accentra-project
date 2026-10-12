@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { router, usePage } from "@inertiajs/react";
 
 import {
   Search,
@@ -22,12 +23,46 @@ import Sidebar from "../components/layout/sidebar";
 import Navbar from "../components/layout/navbar";
 import MobileOverlay from "../components/layout/mobileOverlay";
 
-import { faculty as initialFaculty } from "../assets/data/facultyData";
+const mapFaculty = (member) => ({
+    databaseId: member.id,
+    id: member.faculty_number,
+    name: member.name,
+    email: member.email,
+    specialization: member.specialization,
+    contactNumber: member.contact_number || "",
+    address: member.address || "",
+    assignedSections: (member.sections || []).map(
+        (section) => section.section_name
+    ),
+    assignedSectionIds: (member.sections || []).map(
+        (section) => section.id
+    ),
+    status: member.status,
+    dateAdded: member.created_at
+        ? new Date(member.created_at).toLocaleDateString("en-US", {
+              month: "long",
+              day: "numeric",
+              year: "numeric",
+          })
+        : "",
+});
 
 export default function FacultyManagement() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState("Faculty");
-  const [faculty, setFaculty] = useState(initialFaculty);
+const {
+    faculty: databaseFaculty = [],
+    availableSections = [],
+} = usePage().props;
+
+const [faculty, setFaculty] = useState(() =>
+    databaseFaculty.map(mapFaculty)
+);
+
+
+useEffect(() => {
+    setFaculty(databaseFaculty.map(mapFaculty));
+}, [databaseFaculty]);
 
   const [searchValue, setSearchValue] = useState("");
   const [sectionFilter, setSectionFilter] = useState("All");
@@ -53,6 +88,7 @@ export default function FacultyManagement() {
     status: "Active",
     dateAdded: "",
   });
+
 
   /* =======================================================
      INITIALS
@@ -172,7 +208,7 @@ export default function FacultyManagement() {
 
   const openAddModal = () => {
     setFormData({
-      id: `FAC-${String(faculty.length + 1).padStart(3, "0")}`,
+      id: "",
       name: "",
       email: "",
       specialization: "",
@@ -212,14 +248,13 @@ export default function FacultyManagement() {
     setSelectedFaculty(member);
 
     setFormData({
-      ...member,
-      assignedSections: [
-        ...(member.assignedSections || []),
-      ],
+        ...member,
+        assignedSections: [...(member.assignedSections || [])],
+        assignedSectionIds: [...(member.assignedSectionIds || [])],
     });
 
     setModalType("assign");
-  };
+};
 
   const closeModal = () => {
     setModalType(null);
@@ -239,97 +274,144 @@ export default function FacultyManagement() {
     }));
   };
 
-  const toggleSection = (section) => {
+  
+const toggleSection = (sectionId) => {
     setFormData((current) => {
-      const exists =
-        current.assignedSections.includes(section);
+        const selectedIds = current.assignedSectionIds || [];
 
-      return {
-        ...current,
-        assignedSections: exists
-          ? current.assignedSections.filter(
-              (item) => item !== section
-            )
-          : [
-              ...current.assignedSections,
-              section,
-            ],
-      };
+        return {
+            ...current,
+            assignedSectionIds: selectedIds.includes(sectionId)
+                ? selectedIds.filter((id) => id !== sectionId)
+                : [...selectedIds, sectionId],
+        };
     });
-  };
+};
 
-  const handleSubmit = (event) => {
+
+  
+
+
+const handleSubmit = (event) => {
     event.preventDefault();
 
-    if (modalType === "add") {
-      setFaculty((current) => [
-        ...current,
-        formData,
-      ]);
-    }
-
-    if (modalType === "edit") {
-      setFaculty((current) =>
-        current.map((member) =>
-          member.id === formData.id
-            ? formData
-            : member
-        )
-      );
-    }
-
+    // ASSIGN SECTIONS
     if (modalType === "assign") {
-      setFaculty((current) =>
-        current.map((member) =>
-          member.id === formData.id
-            ? {
-                ...member,
-                assignedSections:
-                  formData.assignedSections,
-              }
-            : member
-        )
-      );
+        if (!selectedFaculty?.databaseId) return;
+
+        router.put(
+            `/faculty/${selectedFaculty.databaseId}/sections`,
+            {
+                section_ids: formData.assignedSectionIds || [],
+            },
+            {
+                preserveScroll: true,
+
+                onSuccess: () => {
+                    closeModal();
+                },
+
+                onError: (errors) => {
+                    console.error("Assignment errors:", errors);
+                    alert(Object.values(errors).join("\n"));
+                },
+            }
+        );
+
+        return;
     }
 
-    closeModal();
-  };
+    // ADD / EDIT FACULTY
+    const payload = {
+        faculty_number: formData.id,
+        name: formData.name,
+        email: formData.email,
+        specialization: formData.specialization,
+        contact_number: formData.contactNumber || null,
+        address: formData.address || null,
+        status: formData.status,
+    };
+
+    const options = {
+        preserveScroll: true,
+
+        onSuccess: () => {
+            closeModal();
+        },
+
+        onError: (errors) => {
+            console.error("Faculty errors:", errors);
+            alert(Object.values(errors).join("\n"));
+        },
+    };
+
+    if (modalType === "add") {
+        router.post("/faculty", payload, options);
+    }
+
+    if (modalType === "edit" && selectedFaculty?.databaseId) {
+        router.put(
+            `/faculty/${selectedFaculty.databaseId}`,
+            payload,
+            options
+        );
+    }
+};
+
+
+  
+
 
   /* =======================================================
      ACCOUNT STATUS
   ======================================================= */
 
-  const toggleAccountStatus = (member) => {
-    setFaculty((current) =>
-      current.map((item) =>
-        item.id === member.id
-          ? {
-              ...item,
-              status:
-                item.status === "Active"
-                  ? "Inactive"
-                  : "Active",
-            }
-          : item
-      )
+  
+const toggleAccountStatus = (member) => {
+    const newStatus =
+        member.status === "Active" ? "Inactive" : "Active";
+
+    router.patch(
+        `/faculty/${member.databaseId}/status`,
+        { status: newStatus },
+        {
+            preserveScroll: true,
+
+            onError: (errors) => {
+                console.error(errors);
+                alert("Unable to update faculty status.");
+            },
+        }
     );
-  };
+};
+
 
   /* =======================================================
      DELETE
   ======================================================= */
 
-  const confirmDelete = () => {
-    if (!deleteFaculty) return;
+  
+const confirmDelete = () => {
+    if (!deleteFaculty?.databaseId) return;
 
-    setFaculty((current) =>
-      current.filter(
-        (member) => member.id !== deleteFaculty.id
-      )
-    );
+    router.delete(`/faculty/${deleteFaculty.databaseId}`, {
+        preserveScroll: true,
 
-    setDeleteFaculty(null);
-  };
+        onSuccess: () => {
+            setDeleteFaculty(null);
+
+            if (paginatedFaculty.length === 1 && safeCurrentPage > 1) {
+                setCurrentPage((page) => Math.max(1, page - 1));
+            }
+        },
+
+        onError: (errors) => {
+            console.error(errors);
+            alert("Unable to delete faculty.");
+        },
+    });
+};
+
 
   /* =======================================================
      RESET CREDENTIALS
@@ -400,21 +482,21 @@ export default function FacultyManagement() {
 
       <main
         className="
-          ml-[250px]
+          ml-62.5
           min-h-screen
           w-[calc(100%-250px)]
           min-w-0
-          px-[30px]
-          py-[25px]
+          px-7.5
+          py-6.25
           transition-all
           duration-300
-          max-[1100px]:px-[24px]
+          max-[1100px]:px-6
           max-[768px]:ml-0
           max-[768px]:w-full
-          max-[768px]:px-[18px]
-          max-[768px]:py-[18px]
-          max-[480px]:px-[14px]
-          max-[480px]:py-[14px]
+          max-[768px]:px-4.5
+          max-[768px]:py-4.5
+          max-[480px]:px-3.5
+          max-[480px]:py-3.5
         "
       >
         <Navbar
@@ -530,7 +612,7 @@ export default function FacultyManagement() {
       rounded-2xl
       border
       border-[#AFC1D4]
-      bg-gradient-to-br
+      bg-linear-to-br
       from-[#E2EAF2]
       via-[#EDF2F7]
       to-white
@@ -595,7 +677,7 @@ export default function FacultyManagement() {
       rounded-2xl
       border
       border-[#B9D5C8]
-      bg-gradient-to-br
+      bg-linear-to-br
       from-[#E3F0EA]
       via-[#EFF6F2]
       to-white
@@ -660,7 +742,7 @@ export default function FacultyManagement() {
       rounded-2xl
       border
       border-[#C8D0D9]
-      bg-gradient-to-br
+      bg-linear-to-br
       from-[#E6EAF0]
       via-[#F0F3F6]
       to-white
@@ -725,7 +807,7 @@ export default function FacultyManagement() {
       rounded-2xl
       border
       border-[#AFC2D8]
-      bg-gradient-to-br
+      bg-linear-to-br
       from-[#DFE8F2]
       via-[#EAF0F6]
       to-white
@@ -802,7 +884,7 @@ export default function FacultyManagement() {
     className="
       border-b
       border-[#DCE4EC]
-      bg-gradient-to-r
+      bg-linear-to-r
       from-[#DCE6F0]
       to-white
       px-5
@@ -974,7 +1056,7 @@ export default function FacultyManagement() {
 
   {/* TABLE */}
   <div className="w-full overflow-x-auto">
-              <table className="w-full min-w-[980px] border-collapse">
+              <table className="w-full min-w-245 border-collapse">
                 <thead>
                   <tr className="border-b border-[#CDD8E3] bg-[#E7EDF3]">
                     <th className="px-5 py-3.5 text-left text-[11px] font-bold uppercase tracking-wide text-[#40566E]">
@@ -1486,7 +1568,7 @@ export default function FacultyManagement() {
           className="
             fixed
             inset-0
-            z-[70]
+            z-70
             flex
             items-center
             justify-center
@@ -1517,7 +1599,7 @@ export default function FacultyManagement() {
               className="
                 relative
                 overflow-hidden
-                bg-gradient-to-br
+                bg-linear-to-br
                 from-[#142A43]
                 via-[#1B3553]
                 to-[#294B70]
@@ -1645,7 +1727,7 @@ export default function FacultyManagement() {
                     Faculty ID
                   </span>
 
-                  <strong className="mt-1 block break-words pl-1 text-sm font-semibold text-[#243A52]">
+                  <strong className="mt-1 block wrap-break-word pl-1 text-sm font-semibold text-[#243A52]">
                     {selectedFaculty.id || "—"}
                   </strong>
                 </div>
@@ -1675,7 +1757,7 @@ export default function FacultyManagement() {
                     Name
                   </span>
 
-                  <strong className="mt-1 block break-words pl-1 text-sm font-semibold text-[#243A52]">
+                  <strong className="mt-1 block wrap-break-word pl-1 text-sm font-semibold text-[#243A52]">
                     {selectedFaculty.name || "—"}
                   </strong>
                 </div>
@@ -1705,7 +1787,7 @@ export default function FacultyManagement() {
                     Email Address
                   </span>
 
-                  <strong className="mt-1 block break-words pl-1 text-sm font-semibold text-[#243A52]">
+                  <strong className="mt-1 block wrap-break-word pl-1 text-sm font-semibold text-[#243A52]">
                     {selectedFaculty.email || "—"}
                   </strong>
                 </div>
@@ -1735,7 +1817,7 @@ export default function FacultyManagement() {
                     Specialization
                   </span>
 
-                  <strong className="mt-1 block break-words pl-1 text-sm font-semibold text-[#243A52]">
+                  <strong className="mt-1 block wrap-break-word pl-1 text-sm font-semibold text-[#243A52]">
                     {selectedFaculty.specialization || "—"}
                   </strong>
                 </div>
@@ -1765,7 +1847,7 @@ export default function FacultyManagement() {
                     Contact Number
                   </span>
 
-                  <strong className="mt-1 block break-words pl-1 text-sm font-semibold text-[#243A52]">
+                  <strong className="mt-1 block wrap-break-word pl-1 text-sm font-semibold text-[#243A52]">
                     {selectedFaculty.contactNumber || "—"}
                   </strong>
                 </div>
@@ -1799,7 +1881,7 @@ export default function FacultyManagement() {
                   className="
                     mt-1.5
                     block
-                    break-words
+                    wrap-break-word
                     text-sm
                     font-semibold
                     text-[#243A52]
@@ -1838,7 +1920,7 @@ export default function FacultyManagement() {
                     Address
                   </span>
 
-                  <strong className="mt-1 block break-words pl-1 text-sm font-semibold text-[#243A52]">
+                  <strong className="mt-1 block wrap-break-word pl-1 text-sm font-semibold text-[#243A52]">
                     {selectedFaculty.address || "—"}
                   </strong>
                 </div>
@@ -1868,7 +1950,7 @@ export default function FacultyManagement() {
                     Date Added
                   </span>
 
-                  <strong className="mt-1 block break-words pl-1 text-sm font-semibold text-[#243A52]">
+                  <strong className="mt-1 block wrap-break-word pl-1 text-sm font-semibold text-[#243A52]">
                     {selectedFaculty.dateAdded || "—"}
                   </strong>
                 </div>
@@ -2014,7 +2096,7 @@ export default function FacultyManagement() {
           className="
             fixed
             inset-0
-            z-[100]
+            z-100
             flex
             items-center
             justify-center
@@ -2048,7 +2130,7 @@ export default function FacultyManagement() {
                 flex
                 items-center
                 justify-between
-                bg-gradient-to-r
+                bg-linear-to-r
                 from-[#1B3553]
                 via-[#294B70]
                 to-[#365C7E]
@@ -2140,7 +2222,6 @@ export default function FacultyManagement() {
                     name="id"
                     value={formData.id}
                     onChange={handleFormChange}
-                    disabled
                     className="
                       w-full
                       rounded-xl
@@ -2352,28 +2433,28 @@ export default function FacultyManagement() {
                   Cancel
                 </button>
 
-                <button
-                  type="submit"
-                  className="
-                    rounded-xl
-                    bg-[#1B3553]
-                    px-4
-                    py-2.5
-                    text-sm
-                    font-semibold
-                    text-white
-                    shadow-sm
-                    transition-all
-                    duration-200
-                    hover:bg-[#142A43]
-                    hover:shadow-md
-                    active:scale-[0.98]
-                  "
-                >
-                  {modalType === "add"
-                    ? "Add Faculty"
-                    : "Save Changes"}
-                </button>
+                
+<button
+    type="submit"
+    className="
+        rounded-xl
+        bg-[#1B3553]
+        px-4
+        py-2.5
+        text-sm
+        font-semibold
+        text-white
+        shadow-sm
+        transition-all
+        duration-200
+        hover:bg-[#142A43]
+        hover:shadow-md
+        active:scale-[0.98]
+    "
+>
+    {modalType === "add" ? "Add Faculty" : "Save Changes"}
+</button>
+
               </div>
             </form>
           </div>
@@ -2390,7 +2471,7 @@ export default function FacultyManagement() {
             className="
               fixed
               inset-0
-              z-[100]
+              z-100
               flex
               items-center
               justify-center
@@ -2424,7 +2505,7 @@ export default function FacultyManagement() {
                   flex
                   items-center
                   justify-between
-                  bg-gradient-to-r
+                  bg-linear-to-r
                   from-[#1B3553]
                   via-[#294B70]
                   to-[#365C7E]
@@ -2548,63 +2629,57 @@ export default function FacultyManagement() {
               {/* SECTIONS */}
 
               <div
-                className="
-                  grid
-                  grid-cols-2
-                  gap-2
-                  px-5
-                  py-5
-                  max-[480px]:grid-cols-1
-                "
-              >
-                {[
-                  "BSAIS-1A",
-                  "BSAIS-1B",
-                  "BSAIS-2A",
-                  "BSAIS-2B",
-                  "BSAIS-3A",
-                  "BSAIS-3B",
-                ].map((section) => (
-                  <label
-                    key={section}
-                    className="
-                      flex
-                      cursor-pointer
-                      items-center
-                      gap-3
-                      rounded-xl
-                      border
-                      border-[#C9D6E4]
-                      bg-white
-                      px-3.5
-                      py-3
-                      text-sm
-                      font-medium
-                      text-[#526579]
-                      transition-all
-                      hover:border-[#9FB3C8]
-                      hover:bg-[#E7EDF3]
-                    "
-                  >
-                    <input
-                      type="checkbox"
-                      checked={formData.assignedSections.includes(
-                        section
-                      )}
-                      onChange={() =>
-                        toggleSection(section)
-                      }
-                      className="
-                        h-4
-                        w-4
-                        accent-[#1B3553]
-                      "
-                    />
+                
+ className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+    {availableSections.length === 0 ? (
+    <p className="col-span-2 text-sm text-[#7A8999]">
+        No sections available. Create a section first.
+    </p>
+) : (
+    availableSections.map((section) => {
+        const selected = (
+            formData.assignedSectionIds || []
+        ).includes(section.id);
 
-                    <span>{section}</span>
-                  </label>
-                ))}
-              </div>
+        const assignedToOther =
+            section.faculty_id != null &&
+            Number(section.faculty_id) !==
+                Number(selectedFaculty?.databaseId);
+
+        return (
+            <label
+                key={section.id}
+                className="
+                    flex cursor-pointer items-center gap-3
+                    rounded-xl border border-[#C9D6E4]
+                    bg-white px-3.5 py-3
+                    text-sm font-medium text-[#526579]
+                    transition-all
+                    hover:border-[#9FB3C8]
+                    hover:bg-[#E7EDF3]
+                "
+            >
+                <input
+                    type="checkbox"
+                    checked={selected}
+                    onChange={() => toggleSection(section.id)}
+                    className="h-4 w-4 accent-[#1B3553]"
+                />
+
+                <span>
+                    {section.section_name}
+                    {assignedToOther && (
+                        <small className="block text-amber-700">
+                            Assigned to another faculty
+                        </small>
+                    )}
+                </span>
+            </label>
+        );
+    })
+)}
+
+    </div>
 
               {/* FOOTER */}
 
@@ -2680,7 +2755,7 @@ export default function FacultyManagement() {
           className="
             fixed
             inset-0
-            z-[100]
+            z-100
             flex
             items-center
             justify-center
@@ -2823,7 +2898,7 @@ export default function FacultyManagement() {
           className="
             fixed
             inset-0
-            z-[100]
+            z-100
             flex
             items-center
             justify-center
