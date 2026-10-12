@@ -23,6 +23,10 @@ resolve: async (name) => {
 
 
     setup({ el, App, props }) {
+        if (!el) {
+            return;
+        }
+
         createRoot(el).render(<App {...props} />);
     },
 

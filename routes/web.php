@@ -1,11 +1,11 @@
 <?php
 
+use App\Http\Controllers\TaskController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
 Route::inertia('/login', 'login')->name('login');
 
-Route::inertia('/', 'dashboard')->name('dashboard');
+Route::inertia('/', 'dashboard')->name('home');
 
 Route::inertia('/faculty', 'facultyManagement')->name('faculty');
 
@@ -31,3 +31,19 @@ Route::inertia('/faculty/content', 'contentManagement')
 Route::inertia('/faculty/tasks', 'facultyTaskManagement')
     ->name('faculty.tasks');
 
+Route::get('/faculty/tasks/data', [TaskController::class, 'index'])
+    ->name('faculty.tasks.data');
+
+Route::post('/faculty/tasks', [TaskController::class, 'store'])
+    ->name('faculty.tasks.store');
+
+Route::get('/faculty/tasks/{task}/attachment', [TaskController::class, 'downloadAttachment'])
+    ->name('faculty.tasks.attachment');
+
+Route::put('/faculty/tasks/{task}', [TaskController::class, 'update'])
+    ->name('faculty.tasks.update');
+
+Route::delete('/faculty/tasks/{task}', [TaskController::class, 'destroy'])
+    ->name('faculty.tasks.destroy');
+
+Route::resource('tasks', TaskController::class)->except(['create', 'edit']);

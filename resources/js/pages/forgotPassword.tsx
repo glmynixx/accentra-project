@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   Mail,
@@ -13,6 +13,11 @@ export default function ForgotPassword() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [currentYear, setCurrentYear] = useState(2026);
+
+  useEffect(() => {
+    setCurrentYear(new Date().getFullYear());
+  }, []);
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -210,7 +215,7 @@ export default function ForgotPassword() {
 
       {/* FOOTER */}
       <footer className="border-t border-[#E1E7EE] px-5 py-5 text-center text-xs text-[#8FA3BA]">
-        © {new Date().getFullYear()} ACCENTRA. All rights reserved.
+        © {currentYear} ACCENTRA. All rights reserved.
       </footer>
     </main>
   );
