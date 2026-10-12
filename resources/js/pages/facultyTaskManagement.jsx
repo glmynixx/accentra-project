@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
     Search,
     Plus,
@@ -18,15 +18,15 @@ import {
     Send,
     RotateCcw,
     RefreshCw,
+    Paperclip,
+    Download,
+    Trash,
 } from "lucide-react";
 
 import FacultyLayout from "../components/layout/facultyLayout";
+import { initialTasks } from "../assets/data/facultyData";
 
-import {
-  initialTasks as initialTasks,
-  
-} from "../assets/data/facultyData";
-
+// --- Initial form data --
 const emptyForm = {
     title: "",
     topic: "",
@@ -37,6 +37,7 @@ const emptyForm = {
     description: "",
     instructions: "",
     dateCreated: new Date().toISOString().slice(0, 10),
+    attachment: null,
 };
 
 const sections = [
@@ -53,7 +54,8 @@ const sections = [
 const inputClass =
     "w-full rounded-xl border border-[#C9D6E4] bg-white px-3.5 py-2.5 text-sm text-[#243A52] outline-none transition-all placeholder:text-[#9AA8B7] focus:border-[#294B70] focus:ring-2 focus:ring-[#294B70]/10 disabled:cursor-not-allowed disabled:bg-[#E7EDF3]";
 
-const labelClass = "mb-1.5 block text-xs font-semibold text-[#526579]";
+const labelClass =
+    "mb-1.5 block text-xs font-semibold text-[#526579]";
 
 const buttonSecondary =
     "inline-flex items-center justify-center gap-2 rounded-xl border border-[#C9D6E3] bg-white px-4 py-2.5 text-sm font-semibold text-[#526579] shadow-sm transition-all hover:bg-[#E7EDF3] hover:text-[#243A52]";
@@ -61,7 +63,22 @@ const buttonSecondary =
 const buttonPrimary =
     "inline-flex items-center justify-center gap-2 rounded-xl bg-[#1B3553] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-[#142A43] hover:shadow-md active:scale-[0.98]";
 
-// Date formatting
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+const ALLOWED_EXTENSIONS = [
+    "pdf",
+    "doc",
+    "docx",
+    "ppt",
+    "pptx",
+    "xls",
+    "xlsx",
+    "png",
+    "jpg",
+    "jpeg",
+];
+
+// --- Utility helpers ---
 function formatDate(date) {
     if (!date) return "—";
 
@@ -76,7 +93,73 @@ function formatDate(date) {
     });
 }
 
-// Status badge 
+function formatFileSize(bytes) {
+    if (!Number.isFinite(bytes)) return "";
+
+    if (bytes < 1024) return `${bytes} B`;
+
+    if (bytes < 1024 * 1024) {
+        return `${(bytes / 1024).toFixed(1)} KB`;
+    }
+
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+function getAttachmentName(attachment) {
+    if (!attachment) return "";
+
+    if (typeof File !== "undefined" && attachment instanceof File) {
+        return attachment.name;
+    }
+
+    if (typeof attachment === "string") {
+        return attachment.split("/").pop() || "Attachment";
+    }
+
+    return attachment.name || "Attachment";
+}
+
+function downloadAttachment(attachment) {
+    if (!attachment) return;
+
+    let url = "";
+    let shouldRevoke = false;
+
+    if (
+        (typeof File !== "undefined" && attachment instanceof File) ||
+        (typeof Blob !== "undefined" && attachment instanceof Blob)
+    ) {
+        url = URL.createObjectURL(attachment);
+        shouldRevoke = true;
+    } else if (typeof attachment === "string") {
+        url = attachment;
+    } else if (attachment.url) {
+        url = attachment.url;
+    }
+
+    if (!url) {
+        window.alert(
+            "This attachment is not available for download. Please upload the file again.",
+        );
+        return;
+    }
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = getAttachmentName(attachment);
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    if (shouldRevoke) {
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+}
+
+// --- Status Badge ---
 function StatusBadge({ status }) {
     const styles = {
         Active: "border-[#B9D9C8] bg-[#F0F8F3] text-[#267653]",
@@ -95,7 +178,8 @@ function StatusBadge({ status }) {
     return (
         <span
             className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold ${
-                styles[status] || "border-[#CBD3DC] bg-white text-[#647181]"
+                styles[status] ||
+                "border-[#CBD3DC] bg-white text-[#647181]"
             }`}
         >
             <span
@@ -108,7 +192,6 @@ function StatusBadge({ status }) {
     );
 }
 
-// Summary cards 
 function SummaryCard({
     title,
     value,
@@ -160,7 +243,7 @@ function SummaryCard({
     );
 }
 
-// Modal for viewing task details or creating and editing task entries.
+// --- Task modal dialogs ---
 function TaskModal({
     mode,
     task,
@@ -170,6 +253,8 @@ function TaskModal({
     onSubmit,
     onEdit,
 }) {
+    const fileInputRef = useRef(null);
+
     const isView = mode === "view";
     const isAdd = mode === "add";
 
@@ -180,6 +265,49 @@ function TaskModal({
             ...previous,
             [name]: value,
         }));
+    };
+
+    const handleFileChange = (event) => {
+        const file = event.target.files?.[0];
+
+        if (!file) return;
+
+        const extension = file.name.split(".").pop()?.toLowerCase();
+
+        if (!ALLOWED_EXTENSIONS.includes(extension)) {
+            window.alert(
+                "Unsupported file type. Upload a PDF, Word, PowerPoint, Excel, PNG, or JPG file.",
+            );
+
+            event.target.value = "";
+            return;
+        }
+
+        if (file.size > MAX_FILE_SIZE) {
+            window.alert("The file exceeds the 10 MB limit.");
+
+            event.target.value = "";
+            return;
+        }
+
+        setFormData((previous) => ({
+            ...previous,
+            attachment: file,
+        }));
+
+        // Allows the same file to be selected again
+        event.target.value = "";
+    };
+
+    const removeAttachment = () => {
+        setFormData((previous) => ({
+            ...previous,
+            attachment: null,
+        }));
+
+        if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }
     };
 
     if (!mode) return null;
@@ -193,6 +321,8 @@ function TaskModal({
             ["Total Points", `${task.points ?? 100} points`],
             ["Date Created", formatDate(task.dateCreated)],
         ];
+
+        const attachment = task.attachment;
 
         return (
             <div
@@ -214,9 +344,11 @@ function TaskModal({
                                     <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#C8D8E8]">
                                         Task Information
                                     </span>
+
                                     <h2 className="mt-1 break-words text-xl font-bold text-white">
                                         {task.title}
                                     </h2>
+
                                     <span className="mt-1.5 inline-block rounded-md bg-white/10 px-2 py-1 text-xs font-semibold text-[#D8E4EF]">
                                         TSK-{String(task.id).padStart(3, "0")}
                                     </span>
@@ -234,10 +366,11 @@ function TaskModal({
                         </div>
                     </div>
 
-                    <div className="bg-[#EEF2F6] px-6 py-6">
+                    <div className="max-h-[65vh] overflow-y-auto bg-[#EEF2F6] px-6 py-6">
                         <h3 className="text-sm font-bold text-[#1B3553]">
                             Task & Academic Details
                         </h3>
+
                         <p className="mb-4 mt-0.5 text-xs text-[#738396]">
                             Information about this task and its requirements
                         </p>
@@ -251,6 +384,7 @@ function TaskModal({
                                     <span className="block text-[10px] font-bold uppercase tracking-[0.08em] text-[#53677D]">
                                         {label}
                                     </span>
+
                                     <strong className="mt-1 block break-words text-sm font-semibold text-[#243A52]">
                                         {value || "—"}
                                     </strong>
@@ -261,6 +395,7 @@ function TaskModal({
                                 <span className="block text-[10px] font-bold uppercase tracking-[0.08em] text-[#53677D]">
                                     Task Status
                                 </span>
+
                                 <div className="mt-2">
                                     <StatusBadge status={task.status} />
                                 </div>
@@ -270,8 +405,10 @@ function TaskModal({
                                 <span className="block text-[10px] font-bold uppercase tracking-[0.08em] text-[#53677D]">
                                     Description
                                 </span>
+
                                 <p className="mt-1 break-words text-sm leading-6 text-[#243A52]">
-                                    {task.description || "No description provided."}
+                                    {task.description ||
+                                        "No description provided."}
                                 </p>
                             </div>
 
@@ -279,9 +416,66 @@ function TaskModal({
                                 <span className="block text-[10px] font-bold uppercase tracking-[0.08em] text-[#53677D]">
                                     Instructions
                                 </span>
+
                                 <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-[#243A52]">
-                                    {task.instructions || "No additional instructions."}
+                                    {task.instructions ||
+                                        "No additional instructions."}
                                 </p>
+                            </div>
+
+                            <div className="rounded-xl border border-[#C9D6E3] bg-white px-4 py-4 sm:col-span-2">
+                                <span className="block text-[10px] font-bold uppercase tracking-[0.08em] text-[#53677D]">
+                                    File Attachment
+                                </span>
+
+                                {attachment ? (
+                                    <div className="mt-3 flex flex-col gap-3 rounded-xl border border-[#C9D6E3] bg-[#F7F9FB] p-3 sm:flex-row sm:items-center sm:justify-between">
+                                        <div className="flex min-w-0 items-center gap-3">
+                                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#C9D6E3] bg-white text-[#294B70]">
+                                                <Paperclip size={20} />
+                                            </div>
+
+                                            <div className="min-w-0">
+                                                <p className="break-all text-sm font-semibold text-[#243A52]">
+                                                    {getAttachmentName(
+                                                        attachment,
+                                                    )}
+                                                </p>
+
+                                                <p className="mt-1 text-xs text-[#8292A3]">
+                                                    {typeof File !==
+                                                        "undefined" &&
+                                                    attachment instanceof File
+                                                        ? formatFileSize(
+                                                              attachment.size,
+                                                          )
+                                                        : "Attached file"}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                downloadAttachment(attachment)
+                                            }
+                                            className={buttonSecondary}
+                                        >
+                                            <Download size={15} />
+                                            Download
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="mt-3 rounded-xl border border-dashed border-[#C9D6E3] bg-[#F7F9FB] px-4 py-6 text-center">
+                                        <FileText
+                                            size={24}
+                                            className="mx-auto text-[#9AA8B7]"
+                                        />
+                                        <p className="mt-2 text-sm text-[#8292A3]">
+                                            No attachment available.
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -295,6 +489,7 @@ function TaskModal({
                             <Pencil size={16} />
                             Edit Task
                         </button>
+
                         <button
                             type="button"
                             onClick={onClose}
@@ -322,9 +517,11 @@ function TaskModal({
                         <span className="inline-flex rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white/80">
                             Task Management
                         </span>
+
                         <h2 className="mt-2 text-lg font-bold text-white">
                             {isAdd ? "Create Task" : "Edit Task"}
                         </h2>
+
                         <p className="mt-0.5 text-xs text-white/65">
                             {isAdd
                                 ? "Create a new academic task for a section."
@@ -345,9 +542,13 @@ function TaskModal({
                 <form onSubmit={onSubmit}>
                     <div className="grid grid-cols-1 gap-4 px-5 py-5 sm:grid-cols-2">
                         <div className="sm:col-span-2">
-                            <label htmlFor="task-title" className={labelClass}>
+                            <label
+                                htmlFor="task-title"
+                                className={labelClass}
+                            >
                                 Task Title
                             </label>
+
                             <input
                                 id="task-title"
                                 name="title"
@@ -360,9 +561,13 @@ function TaskModal({
                         </div>
 
                         <div>
-                            <label htmlFor="task-topic" className={labelClass}>
+                            <label
+                                htmlFor="task-topic"
+                                className={labelClass}
+                            >
                                 Topic
                             </label>
+
                             <input
                                 id="task-topic"
                                 name="topic"
@@ -375,9 +580,13 @@ function TaskModal({
                         </div>
 
                         <div>
-                            <label htmlFor="task-section" className={labelClass}>
+                            <label
+                                htmlFor="task-section"
+                                className={labelClass}
+                            >
                                 Assigned Section
                             </label>
+
                             <select
                                 id="task-section"
                                 name="section"
@@ -387,6 +596,7 @@ function TaskModal({
                                 className={inputClass}
                             >
                                 <option value="">Select section</option>
+
                                 {sections.map((section) => (
                                     <option key={section} value={section}>
                                         {section}
@@ -396,9 +606,13 @@ function TaskModal({
                         </div>
 
                         <div>
-                            <label htmlFor="task-due" className={labelClass}>
+                            <label
+                                htmlFor="task-due"
+                                className={labelClass}
+                            >
                                 Due Date
                             </label>
+
                             <input
                                 id="task-due"
                                 type="date"
@@ -411,9 +625,13 @@ function TaskModal({
                         </div>
 
                         <div>
-                            <label htmlFor="task-points" className={labelClass}>
+                            <label
+                                htmlFor="task-points"
+                                className={labelClass}
+                            >
                                 Total Points
                             </label>
+
                             <input
                                 id="task-points"
                                 type="number"
@@ -433,6 +651,7 @@ function TaskModal({
                             >
                                 Description
                             </label>
+
                             <textarea
                                 id="task-description"
                                 name="description"
@@ -452,6 +671,7 @@ function TaskModal({
                             >
                                 Instructions (Optional)
                             </label>
+
                             <textarea
                                 id="task-instructions"
                                 name="instructions"
@@ -463,10 +683,109 @@ function TaskModal({
                             />
                         </div>
 
+                        {/* Updated File Attachment */}
                         <div className="sm:col-span-2">
-                            <label htmlFor="task-status" className={labelClass}>
+                            <label
+                                htmlFor="task-attachment"
+                                className={labelClass}
+                            >
+                                File Attachment (Optional)
+                            </label>
+
+                            <input
+                                ref={fileInputRef}
+                                id="task-attachment"
+                                type="file"
+                                accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.png,.jpg,.jpeg"
+                                onChange={handleFileChange}
+                                className="hidden"
+                            />
+
+                            {!formData.attachment ? (
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        fileInputRef.current?.click()
+                                    }
+                                    className="flex w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-[#B8C9DA] bg-[#F7F9FB] px-5 py-8 text-center transition-all hover:border-[#294B70] hover:bg-[#EEF4F9]"
+                                >
+                                    <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-[#C9D6E3] bg-white text-[#294B70] shadow-sm">
+                                        <Upload size={22} />
+                                    </div>
+
+                                    <p className="mt-3 text-sm font-semibold text-[#243A52]">
+                                        Click to select a file
+                                    </p>
+
+                                   
+                                    <span className="mt-2 text-[11px] leading-5 text-[#8292A3]">
+                                       PDF, Office documents, or images | Maximum file
+                                        size: 10 MB.
+                                    </span>
+                                </button>
+                            ) : (
+                                <div className="flex flex-col gap-3 rounded-xl border border-[#C9D6E3] bg-[#F7F9FB] p-4 sm:flex-row sm:items-center sm:justify-between">
+                                    <div className="flex min-w-0 items-center gap-3">
+                                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#C9D6E3] bg-white text-[#294B70]">
+                                            <Paperclip size={20} />
+                                        </div>
+
+                                        <div className="min-w-0">
+                                            <p className="break-all text-sm font-semibold text-[#243A52]">
+                                                {getAttachmentName(
+                                                    formData.attachment,
+                                                )}
+                                            </p>
+
+                                            <p className="mt-1 text-xs text-[#8292A3]">
+                                                {typeof File !== "undefined" &&
+                                                formData.attachment instanceof
+                                                    File
+                                                    ? formatFileSize(
+                                                          formData.attachment
+                                                              .size,
+                                                      )
+                                                    : "Existing attachment"}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex shrink-0 items-center gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                fileInputRef.current?.click()
+                                            }
+                                            className="inline-flex items-center justify-center gap-2 rounded-lg border border-[#C9D6E3] bg-white px-3 py-2 text-xs font-semibold text-[#294B70] transition hover:bg-[#EEF4F9]"
+                                        >
+                                            <RefreshCw size={14} />
+                                            Replace
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={removeAttachment}
+                                            aria-label="Remove attachment"
+                                            className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-100"
+                                        >
+                                            <Trash size={14} />
+                                            Remove
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            
+                        </div>
+
+                        <div className="sm:col-span-2">
+                            <label
+                                htmlFor="task-status"
+                                className={labelClass}
+                            >
                                 Task Status
                             </label>
+
                             <select
                                 id="task-status"
                                 name="status"
@@ -477,6 +796,7 @@ function TaskModal({
                                 <option value="Draft">Draft</option>
                                 <option value="Active">Active</option>
                             </select>
+
                             <p className="mt-1.5 text-[11px] text-[#7A8999]">
                                 Draft tasks are not yet published to students.
                             </p>
@@ -491,8 +811,17 @@ function TaskModal({
                         >
                             Cancel
                         </button>
-                        <button type="submit" className={buttonPrimary}>
-                            {isAdd ? <Plus size={16} /> : <CheckCircle2 size={16} />}
+
+                        <button
+                            type="submit"
+                            className={buttonPrimary}
+                        >
+                            {isAdd ? (
+                                <Plus size={16} />
+                            ) : (
+                                <CheckCircle2 size={16} />
+                            )}
+
                             {isAdd ? "Create Task" : "Save Changes"}
                         </button>
                     </div>
@@ -502,7 +831,7 @@ function TaskModal({
     );
 }
 
-// Confirmation prompt
+// --- Confirmation modal ---
 function ConfirmModal({ type, task, onClose, onConfirm }) {
     if (!type || !task) return null;
 
@@ -609,7 +938,7 @@ function ConfirmModal({ type, task, onClose, onConfirm }) {
     );
 }
 
-// Main task management dashboard for creating, filtering, viewing, and updating faculty assignments.
+// --- Main task management page ---
 export default function TaskManagement() {
     const [tasks, setTasks] = useState(initialTasks);
     const [searchValue, setSearchValue] = useState("");
@@ -629,7 +958,9 @@ export default function TaskManagement() {
             total: tasks.length,
             active: tasks.filter((task) => task.status === "Active").length,
             drafts: tasks.filter((task) => task.status === "Draft").length,
-            completed: tasks.filter((task) => task.status === "Completed").length,
+            completed: tasks.filter(
+                (task) => task.status === "Completed",
+            ).length,
         }),
         [tasks],
     );
@@ -646,12 +977,14 @@ export default function TaskManagement() {
                     task.section,
                     task.description,
                     `TSK-${String(task.id).padStart(3, "0")}`,
+                    getAttachmentName(task.attachment),
                 ].some((value) =>
                     String(value || "").toLowerCase().includes(search),
                 );
 
             const matchesStatus =
-                statusFilter === "All Status" || task.status === statusFilter;
+                statusFilter === "All Status" ||
+                task.status === statusFilter;
 
             const matchesSection =
                 sectionFilter === "All Sections" ||
@@ -680,21 +1013,26 @@ export default function TaskManagement() {
 
     const openAddModal = () => {
         setSelectedTask(null);
+
         setFormData({
             ...emptyForm,
             due: "",
             dateCreated: new Date().toISOString().slice(0, 10),
         });
+
         setModalType("add");
     };
 
     const openEditModal = (task) => {
         setSelectedTask(task);
+
         setFormData({
             ...emptyForm,
             ...task,
             points: String(task.points ?? 100),
+            attachment: task.attachment ?? null,
         });
+
         setModalType("edit");
     };
 
@@ -805,10 +1143,10 @@ export default function TaskManagement() {
     };
 
     return (
-       <FacultyLayout
-    activeMenu="Task Management"
-    showPageInfo={false}
-    showSearch={false}
+        <FacultyLayout
+            activeMenu="Task Management"
+            showPageInfo={false}
+            showSearch={false}
         >
             <div className="mx-auto w-full max-w-[1600px]">
                 <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
@@ -822,7 +1160,8 @@ export default function TaskManagement() {
                         </h1>
 
                         <p className="mt-1 text-sm text-[#738396]">
-                            Create academic tasks, manage deadlines, and monitor task status.
+                            Create academic tasks, manage deadlines, and
+                            monitor task status.
                         </p>
                     </div>
 
@@ -836,83 +1175,85 @@ export default function TaskManagement() {
                     </button>
                 </div>
 
-                
-              <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                  <SummaryCard
-                      title="Total Tasks"
-                      value={counts.total}
-                      description="All created tasks"
-                      icon={ClipboardList}
-                      gradient="from-[#E2EAF2] via-[#EDF2F7] to-white"
-                      borderColor="border-[#AFC1D4]"
-                      accentColor="bg-[#1B3553]/20"
-                      iconBackground="bg-[#1B3553]"
-                      bars={[
-                          "h-3 bg-[#AFC1D4]",
-                          "h-5 bg-[#8FA9C1]",
-                          "h-8 bg-[#6F8CA8]",
-                          "h-6 bg-[#AFC1D4]",
-                      ]}
-                  />
+                {/* --- Summary statistics --- */}
+                <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                    <SummaryCard
+                        title="Total Tasks"
+                        value={counts.total}
+                        description="All created tasks"
+                        icon={ClipboardList}
+                        gradient="from-[#E2EAF2] via-[#EDF2F7] to-white"
+                        borderColor="border-[#AFC1D4]"
+                        accentColor="bg-[#1B3553]/20"
+                        iconBackground="bg-[#1B3553]"
+                        bars={[
+                            "h-3 bg-[#AFC1D4]",
+                            "h-5 bg-[#8FA9C1]",
+                            "h-8 bg-[#6F8CA8]",
+                            "h-6 bg-[#AFC1D4]",
+                        ]}
+                    />
 
-                  <SummaryCard
-                      title="Active Tasks"
-                      value={counts.active}
-                      description="Currently published"
-                      icon={RefreshCw}
-                      gradient="from-[#E3F0EA] via-[#EFF6F2] to-white"
-                      borderColor="border-[#B9D5C8]"
-                      accentColor="bg-[#31805E]/30"
-                      iconBackground="bg-[#31795B]"
-                      bars={[
-                          "h-3 bg-[#B9D9C8]",
-                          "h-5 bg-[#8FC1A7]",
-                          "h-7 bg-[#5E9C7A]",
-                          "h-9 bg-[#31795B]",
-                      ]}
-                  />
+                    <SummaryCard
+                        title="Active Tasks"
+                        value={counts.active}
+                        description="Currently published"
+                        icon={RefreshCw}
+                        gradient="from-[#E3F0EA] via-[#EFF6F2] to-white"
+                        borderColor="border-[#B9D5C8]"
+                        accentColor="bg-[#31805E]/30"
+                        iconBackground="bg-[#31795B]"
+                        bars={[
+                            "h-3 bg-[#B9D9C8]",
+                            "h-5 bg-[#8FC1A7]",
+                            "h-7 bg-[#5E9C7A]",
+                            "h-9 bg-[#31795B]",
+                        ]}
+                    />
 
-                  <SummaryCard
-                      title="Draft Tasks"
-                      value={counts.drafts}
-                      description="Not yet published"
-                      icon={FileText}
-                      gradient="from-[#E6EAF0] via-[#F0F3F6] to-white"
-                      borderColor="border-[#C8D0D9]"
-                      accentColor="bg-[#64748B]/25"
-                      iconBackground="bg-[#5E6C7C]"
-                      bars={[
-                          "h-8 bg-[#CBD3DC]",
-                          "h-5 bg-[#AAB4BF]",
-                          "h-6 bg-[#7C8794]",
-                          "h-3 bg-[#5E6C7C]",
-                      ]}
-                  />
+                    <SummaryCard
+                        title="Draft Tasks"
+                        value={counts.drafts}
+                        description="Not yet published"
+                        icon={FileText}
+                        gradient="from-[#E6EAF0] via-[#F0F3F6] to-white"
+                        borderColor="border-[#C8D0D9]"
+                        accentColor="bg-[#64748B]/25"
+                        iconBackground="bg-[#5E6C7C]"
+                        bars={[
+                            "h-8 bg-[#CBD3DC]",
+                            "h-5 bg-[#AAB4BF]",
+                            "h-6 bg-[#7C8794]",
+                            "h-3 bg-[#5E6C7C]",
+                        ]}
+                    />
 
-                  <SummaryCard
-                      title="Completed Tasks"
-                      value={counts.completed}
-                      description="Marked as completed"
-                      icon={CheckCircle2}
-                      gradient="from-[#DFE8F2] via-[#EAF0F6] to-white"
-                      borderColor="border-[#AFC2D8]"
-                      accentColor="bg-[#294B70]/30"
-                      iconBackground="bg-[#294B70]"
-                      bars={[
-                          "h-4 bg-[#AFC2D8]",
-                          "h-7 bg-[#7898B8]",
-                          "h-5 bg-[#52789D]",
-                          "h-9 bg-[#294B70]",
-                      ]}
-                  />
-              </div>
+                    <SummaryCard
+                        title="Completed Tasks"
+                        value={counts.completed}
+                        description="Marked as completed"
+                        icon={CheckCircle2}
+                        gradient="from-[#DFE8F2] via-[#EAF0F6] to-white"
+                        borderColor="border-[#AFC2D8]"
+                        accentColor="bg-[#294B70]/30"
+                        iconBackground="bg-[#294B70]"
+                        bars={[
+                            "h-4 bg-[#AFC2D8]",
+                            "h-7 bg-[#7898B8]",
+                            "h-5 bg-[#52789D]",
+                            "h-9 bg-[#294B70]",
+                        ]}
+                    />
+                </div>
 
+                {/* --- Task list controls and table --- */}
                 <section className="overflow-hidden rounded-2xl border border-[#C9D6E3] bg-white shadow-[0_5px_20px_rgba(27,53,83,0.06)]">
                     <div className="flex flex-col gap-3 border-b border-[#C9D6E3] bg-gradient-to-r from-[#F8FAFC] to-[#EEF3F8] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <h2 className="text-base font-bold text-[#1B3553]">
                                 Task List
                             </h2>
+
                             <p className="mt-0.5 text-xs text-[#738396]">
                                 View and manage all academic tasks
                             </p>
@@ -925,6 +1266,7 @@ export default function TaskManagement() {
                         </span>
                     </div>
 
+                    {/* --- Filters --- */}
                     <div className="border-b border-[#DCE4EC] bg-[#F7F9FB] px-5 py-4">
                         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(220px,1fr)_190px_190px_auto]">
                             <div className="relative min-w-0">
@@ -932,13 +1274,14 @@ export default function TaskManagement() {
                                     size={17}
                                     className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8292A3]"
                                 />
+
                                 <input
                                     type="text"
                                     value={searchValue}
                                     onChange={(event) =>
                                         handleSearch(event.target.value)
                                     }
-                                    placeholder="Search tasks..."
+                                    placeholder="Search tasks or attachments..."
                                     className="w-full rounded-xl border border-[#C9D6E4] bg-white py-2.5 pl-10 pr-4 text-sm text-[#243A52] outline-none placeholder:text-[#9AA8B7] focus:border-[#294B70] focus:ring-2 focus:ring-[#294B70]/10"
                                 />
                             </div>
@@ -952,11 +1295,13 @@ export default function TaskManagement() {
                                 className={inputClass}
                                 aria-label="Filter by section"
                             >
-                                {["All Sections", ...sections].map((section) => (
-                                    <option key={section} value={section}>
-                                        {section}
-                                    </option>
-                                ))}
+                                {["All Sections", ...sections].map(
+                                    (section) => (
+                                        <option key={section} value={section}>
+                                            {section}
+                                        </option>
+                                    ),
+                                )}
                             </select>
 
                             <select
@@ -980,12 +1325,12 @@ export default function TaskManagement() {
                                     </option>
                                 ))}
                             </select>
-
                         </div>
                     </div>
 
+                    {/* --- Task table --- */}
                     <div className="w-full overflow-x-auto">
-                        <table className="w-full min-w-[1000px] border-collapse text-left">
+                        <table className="w-full min-w-[1100px] border-collapse text-left">
                             <thead>
                                 <tr className="border-b border-[#C9D6E3] bg-[#E7EDF3]">
                                     {[
@@ -994,6 +1339,7 @@ export default function TaskManagement() {
                                         "Section",
                                         "Due Date",
                                         "Points",
+                                        "Attachment",
                                         "Status",
                                         "Actions",
                                     ].map((heading) => (
@@ -1018,10 +1364,12 @@ export default function TaskManagement() {
                                                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#C9D6E3] bg-[#EEF4F9] text-[#294B70]">
                                                     <BookOpen size={18} />
                                                 </div>
+
                                                 <div className="min-w-0">
                                                     <p className="max-w-[260px] truncate text-sm font-semibold text-[#243A52]">
                                                         {task.title}
                                                     </p>
+
                                                     <p className="mt-1 text-[11px] text-[#8292A3]">
                                                         TSK-
                                                         {String(task.id).padStart(
@@ -1058,10 +1406,46 @@ export default function TaskManagement() {
                                         </td>
 
                                         <td className="px-5 py-4">
-                                            <StatusBadge status={task.status} />
+                                            {task.attachment ? (
+                                                <button
+                                                    type="button"
+                                                    title={`Download ${getAttachmentName(task.attachment)}`}
+                                                    onClick={() =>
+                                                        downloadAttachment(
+                                                            task.attachment,
+                                                        )
+                                                    }
+                                                    className="flex max-w-[190px] items-center gap-2 rounded-lg border border-[#C9D6E3] bg-white px-3 py-2 text-xs font-semibold text-[#294B70] transition hover:bg-[#EEF4F9]"
+                                                >
+                                                    <Paperclip
+                                                        size={14}
+                                                        className="shrink-0"
+                                                    />
+
+                                                    <span className="truncate">
+                                                        {getAttachmentName(
+                                                            task.attachment,
+                                                        )}
+                                                    </span>
+
+                                                    <Download
+                                                        size={13}
+                                                        className="shrink-0"
+                                                    />
+                                                </button>
+                                            ) : (
+                                                <span className="text-sm text-[#9AA8B7]">
+                                                    —
+                                                </span>
+                                            )}
                                         </td>
 
-                                       {/* Actions */}
+                                        <td className="px-5 py-4">
+                                            <StatusBadge
+                                                status={task.status}
+                                            />
+                                        </td>
+
                                         <td className="px-5 py-4">
                                             <div className="flex items-center gap-1.5">
                                                 <button
@@ -1072,15 +1456,8 @@ export default function TaskManagement() {
                                                         setSelectedTask(task);
                                                         setModalType("view");
                                                     }}
-                                                    className="flex h-8 w-8 items-center justify-center rounded-lg border  border-[#BFCFDF]
-                                                      bg-[#E6EDF4]
-                                                      text-[#1B3553]
-                                                      transition-all
-                                                      duration-200
-                                                      hover:border-[#91A9C0]
-                                                      hover:bg-[#D5E1EC]
-                                                      hover:text-[#142A43]"
-                                                                >
+                                                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#BFCFDF] bg-[#E6EDF4] text-[#1B3553] transition-all duration-200 hover:border-[#91A9C0] hover:bg-[#D5E1EC] hover:text-[#142A43]"
+                                                >
                                                     <Eye size={15} />
                                                 </button>
 
@@ -1091,14 +1468,8 @@ export default function TaskManagement() {
                                                     onClick={() =>
                                                         openEditModal(task)
                                                     }
-                                                    className="flex h-8 w-8 items-center justify-center rounded-lg border  border-blue-200
-                                                        bg-blue-50
-                                                        text-blue-600
-                                                        transition-all
-                                                        duration-200
-                                                        hover:bg-blue-100
-                                                        hover:text-blue-700"
-                                                   >
+                                                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-600 transition-all duration-200 hover:bg-blue-100 hover:text-blue-700"
+                                                >
                                                     <Pencil size={15} />
                                                 </button>
 
@@ -1146,14 +1517,7 @@ export default function TaskManagement() {
                                                             task,
                                                         )
                                                     }
-                                                    className="flex h-8 w-8 items-center justify-center rounded-lg border  border-red-200
-                                                        bg-red-50
-                                                        text-red-500
-                                                        transition-all
-                                                        duration-200
-                                                        hover:bg-red-100
-                                                        hover:text-red-600
-                                                        active:scale-95"
+                                                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-500 transition-all duration-200 hover:bg-red-100 hover:text-red-600 active:scale-95"
                                                 >
                                                     <Trash2 size={15} />
                                                 </button>
@@ -1165,7 +1529,7 @@ export default function TaskManagement() {
                                 {paginatedTasks.length === 0 && (
                                     <tr>
                                         <td
-                                            colSpan={7}
+                                            colSpan={8}
                                             className="px-5 py-16 text-center"
                                         >
                                             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-[#C9D6E3] bg-[#EEF4F9] text-[#8292A3]">
@@ -1305,4 +1669,4 @@ export default function TaskManagement() {
             />
         </FacultyLayout>
     );
-} 
+}
