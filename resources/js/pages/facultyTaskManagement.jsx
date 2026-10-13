@@ -1609,7 +1609,7 @@ export default function TaskManagement() {
                                     setCurrentPage((page) =>
                                         Math.max(1, page - 1),
                                     )
-                                }
+                                }   
                                 className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#C9D6E3] bg-white text-[#526579] hover:bg-[#EEF4F9] disabled:cursor-not-allowed disabled:opacity-40"
                             >
                                 <ChevronLeft size={17} />
