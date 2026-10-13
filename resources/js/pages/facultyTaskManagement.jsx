@@ -202,9 +202,9 @@ function SummaryCard({
 }) {
     return (
         <div
-            className={`group relative min-w-0 overflow-hidden rounded-2xl border ${borderColor} bg-gradient-to-br ${gradient} p-5 shadow-[0_5px_22px_rgba(27,53,83,0.10)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_30px_rgba(27,53,83,0.16)]`}
+            className={`group relative min-w-0 overflow-hidden rounded-2xl border ${borderColor} bg-gradient-to-br ${gradient} p-3 shadow-[0_5px_22px_rgba(27,53,83,0.10)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_30px_rgba(27,53,83,0.16)] sm:p-5`}
         >
-            <div className="absolute top-5 right-5 flex h-9 items-end gap-1 opacity-70">
+            <div className="absolute top-5 right-5 hidden h-9 items-end gap-1 opacity-70 sm:flex">
                 {bars.map((bar, index) => (
                     <span key={index} className={`w-1.5 rounded-full ${bar}`} />
                 ))}
@@ -214,25 +214,98 @@ function SummaryCard({
                 className={`absolute bottom-0 left-0 h-1 w-full ${accentColor}`}
             />
 
-            <div className="relative flex items-center gap-4">
+            <div className="relative flex min-h-[76px] items-center gap-2 sm:gap-4">
                 <div
-                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${iconBackground} text-white shadow-[0_4px_10px_rgba(27,53,83,0.16)] transition-transform duration-200 group-hover:scale-105`}
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${iconBackground} text-white shadow-[0_4px_10px_rgba(27,53,83,0.16)] transition-transform duration-200 group-hover:scale-105 sm:h-12 sm:w-12`}
                 >
-                    <Icon size={21} />
+                    <Icon size={18} />
                 </div>
 
                 <div className="min-w-0">
-                    <span className="block text-xs font-bold text-[#526579]">
+                    <span className="block text-[11px] leading-tight font-bold text-[#526579] sm:text-xs">
                         {title}
                     </span>
-                    <span className="mt-1 block text-2xl font-bold tracking-tight text-[#142A43]">
+                    <span className="mt-1 block text-xl font-bold tracking-tight text-[#142A43] sm:text-2xl">
                         {value}
                     </span>
-                    <span className="mt-1 block text-[11px] text-[#738396]">
+                    <span className="mt-1 block text-[10px] leading-tight text-[#738396] sm:text-[11px]">
                         {description}
                     </span>
                 </div>
             </div>
+        </div>
+    );
+}
+
+function TaskActions({ task, onView, onEdit, onConfirm, mobile = false }) {
+    const buttonClass = mobile
+        ? 'inline-flex min-h-10 min-w-[76px] flex-1 items-center justify-center gap-1.5 rounded-lg border px-2 text-xs font-semibold transition-colors'
+        : 'flex h-8 w-8 items-center justify-center rounded-lg border transition-colors';
+
+    return (
+        <div
+            className={
+                mobile ? 'flex flex-wrap gap-2' : 'flex items-center gap-1.5'
+            }
+        >
+            <button
+                type="button"
+                title="View task"
+                aria-label={`View ${task.title}`}
+                onClick={onView}
+                className={`${buttonClass} border-[#BFCFDF] bg-[#E6EDF4] text-[#1B3553] hover:border-[#91A9C0] hover:bg-[#D5E1EC]`}
+            >
+                <Eye size={15} />
+                {mobile && <span>View</span>}
+            </button>
+
+            <button
+                type="button"
+                title="Edit task"
+                aria-label={`Edit ${task.title}`}
+                onClick={onEdit}
+                className={`${buttonClass} border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700`}
+            >
+                <Pencil size={15} />
+                {mobile && <span>Edit</span>}
+            </button>
+
+            {task.status === 'Draft' && (
+                <button
+                    type="button"
+                    title="Publish task"
+                    aria-label={`Publish ${task.title}`}
+                    onClick={() => onConfirm('publish', task)}
+                    className={`${buttonClass} border-[#B9D9C8] bg-white text-[#267653] hover:bg-[#F0F8F3]`}
+                >
+                    <Upload size={15} />
+                    {mobile && <span>Publish</span>}
+                </button>
+            )}
+
+            {task.status === 'Active' && (
+                <button
+                    type="button"
+                    title="Cancel task"
+                    aria-label={`Cancel ${task.title}`}
+                    onClick={() => onConfirm('cancel', task)}
+                    className={`${buttonClass} border-[#D7C7A8] bg-white text-[#8A6A25] hover:bg-[#FAF5E9]`}
+                >
+                    <Ban size={15} />
+                    {mobile && <span>Cancel</span>}
+                </button>
+            )}
+
+            <button
+                type="button"
+                title="Delete task"
+                aria-label={`Delete ${task.title}`}
+                onClick={() => onConfirm('delete', task)}
+                className={`${buttonClass} border-red-200 bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-600`}
+            >
+                <Trash2 size={15} />
+                {mobile && <span>Delete</span>}
+            </button>
         </div>
     );
 }
@@ -320,14 +393,14 @@ function TaskModal({
 
         return (
             <div
-                className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-[#0C1C2D]/60 p-4 backdrop-blur-sm"
+                className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-[#0C1C2D]/60 px-3 py-3 backdrop-blur-sm sm:items-center sm:p-4"
                 onMouseDown={onClose}
             >
                 <div
                     className="my-auto w-full max-w-3xl overflow-hidden rounded-2xl border border-[#B8C9DA] bg-white shadow-[0_25px_70px_rgba(10,30,50,0.30)]"
                     onMouseDown={(event) => event.stopPropagation()}
                 >
-                    <div className="bg-gradient-to-br from-[#142A43] via-[#1B3553] to-[#294B70] px-6 py-6">
+                    <div className="bg-gradient-to-br from-[#142A43] via-[#1B3553] to-[#294B70] px-4 py-4 sm:px-6 sm:py-6">
                         <div className="flex items-start justify-between gap-4">
                             <div className="flex min-w-0 items-center gap-4">
                                 <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-white/25 bg-white/15 text-white">
@@ -360,7 +433,7 @@ function TaskModal({
                         </div>
                     </div>
 
-                    <div className="max-h-[65vh] overflow-y-auto bg-[#EEF2F6] px-6 py-6">
+                    <div className="max-h-[60dvh] overflow-y-auto bg-[#EEF2F6] px-4 py-4 sm:max-h-[65vh] sm:px-6 sm:py-6">
                         <h3 className="text-sm font-bold text-[#1B3553]">
                             Task & Academic Details
                         </h3>
@@ -499,11 +572,11 @@ function TaskModal({
 
     return (
         <div
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-[#142A43]/40 px-4 py-6 backdrop-blur-sm"
+            className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-[#142A43]/40 px-3 py-3 backdrop-blur-sm sm:items-center sm:px-4 sm:py-6"
             onMouseDown={onClose}
         >
             <div
-                className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-[#C9D5E2] bg-white shadow-[0_20px_60px_rgba(27,53,83,0.20)]"
+                className="max-h-[calc(100dvh-1.5rem)] w-full max-w-3xl overflow-y-auto rounded-2xl border border-[#C9D5E2] bg-white shadow-[0_20px_60px_rgba(27,53,83,0.20)] sm:max-h-[90vh]"
                 onMouseDown={(event) => event.stopPropagation()}
             >
                 <div className="flex items-center justify-between bg-gradient-to-r from-[#1B3553] via-[#294B70] to-[#365C7E] px-5 py-5">
@@ -1258,7 +1331,7 @@ export default function TaskManagement() {
                 </div>
 
                 {/* --- Summary statistics --- */}
-                <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="mb-6 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
                     <SummaryCard
                         title="Total Tasks"
                         value={counts.total}
@@ -1426,8 +1499,159 @@ export default function TaskManagement() {
                         </div>
                     </div>
 
-                    {/* --- Task table --- */}
-                    <div className="w-full overflow-x-auto">
+                    {/* --- Mobile task cards --- */}
+                    <div className="space-y-3 p-3 md:hidden">
+                        {isLoading && (
+                            <div className="px-3 py-10 text-center text-sm text-[#526579]">
+                                Loading tasks...
+                            </div>
+                        )}
+
+                        {!isLoading &&
+                            paginatedTasks.map((task) => (
+                                <article
+                                    key={task.id}
+                                    className="min-w-0 rounded-xl border border-[#D5DFE9] bg-white p-4 shadow-sm"
+                                >
+                                    <div className="flex min-w-0 items-start justify-between gap-3">
+                                        <div className="flex min-w-0 items-start gap-3">
+                                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#C9D6E3] bg-[#EEF4F9] text-[#294B70]">
+                                                <BookOpen size={18} />
+                                            </div>
+                                            <div className="min-w-0">
+                                                <h3 className="text-sm font-semibold break-words text-[#243A52]">
+                                                    {task.title}
+                                                </h3>
+                                                <p className="mt-1 text-[11px] text-[#8292A3]">
+                                                    TSK-
+                                                    {String(task.id).padStart(
+                                                        3,
+                                                        '0',
+                                                    )}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <StatusBadge status={task.status} />
+                                    </div>
+
+                                    <dl className="mt-4 grid grid-cols-2 gap-x-3 gap-y-3 border-t border-[#E5EBF1] pt-3 text-xs">
+                                        <div className="min-w-0">
+                                            <dt className="font-semibold text-[#8292A3]">
+                                                Topic
+                                            </dt>
+                                            <dd className="mt-1 break-words text-[#526579]">
+                                                {task.topic || '—'}
+                                            </dd>
+                                        </div>
+                                        <div className="min-w-0">
+                                            <dt className="font-semibold text-[#8292A3]">
+                                                Section
+                                            </dt>
+                                            <dd className="mt-1 break-words text-[#526579]">
+                                                {task.section || '—'}
+                                            </dd>
+                                        </div>
+                                        <div>
+                                            <dt className="font-semibold text-[#8292A3]">
+                                                Due date
+                                            </dt>
+                                            <dd className="mt-1 text-[#526579]">
+                                                {formatDate(task.due_date)}
+                                            </dd>
+                                        </div>
+                                        <div>
+                                            <dt className="font-semibold text-[#8292A3]">
+                                                Points
+                                            </dt>
+                                            <dd className="mt-1 text-[#526579]">
+                                                {task.points ?? 100}
+                                            </dd>
+                                        </div>
+                                    </dl>
+
+                                    {task.attachment && (
+                                        <button
+                                            type="button"
+                                            title={`Download ${getAttachmentName(task.attachment)}`}
+                                            onClick={() =>
+                                                downloadAttachment(
+                                                    task.attachment,
+                                                )
+                                            }
+                                            className="mt-3 inline-flex max-w-full items-center gap-2 rounded-lg border border-[#C9D6E3] bg-[#F7F9FB] px-3 py-2 text-xs font-semibold text-[#294B70] hover:bg-[#EEF4F9]"
+                                        >
+                                            <Paperclip
+                                                size={14}
+                                                className="shrink-0"
+                                            />
+                                            <span className="truncate">
+                                                {getAttachmentName(
+                                                    task.attachment,
+                                                )}
+                                            </span>
+                                            <Download
+                                                size={13}
+                                                className="shrink-0"
+                                            />
+                                        </button>
+                                    )}
+
+                                    <div className="mt-4 border-t border-[#E5EBF1] pt-3">
+                                        <TaskActions
+                                            task={task}
+                                            mobile
+                                            onView={() => {
+                                                setSelectedTask(task);
+                                                setModalType('view');
+                                            }}
+                                            onEdit={() => openEditModal(task)}
+                                            onConfirm={openConfirm}
+                                        />
+                                    </div>
+                                </article>
+                            ))}
+
+                        {!isLoading && paginatedTasks.length === 0 && (
+                            <div className="rounded-xl border border-dashed border-[#C9D6E3] px-4 py-8 text-center">
+                                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl border border-[#C9D6E3] bg-[#EEF4F9] text-[#8292A3]">
+                                    {hasFilters ? (
+                                        <Search size={21} />
+                                    ) : (
+                                        <ClipboardList size={21} />
+                                    )}
+                                </div>
+                                <h3 className="mt-3 text-sm font-bold text-[#243A52]">
+                                    {hasFilters
+                                        ? 'No matching tasks found'
+                                        : 'No tasks available'}
+                                </h3>
+                                <p className="mt-1 text-xs leading-5 text-[#8292A3]">
+                                    {hasFilters
+                                        ? 'Try changing your search or filters.'
+                                        : 'Create a task to start managing academic activities.'}
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={
+                                        hasFilters ? clearFilters : openAddModal
+                                    }
+                                    className="mt-3 inline-flex items-center gap-2 text-xs font-semibold text-[#294B70]"
+                                >
+                                    {hasFilters ? (
+                                        <RotateCcw size={14} />
+                                    ) : (
+                                        <Plus size={14} />
+                                    )}
+                                    {hasFilters
+                                        ? 'Clear filters'
+                                        : 'Create Task'}
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* --- Desktop task table --- */}
+                    <div className="hidden w-full overflow-x-auto md:block">
                         <table className="w-full min-w-[1100px] border-collapse text-left">
                             <thead>
                                 <tr className="border-b border-[#C9D6E3] bg-[#E7EDF3]">
@@ -1556,87 +1780,17 @@ export default function TaskManagement() {
                                             </td>
 
                                             <td className="px-5 py-4">
-                                                <div className="flex items-center gap-1.5">
-                                                    <button
-                                                        type="button"
-                                                        title="View task"
-                                                        aria-label={`View ${task.title}`}
-                                                        onClick={() => {
-                                                            setSelectedTask(
-                                                                task,
-                                                            );
-                                                            setModalType(
-                                                                'view',
-                                                            );
-                                                        }}
-                                                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#BFCFDF] bg-[#E6EDF4] text-[#1B3553] transition-all duration-200 hover:border-[#91A9C0] hover:bg-[#D5E1EC] hover:text-[#142A43]"
-                                                    >
-                                                        <Eye size={15} />
-                                                    </button>
-
-                                                    <button
-                                                        type="button"
-                                                        title="Edit task"
-                                                        aria-label={`Edit ${task.title}`}
-                                                        onClick={() =>
-                                                            openEditModal(task)
-                                                        }
-                                                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-600 transition-all duration-200 hover:bg-blue-100 hover:text-blue-700"
-                                                    >
-                                                        <Pencil size={15} />
-                                                    </button>
-
-                                                    {task.status ===
-                                                        'Draft' && (
-                                                        <button
-                                                            type="button"
-                                                            title="Publish task"
-                                                            aria-label={`Publish ${task.title}`}
-                                                            onClick={() =>
-                                                                openConfirm(
-                                                                    'publish',
-                                                                    task,
-                                                                )
-                                                            }
-                                                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#B9D9C8] bg-white text-[#267653] hover:bg-[#F0F8F3]"
-                                                        >
-                                                            <Upload size={15} />
-                                                        </button>
-                                                    )}
-
-                                                    {task.status ===
-                                                        'Active' && (
-                                                        <button
-                                                            type="button"
-                                                            title="Cancel task"
-                                                            aria-label={`Cancel ${task.title}`}
-                                                            onClick={() =>
-                                                                openConfirm(
-                                                                    'cancel',
-                                                                    task,
-                                                                )
-                                                            }
-                                                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#D7C7A8] bg-white text-[#8A6A25] hover:bg-[#FAF5E9]"
-                                                        >
-                                                            <Ban size={15} />
-                                                        </button>
-                                                    )}
-
-                                                    <button
-                                                        type="button"
-                                                        title="Delete task"
-                                                        aria-label={`Delete ${task.title}`}
-                                                        onClick={() =>
-                                                            openConfirm(
-                                                                'delete',
-                                                                task,
-                                                            )
-                                                        }
-                                                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-500 transition-all duration-200 hover:bg-red-100 hover:text-red-600 active:scale-95"
-                                                    >
-                                                        <Trash2 size={15} />
-                                                    </button>
-                                                </div>
+                                                <TaskActions
+                                                    task={task}
+                                                    onView={() => {
+                                                        setSelectedTask(task);
+                                                        setModalType('view');
+                                                    }}
+                                                    onEdit={() =>
+                                                        openEditModal(task)
+                                                    }
+                                                    onConfirm={openConfirm}
+                                                />
                                             </td>
                                         </tr>
                                     ))}
