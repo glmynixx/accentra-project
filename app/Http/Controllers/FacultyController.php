@@ -2,11 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use App\Models\Faculty;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use App\Models\ActivityLog;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Hash;
 
 class FacultyController extends Controller
 {
@@ -24,37 +28,72 @@ public function index()
 }
 
 
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-        'faculty_number' => 'required|string|max:50|unique:faculties,faculty_number',
+    
+
+public function store(Request $request)
+{
+
+
+    $validated = $request->validate([
+        'faculty_number' => [
+            'required', 'string', 'max:50',
+            'unique:faculties,faculty_number',
+        ],
         'name' => 'required|string|max:255',
-        'email' => 'required|email|max:255|unique:faculties,email',
+        'email' => [
+            'required', 'email', 'max:255',
+            'unique:faculties,email',
+            'unique:users,email',
+        ],
         'specialization' => 'required|string|max:255',
         'contact_number' => 'nullable|string|max:30',
         'address' => 'nullable|string',
         'status' => 'required|in:Active,Inactive',
+        'password' => [
+    'required',
+    'string',
+    'min:12',
+    'confirmed',
+],
     ]);
+    
 
-    Faculty::create($validated);
-    ActivityLog::create([
-    'actor' => 'Admin',
-    'action' => 'added a new faculty member',
-    'module' => 'Faculty Management',
-    'description' => $validated['name'],
-    'icon' => 'user-plus',
+    DB::transaction(function () use ($validated) {
+
+        // Create Laravel login account
+        $user = User::create([
+    'name' => $validated['name'],
+    'email' => $validated['email'],
+    'password' => Hash::make($validated['password']),
+    'role' => 'Faculty',
 ]);
 
+        // Create Faculty profile and link to User
+       $faculty = Faculty::create([
+    ...collect($validated)->except([
+        'password',
+        'password_confirmation',
+    ])->all(),
+    'user_id' => $user->id,
+]);
+
+        // Record Admin activity
+        ActivityLog::create([
+            'actor' => 'Admin',
+            'action' => 'added a new faculty member',
+            'module' => 'Faculty Management',
+            'description' => $faculty->name,
+            'icon' => 'user-plus',
+        ]);
+
+        
+    });
+
     return redirect()
-        ->route('faculty.index')
-        ->with('success', 'Faculty added successfully.');
+        ->route('faculty')
+        ->with('success', 'Faculty account created successfully.');
+}
 
-    }
-
-    public function show(Faculty $faculty)
-    {
-        return response()->json($faculty);
-    }
 
     public function update(Request $request, Faculty $faculty)
     {
@@ -83,7 +122,7 @@ public function index()
         'icon' => 'user-pen',
 ]);
 
-        return redirect()->route('faculty.index')
+        return redirect()->route('faculty')
             ->with('success', 'Faculty updated successfully.');
     }
 
@@ -105,26 +144,40 @@ public function index()
         'icon' => 'user-check',
         ]);
 
-        return redirect()->route('faculty.index');
+        return redirect()->route('faculty');
     }
 
-    public function destroy(Faculty $faculty)
-    {
+    
+public function destroy(Faculty $faculty)
+{
+    DB::transaction(function () use ($faculty) {
         $facultyName = $faculty->name;
+        $userId = $faculty->user_id;
 
+        // Delete the Faculty profile first
         $faculty->delete();
+
+        // Delete its linked login account
+        if ($userId) {
+            User::whereKey($userId)
+                ->where('role', 'Faculty')
+                ->delete();
+        }
 
         ActivityLog::create([
             'actor' => 'Admin',
             'action' => 'deleted a faculty member',
             'module' => 'Faculty Management',
             'description' => $facultyName,
-            'icon' => 'user-minus',
+            'icon' => 'trash-2',
         ]);
+    });
 
-        return redirect()->route('faculty.index')
-            ->with('success', 'Faculty deleted successfully.');
-    }
+    return redirect()
+        ->route('faculty')
+        ->with('success', 'Faculty deleted successfully.');
+}
+
 
     public function assignSections(Request $request, Faculty $faculty)
     {
@@ -152,7 +205,7 @@ public function index()
 ]);
 
     return redirect()
-        ->route('faculty.index')
+        ->route('faculty')
         ->with('success', 'Faculty sections updated successfully.');
 
         }

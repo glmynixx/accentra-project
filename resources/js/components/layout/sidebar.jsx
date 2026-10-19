@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-
+import { router } from "@inertiajs/react";
 import Icon from "../common/icon";
 
 const menuItems = [
@@ -60,15 +60,52 @@ export default function Sidebar({
     }
   }, [isUserManagementActive]);
 
-  const handleNavigation = (event, item) => {
+  
+const [loggingOut, setLoggingOut] = useState(false);
+
+
+const handleLogout = () => {
+    console.log("Logout button clicked");
+
+    if (loggingOut) return;
+
+    router.post("/logout", {}, {
+        onStart: () => {
+            console.log("Sending logout request...");
+            setLoggingOut(true);
+        },
+
+        onSuccess: () => {
+            console.log("Logout request completed successfully");
+        },
+
+        onError: (errors) => {
+            console.error("Logout validation errors:", errors);
+        },
+
+        onFinish: () => {
+            console.log("Logout request finished");
+            setLoggingOut(false);
+        },
+    });
+};
+
+
+const handleNavigation = (event, item) => {
     event.preventDefault();
+
+    if (item.label === "Logout") {
+        handleLogout();
+        return;
+    }
 
     onMenuChange?.(item.label);
 
     if (item.path) {
-      window.location.href = item.path;
+        window.location.href = item.path;
     }
-  };
+};
+
 
   const getMenuItemClasses = (isActive) => `
     group
@@ -407,17 +444,19 @@ export default function Sidebar({
                 activeMenu === item.label;
 
               return (
-                <a
+                
+              <a
                   href={item.path || "#"}
                   key={item.label}
-                  className={getMenuItemClasses(isActive)}
-                  onClick={(event) =>
-                    handleNavigation(
-                      event,
-                      item
-                    )
-                  }
-                >
+                  aria-disabled={item.label === "Logout" && loggingOut}
+                  className={`${getMenuItemClasses(isActive)} ${
+                      item.label === "Logout" && loggingOut
+                          ? "pointer-events-none opacity-50"
+                          : ""
+                  }`}
+                  onClick={(event) => handleNavigation(event, item)}
+              >
+
                   <Icon
                     name={item.icon}
                     className={`

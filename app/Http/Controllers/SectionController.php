@@ -141,7 +141,7 @@ ActivityLog::create([
 ]);
 
         return redirect()
-            ->route('sections.index')
+            ->route('sections')
             ->with('success', 'Section status updated successfully!');
     }
 }

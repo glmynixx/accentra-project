@@ -87,6 +87,8 @@ useEffect(() => {
     assignedSections: [],
     status: "Active",
     dateAdded: "",
+    password: "",
+    password_confirmation: "",
   });
 
 
@@ -346,8 +348,12 @@ const handleSubmit = (event) => {
     };
 
     if (modalType === "add") {
-        router.post("/faculty", payload, options);
-    }
+    router.post("/faculty", {
+        ...payload,
+        password: formData.password,
+        password_confirmation: formData.password_confirmation,
+    }, options);
+}
 
     if (modalType === "edit" && selectedFaculty?.databaseId) {
         router.put(
@@ -392,22 +398,21 @@ const toggleAccountStatus = (member) => {
 
   
 const confirmDelete = () => {
-    if (!deleteFaculty?.databaseId) return;
+    if (!deleteFaculty?.databaseId) {
+        alert("Faculty database ID is missing.");
+        return;
+    }
 
     router.delete(`/faculty/${deleteFaculty.databaseId}`, {
         preserveScroll: true,
 
         onSuccess: () => {
             setDeleteFaculty(null);
-
-            if (paginatedFaculty.length === 1 && safeCurrentPage > 1) {
-                setCurrentPage((page) => Math.max(1, page - 1));
-            }
         },
 
         onError: (errors) => {
-            console.error(errors);
-            alert("Unable to delete faculty.");
+            console.error("Delete faculty failed:", errors);
+            alert(Object.values(errors).join("\n"));
         },
     });
 };
@@ -1790,7 +1795,9 @@ const confirmDelete = () => {
                   <strong className="mt-1 block wrap-break-word pl-1 text-sm font-semibold text-[#243A52]">
                     {selectedFaculty.email || "—"}
                   </strong>
-                </div>
+                </div> 
+
+                
 
                 {/* SPECIALIZATION */}
 
@@ -2288,6 +2295,44 @@ const confirmDelete = () => {
                     className={inputClass}
                   />
                 </div>
+
+                {modalType === "add" && (
+    <>
+        <div>
+            <label className="block mb-2 text-sm font-semibold text-[#526579]">
+                Password
+            </label>
+            <input
+                type="password"
+                name="password"
+                value={formData.password || ""}
+                onChange={handleFormChange}
+                placeholder="Enter faculty password"
+                minLength={12}
+                autoComplete="new-password"
+                required
+                className={inputClass}
+            />
+        </div>
+
+        <div>
+            <label className="block mb-2 text-sm font-semibold text-[#526579]">
+                Confirm Password
+            </label>
+            <input
+                type="password"
+                name="password_confirmation"
+                value={formData.password_confirmation || ""}
+                onChange={handleFormChange}
+                placeholder="Confirm faculty password"
+                minLength={12}
+                autoComplete="new-password"
+                required
+                className={inputClass}
+            />
+        </div>
+    </>
+)}
 
                 {/* SPECIALIZATION */}
 

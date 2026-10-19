@@ -1,4 +1,4 @@
-import { Link } from "@inertiajs/react";
+import { Link, router } from "@inertiajs/react";
 import { useState } from "react";
 
 import {
@@ -29,29 +29,54 @@ const inputClass = (hasError) => `     w-full rounded-xl border bg-white px-4 py
     }
   `;
 
+
 const handleSubmit = (event) => {
-event.preventDefault();
+    event.preventDefault();
 
-const newErrors = {};
+    const newErrors = {};
 
-if (!email.trim()) {
-  newErrors.email = "Email address is required.";
-} else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-  newErrors.email = "Please enter a valid email address.";
-}
+    if (!email.trim()) {
+        newErrors.email = "Email address is required.";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        newErrors.email = "Please enter a valid email address.";
+    }
 
-if (!password) {
-  newErrors.password = "Password is required.";
-}
+    if (!password) {
+        newErrors.password = "Password is required.";
+    }
 
-setErrors(newErrors);
-setMessage("");
+    setErrors(newErrors);
+    setMessage("");
 
-if (Object.keys(newErrors).length === 0) {
-  setMessage("wala pa ngani connection");
-}
+    if (Object.keys(newErrors).length > 0) {
+        return;
+    }
 
+    router.post(
+        "/faculty/login",
+        {
+            email: email.trim(),
+            password,
+            remember: rememberMe,
+        },
+        {
+            preserveScroll: true,
+
+            onStart: () => {
+                setLoading(true);
+            },
+
+            onError: (serverErrors) => {
+                setErrors(serverErrors);
+            },
+
+            onFinish: () => {
+                setLoading(false);
+            },
+        }
+    );
 };
+
 
 return ( <div className="min-h-screen bg-[#F4F6F8] text-[#142A43]"> <div className="grid min-h-screen lg:grid-cols-2">
 

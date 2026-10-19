@@ -6,24 +6,72 @@ use App\Http\Controllers\StudentController;
 use App\Http\Controllers\SectionController;
 use App\Http\Controllers\FacultyController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Auth\AdminLoginController;
+use App\Http\Controllers\Auth\FacultyLoginController;
+use App\Http\Controllers\Auth\FacultyPasswordController;
+use App\Http\Controllers\Faculty\TaskController;
+use Inertia\Inertia;
+
+// Faculty password setup form
+Route::get('/faculty/setup-password/{token}', [FacultyPasswordController::class, 'edit'])
+    ->middleware('guest')
+    ->name('faculty.password.setup');
+
+// Save new Faculty password
+Route::post('/faculty/setup-password', [FacultyPasswordController::class, 'update'])
+    ->middleware(['guest', 'throttle:5,1'])
+    ->name('faculty.password.update');
 
 /*
-|--------------------------------------------------------------------------
 | Authentication Pages (Teammate)
 |--------------------------------------------------------------------------
 */
 
-Route::inertia('/login', 'login')->name('login');
 
 Route::inertia('/forgot-password', 'forgotPassword')
     ->name('password.request');
 
+// Faculty Login Page
 Route::inertia('/faculty/login', 'facultyLogin')
     ->name('faculty.login');
+
+// Process Faculty Login
+Route::post('/faculty/login', [FacultyLoginController::class, 'login'])
+    ->middleware('throttle:5,1')
+    ->name('faculty.login.submit');
 
 Route::inertia('/faculty/forgot-password', 'facultyForgotPassword')
     ->name('faculty.password.request');
 
+    
+
+/*
+|--------------------------------------------------------------------------
+| Admin Authentication
+|--------------------------------------------------------------------------
+*/
+
+// Admin Login
+Route::middleware('guest')->group(function () {
+
+    Route::inertia('/login', 'login')
+        ->name('login');
+
+    Route::post('/login', [AdminLoginController::class, 'login'])
+        ->middleware('throttle:5,1')
+        ->name('admin.login.submit');
+
+});
+
+// Admin Logout - OUTSIDE the guest group
+Route::post('/logout', [AdminLoginController::class, 'logout'])
+    ->middleware('auth')
+    ->name('logout');
+
+
+
+
+Route::middleware(['auth', 'admin'])->group(function () {
 /*
 |--------------------------------------------------------------------------
 | Admin Dashboard
@@ -33,13 +81,18 @@ Route::inertia('/faculty/forgot-password', 'facultyForgotPassword')
 Route::redirect('/', '/dashboard');
 
 Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->middleware(['auth', 'admin'])
     ->name('dashboard');
+
+
+    
 
 /*
 |--------------------------------------------------------------------------
 | Student Management
 |--------------------------------------------------------------------------
 */
+
 
 Route::get('/students', [StudentController::class, 'index'])
     ->name('students');
@@ -56,6 +109,8 @@ Route::patch('/students/{student}/status', [StudentController::class, 'updateSta
 Route::delete('/students/{student}', [StudentController::class, 'destroy'])
     ->name('students.destroy');
 
+
+
 /*
 |--------------------------------------------------------------------------
 | Faculty Management
@@ -69,6 +124,7 @@ Route::post('/faculty', [FacultyController::class, 'store'])
     ->name('faculty.store');
 
 Route::get('/faculty/{faculty}', [FacultyController::class, 'show'])
+    ->whereNumber('faculty')
     ->name('faculty.show');
 
 Route::put('/faculty/{faculty}', [FacultyController::class, 'update'])
@@ -107,18 +163,70 @@ Route::patch('/sections/{section}/status', [SectionController::class, 'updateSta
 Route::delete('/sections/{section}', [SectionController::class, 'destroy'])
     ->name('sections.destroy');
 
+    });
+
+
 /*
 |--------------------------------------------------------------------------
-| Faculty Pages (Teammate)
+| Faculty Portal
 |--------------------------------------------------------------------------
 */
 
-Route::inertia('/faculty/dashboard', 'facultyDashboard')
-    ->name('faculty.dashboard');
+Route::middleware(['auth', 'faculty'])->group(function () {
 
-Route::inertia('/faculty/content', 'contentManagement')
-    ->name('faculty.content');
+    // Faculty Dashboard
+    Route::inertia('/faculty/dashboard', 'facultyDashboard')
+        ->name('faculty.dashboard');
 
-Route::inertia('/faculty/tasks', 'facultyTaskManagement')
-    ->name('faculty.tasks');
+    // Faculty Content Management
+    Route::inertia('/faculty/content', 'contentManagement')
+        ->name('faculty.content');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Faculty Task Management
+    |--------------------------------------------------------------------------
+    */
+
+    // Display Task Management
+    Route::get('/faculty/tasks', [TaskController::class, 'index'])
+        ->name('faculty.tasks');
+
+    // Create Task
+    Route::post('/faculty/tasks', [TaskController::class, 'store'])
+        ->name('faculty.tasks.store');
+
+    // Update Task
+    Route::post('/faculty/tasks/{id}', [TaskController::class, 'update'])
+        ->whereNumber('id')
+        ->name('faculty.tasks.update');
+
+    // Publish Task
+    Route::patch('/faculty/tasks/{id}/publish', [TaskController::class, 'publish'])
+        ->whereNumber('id')
+        ->name('faculty.tasks.publish');
+
+    // Cancel Task
+    Route::patch('/faculty/tasks/{id}/cancel', [TaskController::class, 'cancel'])
+        ->whereNumber('id')
+        ->name('faculty.tasks.cancel');
+
+    // Delete Task
+    Route::delete('/faculty/tasks/{id}', [TaskController::class, 'destroy'])
+        ->whereNumber('id')
+        ->name('faculty.tasks.destroy');
+
+    // Download Task Attachment
+    Route::get('/faculty/tasks/{id}/attachment', [TaskController::class, 'downloadAttachment'])
+        ->whereNumber('id')
+        ->name('faculty.tasks.attachment');
+
+});
+
+
+// Faculty Logout
+Route::post('/faculty/logout', [FacultyLoginController::class, 'logout'])
+    ->middleware(['auth', 'faculty'])
+    ->name('faculty.logout');
 

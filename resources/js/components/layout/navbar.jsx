@@ -116,31 +116,7 @@ export default function Navbar({
       {/* Right Side */}
       <div className="flex shrink-0 items-center gap-3">
         {/* Notification */}
-        <button
-          type="button"
-          className="
-            relative flex h-10 w-10 items-center
-            justify-center rounded-xl border
-            border-[#3A506A] bg-white/[0.08]
-            text-[#AFC0D2] transition-all duration-200
-            hover:bg-white/[0.14] hover:text-white
-            active:scale-95
-          "
-          aria-label="Notifications"
-        >
-          <Icon
-            name="bell"
-            className="h-[18px] w-[18px]"
-          />
-
-          <span
-            className="
-              absolute right-2 top-2 h-2 w-2
-              rounded-full border-2 border-[#142A43]
-              bg-[#6FA58F]
-            "
-          />
-        </button>
+        
 
         {/* User Profile */}
         <div

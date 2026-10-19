@@ -21,10 +21,15 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'email', 'password'])]
+#[Fillable(['name', 'email', 'password', 'role'])]
 #[Hidden(['password', 'remember_token'])]
+
 class User extends Authenticatable
 {
+    public function faculty()
+{
+    return $this->hasOne(\App\Models\Faculty::class);
+}
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
@@ -35,6 +40,8 @@ class User extends Authenticatable
      */
     protected function casts(): array
     {
+
+    
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',

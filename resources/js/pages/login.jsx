@@ -1,4 +1,4 @@
-import { Link } from "@inertiajs/react";
+import { Link, router } from "@inertiajs/react";
 import { useState } from "react";
 
 import {
@@ -30,28 +30,70 @@ export default function Login() {
     }
   `;
 
-  const handleSubmit = (event) => {
+  
+const handleSubmit = (event) => {
     event.preventDefault();
 
     const newErrors = {};
 
+    // Validate email
     if (!email.trim()) {
-      newErrors.email = "Email address is required.";
+        newErrors.email = "Email address is required.";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      newErrors.email = "Please enter a valid email address.";
+        newErrors.email = "Please enter a valid email address.";
     }
 
+    // Validate password
     if (!password) {
-      newErrors.password = "Password is required.";
+        newErrors.password = "Password is required.";
     }
 
     setErrors(newErrors);
     setMessage("");
 
-    if (Object.keys(newErrors).length === 0) {
-      setMessage("wala pa ngani connection");
+    // Stop if validation fails
+    if (Object.keys(newErrors).length > 0) {
+        return;
     }
-  };
+
+    // Send login request to Laravel
+    router.post(
+        "/login",
+        {
+            email: email.trim(),
+            password: password,
+            remember: rememberMe,
+        },
+        {
+            preserveScroll: true,
+
+            onStart: () => {
+                setLoading(true);
+            },
+
+            onSuccess: () => {
+                setPassword("");
+            },
+
+            onError: (serverErrors) => {
+                setErrors(serverErrors);
+
+                if (serverErrors.email) {
+                    setMessage(serverErrors.email);
+                } else if (serverErrors.password) {
+                    setMessage(serverErrors.password);
+                } else {
+                    setMessage("Unable to log in. Please try again.");
+                }
+            },
+
+            onFinish: () => {
+                setLoading(false);
+            },
+        }
+    );
+};
+
 
   return (
     <div className="min-h-screen bg-[#F4F6F8] text-[#142A43]">

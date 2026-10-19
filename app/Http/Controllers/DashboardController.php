@@ -12,7 +12,9 @@ use App\Models\ActivityLog;
 class DashboardController extends Controller
 {
     public function index()
+    
     {
+    
         $students = Student::with('sectionRecord')
             ->latest()
             ->take(5)
@@ -30,21 +32,31 @@ class DashboardController extends Controller
                 ];
             });
 
-        $faculty = Faculty::latest()
-            ->take(5)
-            ->get()
-            ->map(function ($member) {
-                return [
-                    'id' => $member->faculty_number,
-                    'name' => $member->name,
-                    'username' => $member->email,
-                    'role' => 'Faculty',
-                    'section' => '—',
-                    'status' => $member->status,
-                    'dateAdded' => $member->created_at?->format('F d, Y'),
-                    'createdAt' => $member->created_at?->toISOString(),
-                ];
-            });
+            
+
+
+        
+$faculty = Faculty::with('sections')
+    ->latest()
+    ->take(5)
+    ->get()
+    ->map(function ($member) {
+        return [
+            'id' => $member->faculty_number,
+            'name' => $member->name,
+            'username' => $member->email,
+            'role' => 'Faculty',
+
+            'section' => $member->sections
+                ->pluck('section_name')
+                ->implode(', ') ?: 'Unassigned',
+
+            'status' => $member->status,
+            'dateAdded' => $member->created_at?->format('F d, Y'),
+            'createdAt' => $member->created_at?->toISOString(),
+        ];
+    });
+
 
         $recentUsers = $students
             ->concat($faculty)
