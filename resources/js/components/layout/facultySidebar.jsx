@@ -33,9 +33,9 @@ const menuItems = [
     path: "/faculty/results",
   },
   {
-    label: "My Accounts",
+    label: "My Account",
     icon: "user-round",
-    path: "/faculty/account",
+    path: "/faculty/my-account",
   },
 ];
 

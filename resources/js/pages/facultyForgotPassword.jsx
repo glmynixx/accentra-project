@@ -32,7 +32,7 @@ export default function FacultyForgotPassword() {
 
     setSubmitted(true);
     setMessage(
-      "wala pa ngani"
+      "Your password reset request has been submitted successfully. Please follow the instructions provided to regain access to your account."
     );
   };
 
