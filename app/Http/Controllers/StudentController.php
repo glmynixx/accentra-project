@@ -3,6 +3,13 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Student;
+use App\Mail\NewAccountCredentials;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
+use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use App\Models\ActivityLog;
@@ -61,33 +68,52 @@ class StudentController extends Controller
             'email' => 'required|email|max:255|unique:students,email',
             'course' => 'required|string|max:100',
             'year_level' => 'required|string|max:50',
-            
             'contact_number' => 'nullable|string|max:30',
             'address' => 'nullable|string|max:255',
             'status' => 'required|in:Active,Inactive',
             'section_id' => [
-            'required',
-            'integer',
-            Rule::exists('sections', 'id')->where('status', 'Active'),
+                'required',
+                'integer',
+                Rule::exists('sections', 'id')->where('status', 'Active'),
             ],
             'section' => 'nullable|string|max:255',
         ]);
 
-        Student::create($validated);
+        $password = Str::password(20);
 
-        
-        ActivityLog::create([
-            'actor' => 'Admin',
-            'action' => 'added a new student',
-            'module' => 'Student Management',
-            'description' => $validated['name'],
-            'icon' => 'user-plus',
-        ]);
+        try {
+            DB::transaction(function () use ($validated, $password) {
+                $student = Student::create([
+                    ...$validated,
+                    'password' => Hash::make($password),
+                ]);
 
+                ActivityLog::create([
+                    'actor' => 'Admin',
+                    'action' => 'added a new student',
+                    'module' => 'Student Management',
+                    'description' => $student->name,
+                    'icon' => 'user-plus',
+                ]);
+
+                Mail::to($student->email)->send(new NewAccountCredentials(
+                    $student->name,
+                    $student->email,
+                    $password,
+                    'Student',
+                ));
+            });
+        } catch (TransportExceptionInterface $exception) {
+            report($exception);
+
+            throw ValidationException::withMessages([
+                'email' => 'The student account was not created because its credentials could not be emailed. Check the mail configuration and try again.',
+            ]);
+        }
 
         return redirect()
             ->route('students')
-            ->with('success', 'Student added successfully!');
+            ->with('success', 'Student added. Login credentials were sent to the student email address.');
     }
 
     // 3. View student information

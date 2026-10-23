@@ -2,7 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\NewAccountCredentials;
 use App\Models\User;
+use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\DB;
 use App\Models\Faculty;
 use Illuminate\Http\Request;
@@ -32,8 +36,6 @@ public function index()
 
 public function store(Request $request)
 {
-
-
     $validated = $request->validate([
         'faculty_number' => [
             'required', 'string', 'max:50',
@@ -49,49 +51,50 @@ public function store(Request $request)
         'contact_number' => 'nullable|string|max:30',
         'address' => 'nullable|string',
         'status' => 'required|in:Active,Inactive',
-        'password' => [
-    'required',
-    'string',
-    'min:12',
-    'confirmed',
-],
     ]);
-    
 
-    DB::transaction(function () use ($validated) {
+    $password = Str::password(20);
 
-        // Create Laravel login account
-        $user = User::create([
-    'name' => $validated['name'],
-    'email' => $validated['email'],
-    'password' => Hash::make($validated['password']),
-    'role' => 'Faculty',
-]);
+    try {
+        DB::transaction(function () use ($validated, $password) {
+            $user = User::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => Hash::make($password),
+                'role' => 'Faculty',
+            ]);
 
-        // Create Faculty profile and link to User
-       $faculty = Faculty::create([
-    ...collect($validated)->except([
-        'password',
-        'password_confirmation',
-    ])->all(),
-    'user_id' => $user->id,
-]);
+            $faculty = Faculty::create([
+                ...$validated,
+                'user_id' => $user->id,
+            ]);
 
-        // Record Admin activity
-        ActivityLog::create([
-            'actor' => 'Admin',
-            'action' => 'added a new faculty member',
-            'module' => 'Faculty Management',
-            'description' => $faculty->name,
-            'icon' => 'user-plus',
+            ActivityLog::create([
+                'actor' => 'Admin',
+                'action' => 'added a new faculty member',
+                'module' => 'Faculty Management',
+                'description' => $faculty->name,
+                'icon' => 'user-plus',
+            ]);
+
+            Mail::to($faculty->email)->send(new NewAccountCredentials(
+                $faculty->name,
+                $faculty->email,
+                $password,
+                'Faculty',
+            ));
+        });
+    } catch (TransportExceptionInterface $exception) {
+        report($exception);
+
+        throw ValidationException::withMessages([
+            'email' => 'The faculty account was not created because its credentials could not be emailed. Check the mail configuration and try again.',
         ]);
-
-        
-    });
+    }
 
     return redirect()
         ->route('faculty')
-        ->with('success', 'Faculty account created successfully.');
+        ->with('success', 'Faculty account created. Login credentials were sent to the faculty email address.');
 }
 
 

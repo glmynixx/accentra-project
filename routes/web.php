@@ -1,16 +1,17 @@
 
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\StudentController;
-use App\Http\Controllers\SectionController;
-use App\Http\Controllers\FacultyController;
-use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Auth\AdminLoginController;
 use App\Http\Controllers\Auth\FacultyLoginController;
 use App\Http\Controllers\Auth\FacultyPasswordController;
+use App\Http\Controllers\Auth\PasswordOtpController;
+use App\Http\Controllers\Auth\StudentLoginController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Faculty\TaskController;
-use Inertia\Inertia;
+use App\Http\Controllers\FacultyController;
+use App\Http\Controllers\SectionController;
+use App\Http\Controllers\StudentController;
+use Illuminate\Support\Facades\Route;
 
 // Faculty password setup form
 Route::get('/faculty/setup-password/{token}', [FacultyPasswordController::class, 'edit'])
@@ -27,9 +28,16 @@ Route::post('/faculty/setup-password', [FacultyPasswordController::class, 'updat
 |--------------------------------------------------------------------------
 */
 
-
 Route::inertia('/forgot-password', 'forgotPassword')
     ->name('password.request');
+
+Route::post('/forgot-password/send-otp', [PasswordOtpController::class, 'sendAdminOtp'])
+    ->middleware('throttle:3,1')
+    ->name('password.otp.send');
+
+Route::post('/forgot-password/reset', [PasswordOtpController::class, 'resetAdminPassword'])
+    ->middleware('throttle:5,1')
+    ->name('password.otp.reset');
 
 // Faculty Login Page
 Route::inertia('/faculty/login', 'facultyLogin')
@@ -43,7 +51,41 @@ Route::post('/faculty/login', [FacultyLoginController::class, 'login'])
 Route::inertia('/faculty/forgot-password', 'facultyForgotPassword')
     ->name('faculty.password.request');
 
-    
+Route::post('/faculty/forgot-password/send-otp', [PasswordOtpController::class, 'sendFacultyOtp'])
+    ->middleware('throttle:3,1')
+    ->name('faculty.password.otp.send');
+
+Route::post('/faculty/forgot-password/reset', [PasswordOtpController::class, 'resetFacultyPassword'])
+    ->middleware('throttle:5,1')
+    ->name('faculty.password.otp.reset');
+
+Route::middleware('guest:student')->group(function () {
+    Route::inertia('/student/login', 'studentLogin')
+        ->name('student.login');
+
+    Route::post('/student/login', [StudentLoginController::class, 'login'])
+        ->middleware('throttle:5,1')
+        ->name('student.login.submit');
+
+    Route::inertia('/student/forgot-password', 'studentForgotPassword')
+        ->name('student.password.request');
+});
+
+Route::post('/student/forgot-password/send-otp', [PasswordOtpController::class, 'sendStudentOtp'])
+    ->middleware('throttle:3,1')
+    ->name('student.password.otp.send');
+
+Route::post('/student/forgot-password/reset', [PasswordOtpController::class, 'resetStudentPassword'])
+    ->middleware('throttle:5,1')
+    ->name('student.password.otp.reset');
+
+Route::middleware(['auth:student', 'student'])->group(function () {
+    Route::inertia('/student/dashboard', 'studentDashboard')
+        ->name('student.dashboard');
+
+    Route::post('/student/logout', [StudentLoginController::class, 'logout'])
+        ->name('student.logout');
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -51,8 +93,10 @@ Route::inertia('/faculty/forgot-password', 'facultyForgotPassword')
 |--------------------------------------------------------------------------
 */
 
+Route::redirect('/', '/student/login');
+
 // Admin Login
-Route::middleware('guest')->group(function () {
+Route::middleware(['guest', 'admin.ip'])->group(function () {
 
     Route::inertia('/login', 'login')
         ->name('login');
@@ -68,103 +112,91 @@ Route::post('/logout', [AdminLoginController::class, 'logout'])
     ->middleware('auth')
     ->name('logout');
 
-
-
-
 Route::middleware(['auth', 'admin'])->group(function () {
-/*
-|--------------------------------------------------------------------------
-| Admin Dashboard
-|--------------------------------------------------------------------------
-*/
+    /*
+    |--------------------------------------------------------------------------
+    | Admin Dashboard
+    |--------------------------------------------------------------------------
+    */
 
-Route::redirect('/', '/dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])
+        ->middleware(['auth', 'admin'])
+        ->name('dashboard');
 
-Route::get('/dashboard', [DashboardController::class, 'index'])
-    ->middleware(['auth', 'admin'])
-    ->name('dashboard');
+    /*
+    |--------------------------------------------------------------------------
+    | Student Management
+    |--------------------------------------------------------------------------
+    */
 
+    Route::get('/students', [StudentController::class, 'index'])
+        ->name('students');
 
-    
+    Route::post('/students', [StudentController::class, 'store'])
+        ->name('students.store');
 
-/*
-|--------------------------------------------------------------------------
-| Student Management
-|--------------------------------------------------------------------------
-*/
+    Route::put('/students/{student}', [StudentController::class, 'update'])
+        ->name('students.update');
 
+    Route::patch('/students/{student}/status', [StudentController::class, 'updateStatus'])
+        ->name('students.status');
 
-Route::get('/students', [StudentController::class, 'index'])
-    ->name('students');
+    Route::delete('/students/{student}', [StudentController::class, 'destroy'])
+        ->name('students.destroy');
 
-Route::post('/students', [StudentController::class, 'store'])
-    ->name('students.store');
+    /*
+    |--------------------------------------------------------------------------
+    | Faculty Management
+    |--------------------------------------------------------------------------
+    */
 
-Route::put('/students/{student}', [StudentController::class, 'update'])
-    ->name('students.update');
+    Route::get('/faculty', [FacultyController::class, 'index'])
+        ->name('faculty');
 
-Route::patch('/students/{student}/status', [StudentController::class, 'updateStatus'])
-    ->name('students.status');
+    Route::post('/faculty', [FacultyController::class, 'store'])
+        ->name('faculty.store');
 
-Route::delete('/students/{student}', [StudentController::class, 'destroy'])
-    ->name('students.destroy');
+    Route::get('/faculty/{faculty}', [FacultyController::class, 'show'])
+        ->whereNumber('faculty')
+        ->name('faculty.show');
 
+    Route::put('/faculty/{faculty}', [FacultyController::class, 'update'])
+        ->name('faculty.update');
 
+    Route::patch('/faculty/{faculty}/status', [FacultyController::class, 'updateStatus'])
+        ->name('faculty.status');
 
-/*
-|--------------------------------------------------------------------------
-| Faculty Management
-|--------------------------------------------------------------------------
-*/
+    Route::delete('/faculty/{faculty}', [FacultyController::class, 'destroy'])
+        ->name('faculty.destroy');
 
-Route::get('/faculty', [FacultyController::class, 'index'])
-    ->name('faculty');
+    Route::put('/faculty/{faculty}/sections', [FacultyController::class, 'assignSections'])
+        ->name('faculty.sections');
 
-Route::post('/faculty', [FacultyController::class, 'store'])
-    ->name('faculty.store');
+    /*
+    |--------------------------------------------------------------------------
+    | Section Management
+    |--------------------------------------------------------------------------
+    */
 
-Route::get('/faculty/{faculty}', [FacultyController::class, 'show'])
-    ->whereNumber('faculty')
-    ->name('faculty.show');
+    Route::get('/sections', [SectionController::class, 'index'])
+        ->name('sections.index');
 
-Route::put('/faculty/{faculty}', [FacultyController::class, 'update'])
-    ->name('faculty.update');
+    Route::post('/sections', [SectionController::class, 'store'])
+        ->name('sections.store');
 
-Route::patch('/faculty/{faculty}/status', [FacultyController::class, 'updateStatus'])
-    ->name('faculty.status');
+    Route::get('/sections/{section}', [SectionController::class, 'show'])
+        ->name('sections.show');
 
-Route::delete('/faculty/{faculty}', [FacultyController::class, 'destroy'])
-    ->name('faculty.destroy');
+    Route::put('/sections/{section}', [SectionController::class, 'update'])
+        ->name('sections.update');
 
-Route::put('/faculty/{faculty}/sections', [FacultyController::class, 'assignSections'])
-    ->name('faculty.sections');
+    Route::patch('/sections/{section}/status', [SectionController::class, 'updateStatus'])
+        ->name('sections.status');
 
-/*
-|--------------------------------------------------------------------------
-| Section Management
-|--------------------------------------------------------------------------
-*/
+    Route::delete('/sections/{section}', [SectionController::class, 'destroy'])
+        ->name('sections.destroy');
 
-Route::get('/sections', [SectionController::class, 'index'])
-    ->name('sections');
-
-Route::post('/sections', [SectionController::class, 'store'])
-    ->name('sections.store');
-
-Route::get('/sections/{section}', [SectionController::class, 'show'])
-    ->name('sections.show');
-
-Route::put('/sections/{section}', [SectionController::class, 'update'])
-    ->name('sections.update');
-
-Route::patch('/sections/{section}/status', [SectionController::class, 'updateStatus'])
-    ->name('sections.status');
-
-Route::delete('/sections/{section}', [SectionController::class, 'destroy'])
-    ->name('sections.destroy');
-
-    });
-
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -181,7 +213,6 @@ Route::middleware(['auth', 'faculty'])->group(function () {
     // Faculty Content Management
     Route::inertia('/faculty/content', 'contentManagement')
         ->name('faculty.content');
-
 
     /*
     |--------------------------------------------------------------------------
@@ -224,9 +255,7 @@ Route::middleware(['auth', 'faculty'])->group(function () {
 
 });
 
-
 // Faculty Logout
 Route::post('/faculty/logout', [FacultyLoginController::class, 'logout'])
     ->middleware(['auth', 'faculty'])
     ->name('faculty.logout');
-
