@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { usePage, router } from "@inertiajs/react";
 
 import {
   Search,
@@ -24,10 +25,65 @@ import MobileOverlay from "../components/layout/mobileOverlay";
 import { students as initialStudents } from "../assets/data/studentData";
 
 export default function StudentManagement() {
+  const {
+    students: databaseStudents = [],
+    availableSections = [],
+   } = usePage().props;
+  
+useEffect(() => {
+    const records = Array.isArray(databaseStudents)
+        ? databaseStudents
+        : databaseStudents?.data ?? [];
+
+    const updatedStudents = records.map((student) => ({
+        ...student,
+        databaseId: student.id,
+        id: student.student_number,
+        yearLevel: student.year_level,
+        contactNumber: student.contact_number ?? "",
+        sectionId: student.section_id ?? "",
+        section: student.section_record?.section_name
+            ?? student.section
+            ?? "Unassigned",
+        dateAdded: student.created_at
+            ? new Date(student.created_at).toLocaleDateString()
+            : "",
+    }));
+
+    setStudents(updatedStudents);
+}, [databaseStudents]);
+
+  
+
+console.log("STUDENT DATA TEST:", databaseStudents);
+
+
+  
+  
+  const [students, setStudents] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState("Students");
 
-  const [students, setStudents] = useState(initialStudents);
+  useEffect(() => {
+    const records = Array.isArray(databaseStudents)
+        ? databaseStudents
+        : databaseStudents?.data ?? [];
+
+    const updatedStudents = records.map((student) => ({
+        ...student,
+        databaseId: student.id,
+        id: student.student_number,
+        yearLevel: student.year_level,
+        contactNumber: student.contact_number ?? "",
+        dateAdded: student.created_at
+            ? new Date(student.created_at).toLocaleDateString()
+            : "",
+    }));
+
+    setStudents(updatedStudents);
+}, [databaseStudents]);
+
+
   const [searchValue, setSearchValue] = useState("");
 
   const [sectionFilter, setSectionFilter] = useState("All Sections");
@@ -53,6 +109,7 @@ export default function StudentManagement() {
     yearLevel: "",
     contactNumber: "",
     address: "",
+    sectionId: "",
   });
 
   /* ========================================================= */
@@ -81,16 +138,17 @@ export default function StudentManagement() {
         !query ||
         [
           student.id,
-          student.name,
-          student.email,
-          student.section,
-          student.course,
-          student.yearLevel,
-          student.status,
-        ]
-          .join(" ")
-          .toLowerCase()
-          .includes(query);
+        student.name,
+        student.email,
+        student.section,
+        student.course,
+        student.yearLevel,
+        student.status,
+    ]
+        .map((value) => String(value ?? ""))
+        .join(" ")
+        .toLowerCase()
+        .includes(query);
 
       const matchesSection =
         sectionFilter === "All Sections" ||
@@ -100,7 +158,8 @@ export default function StudentManagement() {
         yearFilter === "All Year Levels" ||
         student.yearLevel === yearFilter;
 
-      const matchesStatus =
+        const matchesStatus =
+      
         statusFilter === "All Status" ||
         student.status === statusFilter;
 
@@ -168,7 +227,7 @@ export default function StudentManagement() {
 
   const openAddModal = () => {
     setFormData({
-      id: `STD-${String(students.length + 1).padStart(3, "0")}`,
+      id: "",
       name: "",
       email: "",
       section: "",
@@ -194,6 +253,7 @@ export default function StudentManagement() {
       yearLevel: student.yearLevel,
       contactNumber: student.contactNumber,
       address: student.address,
+      sectionId: student.section_id ?? "",
     });
 
     setModalType("edit");
@@ -222,48 +282,80 @@ export default function StudentManagement() {
   /* ADD & EDIT STUDENT */
   /* ========================================================= */
 
-  const handleSubmit = (event) => {
+  
+const handleSubmit = (event) => {
     event.preventDefault();
 
-    if (modalType === "add") {
-      const newStudent = {
-        ...formData,
-        status: "Active",
-        dateAdded: new Date().toLocaleDateString("en-US", {
-          month: "long",
-          day: "numeric",
-          year: "numeric",
-        }),
-      };
+    const studentData = {
+        student_number: formData.id,
+        name: formData.name,
+        email: formData.email,
+        course: formData.course,
+        year_level: formData.yearLevel,
+        section_id: formData.sectionId
+          ? Number(formData.sectionId)
+          : null,
 
-      setStudents((previous) => [newStudent, ...previous]);
-      setCurrentPage(1);
+      section:
+          availableSections.find(
+              (section) =>
+                  String(section.id) === String(formData.sectionId)
+          )?.section_name ?? "",
+              contact_number: formData.contactNumber,
+              address: formData.address,
+              status: formData.status || "Active",
+          };
+
+    if (modalType === "add") {
+        router.post("/students", studentData, {
+            preserveScroll: true,
+
+            onSuccess: () => {
+                closeModal();
+                setCurrentPage(1);
+                alert("Student added successfully!");
+            },
+
+            onError: (errors) => {
+                console.error("Add student errors:", errors);
+                alert(
+                    Object.values(errors).join("\\n") ||
+                    "Unable to add student."
+                );
+            },
+        });
     }
 
     if (modalType === "edit") {
-      setStudents((previous) =>
-        previous.map((student) =>
-          student.id === selectedStudent.id
-            ? {
-                ...student,
-                ...formData,
-              }
-            : student
-        )
-      );
+        if (!selectedStudent?.databaseId) {
+            alert("Student database ID is missing.");
+            return;
+        }
 
-      setSelectedStudent((current) =>
-        current
-          ? {
-              ...current,
-              ...formData,
-            }
-          : current
-      );
-    }
+        router.put(`/students/${selectedStudent.databaseId}`, studentData, {
+            preserveScroll: true,
 
+           onSuccess: () => {
     closeModal();
-  };
+
+    router.reload({
+        only: ["students"],
+        preserveScroll: true,
+    });
+
+    alert("Student updated successfully!");
+},
+
+            onError: (errors) => {
+                console.error("Edit student errors:", errors);
+                alert(
+                    Object.values(errors).join("\n") ||
+                    "Unable to update student."
+                );
+            },
+        });
+    }
+};
 
   /* ========================================================= */
   /* ACCOUNT STATUS */
@@ -271,46 +363,70 @@ export default function StudentManagement() {
 
   const toggleAccountStatus = (student) => {
     const newStatus =
-      student.status === "Active" ? "Inactive" : "Active";
+        student.status === "Active" ? "Inactive" : "Active";
 
-    setStudents((previous) =>
-      previous.map((item) =>
-        item.id === student.id
-          ? {
-              ...item,
-              status: newStatus,
-            }
-          : item
-      )
-    );
+    router.patch(
+        `/students/${student.databaseId}/status`,
+        { status: newStatus },
+        {
+            preserveScroll: true,
 
-    setSelectedStudent((current) =>
-      current?.id === student.id
-        ? {
-            ...current,
-            status: newStatus,
-          }
-        : current
+            onSuccess: () => {
+                setStudents((previous) =>
+                    previous.map((item) =>
+                        item.databaseId === student.databaseId
+                            ? { ...item, status: newStatus }
+                            : item
+                    )
+                );
+
+                setSelectedStudent((current) =>
+                    current?.databaseId === student.databaseId
+                        ? { ...current, status: newStatus }
+                        : current
+                );
+            },
+
+            onError: (errors) => {
+                console.error("Status update error:", errors);
+                alert("Unable to update student status.");
+            },
+        }
     );
-  };
+};
 
   /* ========================================================= */
   /* DELETE */
   /* ========================================================= */
 
-  const confirmDelete = () => {
-    if (!deleteStudent) return;
+  
 
-    setStudents((previous) =>
-      previous.filter((student) => student.id !== deleteStudent.id)
-    );
 
-    setDeleteStudent(null);
 
-    if (paginatedStudents.length === 1 && currentPage > 1) {
-      setCurrentPage((page) => page - 1);
-    }
-  };
+
+const confirmDelete = () => {
+    if (!deleteStudent?.databaseId) return;
+
+    router.delete(`/students/${deleteStudent.databaseId}`, {
+        preserveScroll: true,
+
+        onSuccess: () => {
+            setDeleteStudent(null);
+            setCurrentPage(1);
+        },
+
+        onError: (errors) => {
+            console.error("Delete student error:", errors);
+            alert(
+                Object.values(errors).join("\n") ||
+                "Unable to delete student."
+            );
+        },
+    });
+};
+
+
+
 
   /* ========================================================= */
   /* RESET CREDENTIALS */
@@ -351,6 +467,8 @@ export default function StudentManagement() {
     focus:ring-4
     focus:ring-[#1B3553]/10
   `;
+
+  
 
   return (
     <div className="min-h-screen bg-[#EEF2F6]">
@@ -1040,7 +1158,7 @@ export default function StudentManagement() {
                   {paginatedStudents.length > 0 ? (
                     paginatedStudents.map((student) => (
                       <tr
-                        key={student.id}
+                        key={student.student_number}
                         className="
                           border-b
                           border-[#E2E8EF]
@@ -1166,24 +1284,13 @@ export default function StudentManagement() {
                               title="View Student"
                               aria-label="View Student"
                               onClick={() => openViewModal(student)}
-                              className="
-                                flex
-                                h-9
-                                w-9
-                                items-center
-                                justify-center
-                                rounded-lg
-                                border
-                                border-[#BFCFDF]
-                                bg-[#E6EDF4]
-                                text-[#1B3553]
-                                transition-all
-                                duration-200
-                                hover:border-[#91A9C0]
-                                hover:bg-[#D5E1EC]
-                                hover:text-[#142A43]
-                                active:scale-95
-                              "
+                             className="
+                            flex h-8 w-8 shrink-0 items-center justify-center
+                            rounded-lg border border-[#142A43] bg-[#1B3553]
+                            text-white shadow-sm transition-all duration-200
+                            hover:border-[#0F2035] hover:bg-[#142A43]
+                            active:scale-95
+                  "
                             >
                               <Eye size={17} />
                             </button>
@@ -1194,88 +1301,65 @@ export default function StudentManagement() {
                               aria-label="Edit Student"
                               onClick={() => openEditModal(student)}
                               className="
-                                flex
-                                h-9
-                                w-9
-                                items-center
-                                justify-center
-                                rounded-lg
-                                border
-                                border-blue-200
-                                bg-blue-50
-                                text-blue-600
-                                transition-all
-                                duration-200
-                                hover:bg-blue-100
-                                hover:text-blue-700
-                                active:scale-95
-                              "
+                          flex h-8 w-8 shrink-0 items-center justify-center
+                          rounded-lg border border-[#7C2D12] bg-[#9A3412]
+                          text-white shadow-sm transition-all duration-200
+                          hover:border-[#65240F] hover:bg-[#7C2D12]
+                          active:scale-95
+                        "
                             >
                               <Pencil size={17} />
                             </button>
 
                             <button
-                              type="button"
-                              title={
-                                student.status === "Active"
-                                  ? "Deactivate Account"
-                                  : "Activate Account"
-                              }
-                              aria-label={
-                                student.status === "Active"
-                                  ? "Deactivate Account"
-                                  : "Activate Account"
-                              }
-                              onClick={() =>
-                                toggleAccountStatus(student)
-                              }
-                              className="
-                                flex
-                                h-9
-                                w-9
-                                items-center
-                                justify-center
-                                rounded-lg
-                                border
-                                border-amber-200
-                                bg-amber-50
-                                text-amber-600
-                                transition-all
-                                duration-200
-                                hover:bg-amber-100
-                                hover:text-amber-700
+                          type="button"
+                          title={
+                            student.status === "Active"
+                              ? "Deactivate Account"
+                              : "Activate Account"
+                          }
+                          aria-label={
+                            student.status === "Active"
+                              ? "Deactivate Account"
+                              : "Activate Account"
+                          }
+                          onClick={() => toggleAccountStatus(student)}
+                          className={
+                            student.status === "Active"
+                              ? `
+                                flex h-9 w-9 shrink-0 items-center justify-center
+                                rounded-lg border border-[#475569] bg-[#64748B]
+                                text-white shadow-sm transition-all duration-200
+                                hover:border-[#334155] hover:bg-[#475569]
                                 active:scale-95
-                              "
-                            >
-                              {student.status === "Active" ? (
-                                <UserX size={17} />
-                              ) : (
-                                <UserCheck size={17} />
-                              )}
-                            </button>
-
+                              `
+                              : `
+                                flex h-9 w-9 shrink-0 items-center justify-center
+                                rounded-lg border border-[#166534] bg-[#15803D]
+                                text-white shadow-sm transition-all duration-200
+                                hover:border-[#14532D] hover:bg-[#166534]
+                                active:scale-95
+                              `
+                          }
+                        >
+                          {student.status === "Active" ? (
+                            <UserX size={17} />
+                          ) : (
+                            <UserCheck size={17} />
+                          )}
+                        </button>
                             <button
                               type="button"
                               title="Delete Student"
                               aria-label="Delete Student"
                               onClick={() => setDeleteStudent(student)}
-                              className="
-                                flex
-                                h-9
-                                w-9
-                                items-center
-                                justify-center
-                                rounded-lg
-                                border
-                                border-red-200
-                                bg-red-50
-                                text-red-500
-                                transition-all
-                                duration-200
-                                hover:bg-red-100
-                                hover:text-red-600
-                                active:scale-95
-                              "
+                             className="
+                            flex h-8 w-8 shrink-0 items-center justify-center
+                            rounded-lg border border-[#9F1239] bg-[#BE123C]
+                            text-white shadow-sm transition-all duration-200
+                            hover:border-[#881337] hover:bg-[#9F1239]
+                            active:scale-95
+                          "
                             >
                               <Trash2 size={17} />
                             </button>
@@ -2263,14 +2347,23 @@ export default function StudentManagement() {
                       Section
                     </label>
 
-                    <input
-                      name="section"
-                      value={formData.section}
-                      onChange={handleFormChange}
-                      placeholder="e.g. BSAIS-1A"
-                      required
-                      className={inputClass}
-                    />
+                    
+                    <select
+                        name="sectionId"
+                        value={formData.sectionId}
+                        onChange={handleFormChange}
+                        required
+                        className={inputClass}
+                    >
+                        <option value="">Select Section</option>
+
+                        {availableSections.map((section) => (
+                            <option key={section.id} value={section.id}>
+                                {section.section_name} - {section.course}
+                            </option>
+                        ))}
+                    </select>
+
                   </div>
 
                   {/* COURSE */}

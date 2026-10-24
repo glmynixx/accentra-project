@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import { router, usePage } from "@inertiajs/react";
 import {
     Search,
     Plus,
@@ -24,13 +25,12 @@ import {
 } from "lucide-react";
 
 import FacultyLayout from "../components/layout/facultyLayout";
-import { initialTasks } from "../assets/data/facultyData";
 
 // --- Initial form data --
 const emptyForm = {
     title: "",
     topic: "",
-    section: "",
+    section_id: "",
     due: "",
     points: "100",
     status: "Draft",
@@ -38,18 +38,10 @@ const emptyForm = {
     instructions: "",
     dateCreated: new Date().toISOString().slice(0, 10),
     attachment: null,
+    remove_attachment: false,
 };
 
-const sections = [
-    "BSAIS 11CA",
-    "BSAIS 21CA",
-    "BSAIS 31CA",
-    "BSAIS 41CA",
-    "BSEN 11CE",
-    "BSEN 21CE",
-    "BSEN 31CE",
-    "BSEN 41CE",
-];
+
 
 const inputClass =
     "w-full rounded-xl border border-[#C9D6E4] bg-white px-3.5 py-2.5 text-sm text-[#243A52] outline-none transition-all placeholder:text-[#9AA8B7] focus:border-[#294B70] focus:ring-2 focus:ring-[#294B70]/10 disabled:cursor-not-allowed disabled:bg-[#E7EDF3]";
@@ -249,6 +241,7 @@ function TaskModal({
     task,
     formData,
     setFormData,
+    sections,
     onClose,
     onSubmit,
     onEdit,
@@ -291,24 +284,26 @@ function TaskModal({
         }
 
         setFormData((previous) => ({
-            ...previous,
-            attachment: file,
-        }));
+    ...previous,
+    attachment: file,
+    remove_attachment: false,
+}));
 
         // Allows the same file to be selected again
         event.target.value = "";
     };
 
     const removeAttachment = () => {
-        setFormData((previous) => ({
-            ...previous,
-            attachment: null,
-        }));
+    setFormData((previous) => ({
+        ...previous,
+        attachment: null,
+        remove_attachment: true,
+    }));
 
-        if (fileInputRef.current) {
-            fileInputRef.current.value = "";
-        }
-    };
+    if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+    }
+};
 
     if (!mode) return null;
 
@@ -587,22 +582,24 @@ function TaskModal({
                                 Assigned Section
                             </label>
 
-                            <select
-                                id="task-section"
-                                name="section"
-                                value={formData.section}
-                                onChange={updateField}
-                                required
-                                className={inputClass}
-                            >
-                                <option value="">Select section</option>
+                            
+                        <select
+                            id="task-section"
+                            name="section_id"
+                            value={formData.section_id}
+                            onChange={updateField}
+                            required
+                            className={inputClass}
+                        >
+                            <option value="">Select section</option>
 
-                                {sections.map((section) => (
-                                    <option key={section} value={section}>
-                                        {section}
-                                    </option>
-                                ))}
-                            </select>
+                            {sections.map((section) => (
+                                <option key={section.id} value={section.id}>
+                                    {section.section_name}
+                                </option>
+                            ))}
+                        </select>
+
                         </div>
 
                         <div>
@@ -844,26 +841,29 @@ function ConfirmModal({ type, task, onClose, onConfirm }) {
           ? "Publish Task?"
           : "Cancel Task?";
 
-    const accent = isDelete
-        ? {
-              bg: "bg-[#FBEEF0]",
-              icon: "bg-[#A94A55]",
-              border: "border-[#E2BFC3]",
-              button: "bg-[#A94A55] hover:bg-[#8E3742]",
-          }
-        : isPublish
-          ? {
-                bg: "bg-[#EEF4F9]",
-                icon: "bg-[#294B70]",
-                border: "border-[#BFD2E5]",
-                button: "bg-[#1B3553] hover:bg-[#142A43]",
-            }
-          : {
-                bg: "bg-[#FAF5E9]",
-                icon: "bg-[#8A6A25]",
-                border: "border-[#D7C7A8]",
-                button: "bg-[#8A6A25] hover:bg-[#70551E]",
-            };
+   const accent = isDelete
+    ? {
+          bg: "bg-[#FCE7EA]",
+          icon: "bg-[#BE123C]",
+          border: "border-[#F0B8C0]",
+          button:
+              "border border-[#9F1239] bg-[#BE123C] hover:border-[#881337] hover:bg-[#9F1239]",
+      }
+    : isPublish
+      ? {
+            bg: "bg-[#E3F0EA]",
+            icon: "bg-[#15803D]",
+            border: "border-[#B9D5C8]",
+            button:
+                "border border-[#166534] bg-[#15803D] hover:border-[#14532D] hover:bg-[#166534]",
+        }
+      : {
+            bg: "bg-[#E7EDF3]",
+            icon: "bg-[#64748B]",
+            border: "border-[#C9D6E3]",
+            button:
+                "border border-[#475569] bg-[#64748B] hover:border-[#334155] hover:bg-[#475569]",
+        };
 
     const actionText = isDelete
         ? "Delete Task"
@@ -917,6 +917,22 @@ function ConfirmModal({ type, task, onClose, onConfirm }) {
                 <div
                     className={`flex justify-end gap-2 border-t ${accent.border} bg-white px-5 py-4`}
                 >
+                    {!isDelete && !isPublish ? (
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="
+                            inline-flex items-center justify-center gap-2
+                            rounded-xl border border-[#142A43] bg-[#1B3553]
+                            px-4 py-2.5 text-sm font-semibold text-white
+                            shadow-sm transition-all duration-200
+                            hover:border-[#0F2035] hover:bg-[#142A43]
+                            hover:shadow-md active:scale-[0.98]
+                        "
+                    >
+                        Keep Task
+                    </button>
+                ) : (
                     <button
                         type="button"
                         onClick={onClose}
@@ -924,6 +940,7 @@ function ConfirmModal({ type, task, onClose, onConfirm }) {
                     >
                         Keep Task
                     </button>
+                )}    
 
                     <button
                         type="button"
@@ -940,7 +957,41 @@ function ConfirmModal({ type, task, onClose, onConfirm }) {
 
 // --- Main task management page ---
 export default function TaskManagement() {
-    const [tasks, setTasks] = useState(initialTasks);
+    
+const {
+    tasks: databaseTasks = [],
+    sections: assignedSections = [],
+} = usePage().props;
+
+const sections = assignedSections.map(
+    (section) => section.section_name
+);
+
+const tasks = databaseTasks.map((task) => ({
+    ...task,
+
+    section:
+        typeof task.section === "string"
+            ? task.section
+            : task.section?.section_name ?? "—",
+
+    due: task.due ?? task.due_date ?? "",
+
+    dateCreated:
+        task.dateCreated ??
+        task.created_at?.slice(0, 10) ??
+        "",
+
+    attachment:
+        task.attachment ??
+        (task.attachment_path
+            ? {
+                  name: task.attachment_name,
+                  url: `/faculty/tasks/${task.id}/attachment`,
+              }
+            : null),
+}));
+
     const [searchValue, setSearchValue] = useState("");
     const [statusFilter, setStatusFilter] = useState("All Status");
     const [sectionFilter, setSectionFilter] = useState("All Sections");
@@ -1024,64 +1075,68 @@ export default function TaskManagement() {
     };
 
     const openEditModal = (task) => {
-        setSelectedTask(task);
+    setSelectedTask(task);
 
-        setFormData({
-            ...emptyForm,
-            ...task,
-            points: String(task.points ?? 100),
-            attachment: task.attachment ?? null,
-        });
+    setFormData({
+        ...emptyForm,
+        ...task,
+        section_id: String(task.section_id ?? ""),
+        due: task.due ?? "",
+        points: String(task.points ?? 100),
+        attachment: task.attachment ?? null,
+        remove_attachment: false,
+    });
 
-        setModalType("edit");
-    };
+    setModalType("edit");
+};
 
-    const handleSubmit = (event) => {
-        event.preventDefault();
+    
+const handleSubmit = (event) => {
+    event.preventDefault();
 
-        if (
-            tasks.some(
-                (task) =>
-                    task.title.trim().toLowerCase() ===
-                        formData.title.trim().toLowerCase() &&
-                    task.section === formData.section &&
-                    task.id !== selectedTask?.id,
-            )
-        ) {
-            window.alert(
-                "A task with this title already exists for this section.",
-            );
-            return;
-        }
+    const payload = new FormData();
 
-        if (modalType === "add") {
-            const newTask = {
-                ...formData,
-                id: Math.max(0, ...tasks.map((task) => task.id)) + 1,
-                title: formData.title.trim(),
-                points: Number(formData.points) || 100,
-                dateCreated: new Date().toISOString().slice(0, 10),
-            };
+    payload.append("title", formData.title.trim());
+    payload.append("topic", formData.topic);
+    payload.append("section_id", formData.section_id);
+    payload.append("due_date", formData.due);
+    payload.append("points", formData.points);
+    payload.append("description", formData.description);
+    payload.append("instructions", formData.instructions || "");
+    payload.append("status", formData.status);
+    payload.append(
+        "remove_attachment",
+        formData.remove_attachment ? "1" : "0"
+    );
 
-            setTasks((previous) => [newTask, ...previous]);
+    if (formData.attachment instanceof File) {
+        payload.append("attachment", formData.attachment);
+    }
+
+    const options = {
+        preserveScroll: true,
+        forceFormData: true,
+        onSuccess: () => {
+            closeModal();
             setCurrentPage(1);
-        } else if (modalType === "edit" && selectedTask) {
-            setTasks((previous) =>
-                previous.map((task) =>
-                    task.id === selectedTask.id
-                        ? {
-                              ...task,
-                              ...formData,
-                              title: formData.title.trim(),
-                              points: Number(formData.points) || 100,
-                          }
-                        : task,
-                ),
-            );
-        }
-
-        closeModal();
+        },
+        onError: (errors) => {
+            console.error("Task errors:", errors);
+            alert(Object.values(errors).join("\n"));
+        },
     };
+
+    if (modalType === "add") {
+        router.post("/faculty/tasks", payload, options);
+    } else if (modalType === "edit" && selectedTask) {
+        router.post(
+            `/faculty/tasks/${selectedTask.id}`,
+            payload,
+            options
+        );
+    }
+};
+
 
     const openConfirm = (type, task) => {
         setConfirmType(type);
@@ -1093,37 +1148,36 @@ export default function TaskManagement() {
         setConfirmTask(null);
     };
 
-    const handleConfirmAction = () => {
-        if (!confirmTask || !confirmType) return;
+    
+const handleConfirmAction = () => {
+    if (!confirmTask || !confirmType) return;
 
-        if (confirmType === "delete") {
-            setTasks((previous) =>
-                previous.filter((task) => task.id !== confirmTask.id),
-            );
-        }
+    const id = confirmTask.id;
 
-        if (confirmType === "publish") {
-            setTasks((previous) =>
-                previous.map((task) =>
-                    task.id === confirmTask.id
-                        ? { ...task, status: "Active" }
-                        : task,
-                ),
-            );
-        }
-
-        if (confirmType === "cancel") {
-            setTasks((previous) =>
-                previous.map((task) =>
-                    task.id === confirmTask.id
-                        ? { ...task, status: "Cancelled" }
-                        : task,
-                ),
-            );
-        }
-
-        closeConfirm();
+    const options = {
+        preserveScroll: true,
+        onSuccess: () => {
+            closeConfirm();
+        },
+        onError: (errors) => {
+            console.error("Task action errors:", errors);
+            alert(Object.values(errors).join("\n"));
+        },
     };
+
+    if (confirmType === "delete") {
+        router.delete(`/faculty/tasks/${id}`, options);
+    }
+
+    if (confirmType === "publish") {
+        router.patch(`/faculty/tasks/${id}/publish`, {}, options);
+    }
+
+    if (confirmType === "cancel") {
+        router.patch(`/faculty/tasks/${id}/cancel`, {}, options);
+    }
+};
+
 
     const clearFilters = () => {
         setSearchValue("");
@@ -1456,8 +1510,14 @@ export default function TaskManagement() {
                                                         setSelectedTask(task);
                                                         setModalType("view");
                                                     }}
-                                                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#BFCFDF] bg-[#E6EDF4] text-[#1B3553] transition-all duration-200 hover:border-[#91A9C0] hover:bg-[#D5E1EC] hover:text-[#142A43]"
-                                                >
+                                                    className="
+                                                    flex h-9 w-9 shrink-0 items-center justify-center
+                                                    rounded-lg border border-[#142A43] bg-[#1B3553]
+                                                    text-white shadow-sm transition-all duration-200
+                                                    hover:border-[#0F2035] hover:bg-[#142A43]
+                                                    active:scale-95
+                                                    "
+                                                        >
                                                     <Eye size={15} />
                                                 </button>
 
@@ -1468,44 +1528,51 @@ export default function TaskManagement() {
                                                     onClick={() =>
                                                         openEditModal(task)
                                                     }
-                                                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-600 transition-all duration-200 hover:bg-blue-100 hover:text-blue-700"
+                                                   className="
+                                                flex h-8 w-8 shrink-0 items-center justify-center
+                                                rounded-lg border border-[#7C2D12] bg-[#9A3412]
+                                                text-white shadow-sm transition-all duration-200
+                                                hover:border-[#65240F] hover:bg-[#7C2D12]
+                                                active:scale-95"
                                                 >
                                                     <Pencil size={15} />
                                                 </button>
 
-                                                {task.status === "Draft" && (
-                                                    <button
-                                                        type="button"
-                                                        title="Publish task"
-                                                        aria-label={`Publish ${task.title}`}
-                                                        onClick={() =>
-                                                            openConfirm(
-                                                                "publish",
-                                                                task,
-                                                            )
-                                                        }
-                                                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#B9D9C8] bg-white text-[#267653] hover:bg-[#F0F8F3]"
-                                                    >
-                                                        <Upload size={15} />
-                                                    </button>
-                                                )}
+                                               {task.status === "Draft" && (
+                                            <button
+                                                type="button"
+                                                title="Publish task"
+                                                aria-label={`Publish ${task.title}`}
+                                                onClick={() => openConfirm("publish", task)}
+                                                className="
+                                                flex h-8 w-8 shrink-0 items-center justify-center
+                                                rounded-lg border border-[#166534] bg-[#15803D]
+                                                text-white shadow-sm transition-all duration-200
+                                                hover:border-[#14532D] hover:bg-[#166534]
+                                                active:scale-95
+                                                "
+                                            >
+                                                <Upload size={15} />
+                                            </button>
+                                            )}
 
-                                                {task.status === "Active" && (
-                                                    <button
-                                                        type="button"
-                                                        title="Cancel task"
-                                                        aria-label={`Cancel ${task.title}`}
-                                                        onClick={() =>
-                                                            openConfirm(
-                                                                "cancel",
-                                                                task,
-                                                            )
-                                                        }
-                                                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#D7C7A8] bg-white text-[#8A6A25] hover:bg-[#FAF5E9]"
-                                                    >
-                                                        <Ban size={15} />
-                                                    </button>
-                                                )}
+                                            {task.status === "Active" && (
+                                            <button
+                                                type="button"
+                                                title="Cancel task"
+                                                aria-label={`Cancel ${task.title}`}
+                                                onClick={() => openConfirm("cancel", task)}
+                                                className="
+                                                flex h-8 w-8 shrink-0 items-center justify-center
+                                                rounded-lg border border-[#475569] bg-[#64748B]
+                                                text-white shadow-sm transition-all duration-200
+                                                hover:border-[#334155] hover:bg-[#475569]
+                                                active:scale-95
+                                                "
+                                            >
+                                                <Ban size={15} />
+                                            </button>
+                                            )}
 
                                                 <button
                                                     type="button"
@@ -1517,7 +1584,12 @@ export default function TaskManagement() {
                                                             task,
                                                         )
                                                     }
-                                                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-500 transition-all duration-200 hover:bg-red-100 hover:text-red-600 active:scale-95"
+                                                   className="
+                                                flex h-8 w-8 shrink-0 items-center justify-center
+                                                rounded-lg border border-[#9F1239] bg-[#BE123C]
+                                                text-white shadow-sm transition-all duration-200
+                                                hover:border-[#881337] hover:bg-[#9F1239]
+                                                active:scale-95"
                                                 >
                                                     <Trash2 size={15} />
                                                 </button>
@@ -1609,7 +1681,7 @@ export default function TaskManagement() {
                                     setCurrentPage((page) =>
                                         Math.max(1, page - 1),
                                     )
-                                }   
+                                }
                                 className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#C9D6E3] bg-white text-[#526579] hover:bg-[#EEF4F9] disabled:cursor-not-allowed disabled:opacity-40"
                             >
                                 <ChevronLeft size={17} />
@@ -1652,13 +1724,14 @@ export default function TaskManagement() {
             </div>
 
             <TaskModal
-                mode={modalType}
-                task={selectedTask}
-                formData={formData}
-                setFormData={setFormData}
-                onClose={closeModal}
-                onSubmit={handleSubmit}
-                onEdit={openEditModal}
+            mode={modalType}
+            task={selectedTask}
+            formData={formData}
+            setFormData={setFormData}
+            sections={assignedSections}
+            onClose={closeModal}
+            onSubmit={handleSubmit}
+            onEdit={openEditModal}
             />
 
             <ConfirmModal
@@ -1669,4 +1742,4 @@ export default function TaskManagement() {
             />
         </FacultyLayout>
     );
-}   
+}

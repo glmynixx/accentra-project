@@ -15,6 +15,7 @@ import {
     Building2,
     ClipboardList,
     RotateCcw,
+    Layers,
 } from "lucide-react";
 
 import FacultyLayout from "../components/layout/facultyLayout";
@@ -53,10 +54,10 @@ const initialSections = [
         facultyAssigned: "Cai Soriano",
         status: "Active",
         students: [
-            { id: "2025-2001", name: "Gabriel Thomas Mendoza", status: "Active" },
-            { id: "2025-2002", name: "Chloe Anne Dela Cruz", status: "Active" },
-            { id: "2025-2003", name: "Nathaniel Lopez", status: "Active" },
-            { id: "2025-2004", name: "Samantha Reyes", status: "Active" },
+            { id: "2026-2001", name: "Gabriel Thomas Mendoza", status: "Active" },
+            { id: "2026-2002", name: "Chloe Anne Dela Cruz", status: "Active" },
+            { id: "2026-2003", name: "Nathaniel Lopez", status: "Active" },
+            { id: "2026-2004", name: "Samantha Reyes", status: "Active" },
         ],
     },
     {
@@ -69,17 +70,17 @@ const initialSections = [
         facultyAssigned: "Cai Soriano",
         status: "Active",
         students: [
-            { id: "2024-3001", name: "Andrea Nicole Ramos", status: "Active" },
-            { id: "2024-3002", name: "Mark Anthony Villanueva", status: "Inactive" },
-            { id: "2024-3003", name: "Patricia Mae Aquino", status: "Active" },
-            { id: "2024-3004", name: "John Carlo Bautista", status: "Active" },
-            { id: "2024-3005", name: "Kimberly Ann Torres", status: "Active" },
-            { id: "2024-3006", name: "Miguel Angelo Castillo", status: "Active" },
+            { id: "2026-3001", name: "Andrea Nicole Ramos", status: "Active" },
+            { id: "2026-3002", name: "Mark Anthony Villanueva", status: "Inactive" },
+            { id: "2026-3003", name: "Patricia Mae Aquino", status: "Active" },
+            { id: "2026-3004", name: "John Carlo Bautista", status: "Active" },
+            { id: "2026-3005", name: "Kimberly Ann Torres", status: "Active" },
+            { id: "2026-3006", name: "Miguel Angelo Castillo", status: "Active" },
         ],
     },
     {
         id: "SEC-004",
-        name: "BSAIS 12CB",
+        name: "BSAIS 41CA",
         program: "BS Accounting Information System",
         yearLevel: "1st Year",
         academicYear: "2025-2026",
@@ -87,14 +88,14 @@ const initialSections = [
         facultyAssigned: "Cai Soriano",
         status: "Inactive",
         students: [
-            { id: "2025-1101", name: "Beatrice Anne Lim", status: "Active" },
-            { id: "2025-1102", name: "Francis Gabriel Tan", status: "Active" },
-            { id: "2025-1103", name: "Nicole Marie Diaz", status: "Inactive" },
+            { id: "2026-4001", name: "Beatrice Anne Lim", status: "Active" },
+            { id: "2026-4002", name: "Francis Gabriel Tan", status: "Active" },
+            { id: "2026-4003", name: "Nicole Marie Diaz", status: "Inactive" },
         ],
     },
     {
         id: "SEC-005",
-        name: "BSEN 21CA",
+        name: "BSEN 21CE",
         program: "BS Entrepreneurship",
         yearLevel: "2nd Year",
         academicYear: "2026-2027",
@@ -102,9 +103,9 @@ const initialSections = [
         facultyAssigned: "Cai Soriano",
         status: "Active",
         students: [
-            { id: "2025-2101", name: "Paolo Miguel Santos", status: "Active" },
-            { id: "2025-2102", name: "Francesca Mae Garcia", status: "Active" },
-            { id: "2025-2103", name: "Adrian James Cruz", status: "Active" },
+            { id: "2026-5001", name: "Paolo Miguel Santos", status: "Active" },
+            { id: "2026-5002", name: "Francesca Mae Garcia", status: "Active" },
+            { id: "2026-5003", name: "Adrian James Cruz", status: "Active" },
         ],
     },
 ];
@@ -130,7 +131,6 @@ const ACADEMIC_YEARS = [
 const SEMESTERS = [
     "1st Semester",
     "2nd Semester",
-    "Summer",
 ];
 
 const SECTION_STATUSES = ["Active", "Inactive"];
@@ -354,30 +354,31 @@ function SectionDetailsModal({ section, onClose }) {
     }, [section.students, studentSearch, studentStatusFilter]);
 
     const informationCards = [
-        {
-            label: "Section Name",
-            value: section.name,
-            style: "border-[#C9D6E3] bg-white",
-        },
+      
         {
             label: "Program",
             value: section.program,
-            style: "border-[#C9D6E3] bg-white",
+            style: "border-[#B9D9C8] bg-[#E1F0E8]",
+        },
+        {
+            label: "Section Name",
+            value: section.name,
+            style: "border-[#D8CCF4] bg-[#F0EAFE]",
         },
         {
             label: "Year Level",
             value: section.yearLevel,
-            style: "border-[#B9D5C8] bg-[#F0F8F3]",
+            style: "border-[#F1D9B8] bg-[#FFF4E5]",
         },
-        {
+        {   
             label: "Academic Year",
             value: section.academicYear,
-            style: "border-[#C9D6E3] bg-white",
+            style: "border-[#B9D9C8] bg-[#E1F0E8]",
         },
         {
             label: "Semester",
             value: section.semester,
-            style: "border-[#C9D6E3] bg-white",
+            style: "border-[#F0CACA] bg-[#FCEAEA]",
         },
     ];
 
@@ -470,7 +471,7 @@ function SectionDetailsModal({ section, onClose }) {
                             </span>
 
                             <div className="mt-2 flex items-center gap-2">
-                                <Users size={18} className="text-[#294B70]" />
+                               
 
                                 <strong className="text-sm font-semibold text-[#243A52]">
                                     {section.students.length} students
@@ -1093,7 +1094,7 @@ export default function FacultySections() {
                                         <td className="px-5 py-4">
                                             <div className="flex min-w-0 items-center gap-3">
                                                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#C9D6E3] bg-[#EEF4F9] text-[#294B70]">
-                                                    <Building2 size={18} />
+                                                    <Layers size={18} />
                                                 </div>
 
                                                 <div className="min-w-0">
@@ -1134,15 +1135,22 @@ export default function FacultySections() {
 
                                         <td className="px-5 py-4">
                                             <div className="flex items-center gap-2 whitespace-nowrap">
-                                                <ActionButton
-                                                    label={`View details for ${section.name}`}
-                                                    onClick={() =>
-                                                        setSelectedSection(section)
-                                                    }
-                                                >
-                                                    <Eye size={16} />
-                                                </ActionButton>
-                                            </div>
+                                        <button
+                                            type="button"
+                                            title="View Details"
+                                            aria-label={`View details for ${section.name}`}
+                                            onClick={() => setSelectedSection(section)}
+                                            className="
+                                            flex h-9 w-9 shrink-0 items-center justify-center
+                                            rounded-lg border border-[#142A43] bg-[#1B3553]
+                                            text-white shadow-sm transition-all duration-200
+                                            hover:border-[#0F2035] hover:bg-[#142A43]
+                                            active:scale-95
+                                            "
+                                        >
+                                            <Eye size={16} />
+                                        </button>
+                                        </div>
                                         </td>
                                     </tr>
                                 ))}
