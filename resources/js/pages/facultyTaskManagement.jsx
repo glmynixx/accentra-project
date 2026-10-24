@@ -841,26 +841,29 @@ function ConfirmModal({ type, task, onClose, onConfirm }) {
           ? "Publish Task?"
           : "Cancel Task?";
 
-    const accent = isDelete
-        ? {
-              bg: "bg-[#FBEEF0]",
-              icon: "bg-[#A94A55]",
-              border: "border-[#E2BFC3]",
-              button: "bg-[#A94A55] hover:bg-[#8E3742]",
-          }
-        : isPublish
-          ? {
-                bg: "bg-[#EEF4F9]",
-                icon: "bg-[#294B70]",
-                border: "border-[#BFD2E5]",
-                button: "bg-[#1B3553] hover:bg-[#142A43]",
-            }
-          : {
-                bg: "bg-[#FAF5E9]",
-                icon: "bg-[#8A6A25]",
-                border: "border-[#D7C7A8]",
-                button: "bg-[#8A6A25] hover:bg-[#70551E]",
-            };
+   const accent = isDelete
+    ? {
+          bg: "bg-[#FCE7EA]",
+          icon: "bg-[#BE123C]",
+          border: "border-[#F0B8C0]",
+          button:
+              "border border-[#9F1239] bg-[#BE123C] hover:border-[#881337] hover:bg-[#9F1239]",
+      }
+    : isPublish
+      ? {
+            bg: "bg-[#E3F0EA]",
+            icon: "bg-[#15803D]",
+            border: "border-[#B9D5C8]",
+            button:
+                "border border-[#166534] bg-[#15803D] hover:border-[#14532D] hover:bg-[#166534]",
+        }
+      : {
+            bg: "bg-[#E7EDF3]",
+            icon: "bg-[#64748B]",
+            border: "border-[#C9D6E3]",
+            button:
+                "border border-[#475569] bg-[#64748B] hover:border-[#334155] hover:bg-[#475569]",
+        };
 
     const actionText = isDelete
         ? "Delete Task"
@@ -914,6 +917,22 @@ function ConfirmModal({ type, task, onClose, onConfirm }) {
                 <div
                     className={`flex justify-end gap-2 border-t ${accent.border} bg-white px-5 py-4`}
                 >
+                    {!isDelete && !isPublish ? (
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="
+                            inline-flex items-center justify-center gap-2
+                            rounded-xl border border-[#142A43] bg-[#1B3553]
+                            px-4 py-2.5 text-sm font-semibold text-white
+                            shadow-sm transition-all duration-200
+                            hover:border-[#0F2035] hover:bg-[#142A43]
+                            hover:shadow-md active:scale-[0.98]
+                        "
+                    >
+                        Keep Task
+                    </button>
+                ) : (
                     <button
                         type="button"
                         onClick={onClose}
@@ -921,6 +940,7 @@ function ConfirmModal({ type, task, onClose, onConfirm }) {
                     >
                         Keep Task
                     </button>
+                )}    
 
                     <button
                         type="button"
@@ -1490,8 +1510,14 @@ const handleConfirmAction = () => {
                                                         setSelectedTask(task);
                                                         setModalType("view");
                                                     }}
-                                                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#BFCFDF] bg-[#E6EDF4] text-[#1B3553] transition-all duration-200 hover:border-[#91A9C0] hover:bg-[#D5E1EC] hover:text-[#142A43]"
-                                                >
+                                                    className="
+                                                    flex h-9 w-9 shrink-0 items-center justify-center
+                                                    rounded-lg border border-[#142A43] bg-[#1B3553]
+                                                    text-white shadow-sm transition-all duration-200
+                                                    hover:border-[#0F2035] hover:bg-[#142A43]
+                                                    active:scale-95
+                                                    "
+                                                        >
                                                     <Eye size={15} />
                                                 </button>
 
@@ -1502,44 +1528,51 @@ const handleConfirmAction = () => {
                                                     onClick={() =>
                                                         openEditModal(task)
                                                     }
-                                                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-600 transition-all duration-200 hover:bg-blue-100 hover:text-blue-700"
+                                                   className="
+                                                flex h-8 w-8 shrink-0 items-center justify-center
+                                                rounded-lg border border-[#7C2D12] bg-[#9A3412]
+                                                text-white shadow-sm transition-all duration-200
+                                                hover:border-[#65240F] hover:bg-[#7C2D12]
+                                                active:scale-95"
                                                 >
                                                     <Pencil size={15} />
                                                 </button>
 
-                                                {task.status === "Draft" && (
-                                                    <button
-                                                        type="button"
-                                                        title="Publish task"
-                                                        aria-label={`Publish ${task.title}`}
-                                                        onClick={() =>
-                                                            openConfirm(
-                                                                "publish",
-                                                                task,
-                                                            )
-                                                        }
-                                                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#B9D9C8] bg-white text-[#267653] hover:bg-[#F0F8F3]"
-                                                    >
-                                                        <Upload size={15} />
-                                                    </button>
-                                                )}
+                                               {task.status === "Draft" && (
+                                            <button
+                                                type="button"
+                                                title="Publish task"
+                                                aria-label={`Publish ${task.title}`}
+                                                onClick={() => openConfirm("publish", task)}
+                                                className="
+                                                flex h-8 w-8 shrink-0 items-center justify-center
+                                                rounded-lg border border-[#166534] bg-[#15803D]
+                                                text-white shadow-sm transition-all duration-200
+                                                hover:border-[#14532D] hover:bg-[#166534]
+                                                active:scale-95
+                                                "
+                                            >
+                                                <Upload size={15} />
+                                            </button>
+                                            )}
 
-                                                {task.status === "Active" && (
-                                                    <button
-                                                        type="button"
-                                                        title="Cancel task"
-                                                        aria-label={`Cancel ${task.title}`}
-                                                        onClick={() =>
-                                                            openConfirm(
-                                                                "cancel",
-                                                                task,
-                                                            )
-                                                        }
-                                                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#D7C7A8] bg-white text-[#8A6A25] hover:bg-[#FAF5E9]"
-                                                    >
-                                                        <Ban size={15} />
-                                                    </button>
-                                                )}
+                                            {task.status === "Active" && (
+                                            <button
+                                                type="button"
+                                                title="Cancel task"
+                                                aria-label={`Cancel ${task.title}`}
+                                                onClick={() => openConfirm("cancel", task)}
+                                                className="
+                                                flex h-8 w-8 shrink-0 items-center justify-center
+                                                rounded-lg border border-[#475569] bg-[#64748B]
+                                                text-white shadow-sm transition-all duration-200
+                                                hover:border-[#334155] hover:bg-[#475569]
+                                                active:scale-95
+                                                "
+                                            >
+                                                <Ban size={15} />
+                                            </button>
+                                            )}
 
                                                 <button
                                                     type="button"
@@ -1551,7 +1584,12 @@ const handleConfirmAction = () => {
                                                             task,
                                                         )
                                                     }
-                                                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-500 transition-all duration-200 hover:bg-red-100 hover:text-red-600 active:scale-95"
+                                                   className="
+                                                flex h-8 w-8 shrink-0 items-center justify-center
+                                                rounded-lg border border-[#9F1239] bg-[#BE123C]
+                                                text-white shadow-sm transition-all duration-200
+                                                hover:border-[#881337] hover:bg-[#9F1239]
+                                                active:scale-95"
                                                 >
                                                     <Trash2 size={15} />
                                                 </button>

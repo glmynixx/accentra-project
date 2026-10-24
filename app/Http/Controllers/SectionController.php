@@ -58,7 +58,7 @@ class SectionController extends Controller
         ]);
 
         return redirect()
-            ->route('sections.index')
+            ->route('sections')
             ->with('success', 'Section added successfully!');
     }
 
@@ -97,7 +97,7 @@ class SectionController extends Controller
 ]);
 
         return redirect()
-            ->route('sections.index')
+            ->route('sections')
             ->with('success', 'Section updated successfully!');
     }
 
@@ -117,7 +117,7 @@ ActivityLog::create([
 ]);
 
         return redirect()
-            ->route('sections.index')
+            ->route('sections')
             ->with('success', 'Section deleted successfully!');
     }
 

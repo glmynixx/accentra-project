@@ -87,8 +87,6 @@ useEffect(() => {
     assignedSections: [],
     status: "Active",
     dateAdded: "",
-    password: "",
-    password_confirmation: "",
   });
 
 
@@ -348,12 +346,8 @@ const handleSubmit = (event) => {
     };
 
     if (modalType === "add") {
-    router.post("/faculty", {
-        ...payload,
-        password: formData.password,
-        password_confirmation: formData.password_confirmation,
-    }, options);
-}
+        router.post("/faculty", payload, options);
+    }
 
     if (modalType === "edit" && selectedFaculty?.databaseId) {
         router.put(
@@ -2297,42 +2291,11 @@ const confirmDelete = () => {
                 </div>
 
                 {modalType === "add" && (
-    <>
-        <div>
-            <label className="block mb-2 text-sm font-semibold text-[#526579]">
-                Password
-            </label>
-            <input
-                type="password"
-                name="password"
-                value={formData.password || ""}
-                onChange={handleFormChange}
-                placeholder="Enter faculty password"
-                minLength={12}
-                autoComplete="new-password"
-                required
-                className={inputClass}
-            />
-        </div>
-
-        <div>
-            <label className="block mb-2 text-sm font-semibold text-[#526579]">
-                Confirm Password
-            </label>
-            <input
-                type="password"
-                name="password_confirmation"
-                value={formData.password_confirmation || ""}
-                onChange={handleFormChange}
-                placeholder="Confirm faculty password"
-                minLength={12}
-                autoComplete="new-password"
-                required
-                className={inputClass}
-            />
-        </div>
-    </>
-)}
+                  <p className="text-sm text-[#526579] sm:col-span-2">
+                    A secure temporary password will be generated and emailed
+                    to this faculty member.
+                  </p>
+                )}
 
                 {/* SPECIALIZATION */}
 

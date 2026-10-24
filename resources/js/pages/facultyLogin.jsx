@@ -1,4 +1,4 @@
-import { Link, router } from "@inertiajs/react";
+import { Link, router, usePage } from "@inertiajs/react";
 import { useState } from "react";
 
 import {
@@ -11,6 +11,7 @@ CircleAlert,
 } from "lucide-react";
 
 export default function FacultyLogin() {
+const { csrfToken } = usePage().props;
 const [email, setEmail] = useState("");
 const [password, setPassword] = useState("");
 const [showPassword, setShowPassword] = useState(false);
@@ -181,7 +182,13 @@ return ( <div className="min-h-screen bg-[#F4F6F8] text-[#142A43]"> <div classNa
         </div>
 
         {/* LOGIN FORM */}
-        <form onSubmit={handleSubmit} noValidate>
+        <form action="/faculty/login" method="post" onSubmit={handleSubmit} noValidate>
+          <input type="hidden" name="_token" value={csrfToken} />
+          <input
+            type="hidden"
+            name="remember"
+            value={rememberMe ? "1" : "0"}
+          />
 
           {/* EMAIL */}
           <div className="mb-5">

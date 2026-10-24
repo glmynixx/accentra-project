@@ -2,13 +2,13 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 
 /**
@@ -26,12 +26,20 @@ use Illuminate\Support\Carbon;
 
 class User extends Authenticatable
 {
-    public function faculty()
-{
-    return $this->hasOne(\App\Models\Faculty::class);
-}
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
+
+    // Faculty account relationship
+    public function faculty(): HasOne
+    {
+        return $this->hasOne(Faculty::class, 'user_id');
+    }
+
+    // Student account relationship
+    public function student(): HasOne
+    {
+        return $this->hasOne(Student::class, 'user_id');
+    }
 
     /**
      * Get the attributes that should be cast.
@@ -40,8 +48,6 @@ class User extends Authenticatable
      */
     protected function casts(): array
     {
-
-    
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',

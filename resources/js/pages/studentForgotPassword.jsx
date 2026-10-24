@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { useState } from "react";
 
 import {
@@ -222,4 +223,17 @@ export default function StudentForgotPassword() {
       </footer>
     </main>
   );
+=======
+import ForgotPasswordOtp from '../components/auth/forgotPasswordOtp';
+
+export default function StudentForgotPassword() {
+    return (
+        <ForgotPasswordOtp
+            accountType="student"
+            loginUrl="/student/login"
+            sendOtpUrl="/student/forgot-password/send-otp"
+            resetPasswordUrl="/student/forgot-password/reset"
+        />
+    );
+>>>>>>> origin/johnleo-work
 }
