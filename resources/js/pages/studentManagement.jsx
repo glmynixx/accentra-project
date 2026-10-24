@@ -1284,24 +1284,13 @@ const confirmDelete = () => {
                               title="View Student"
                               aria-label="View Student"
                               onClick={() => openViewModal(student)}
-                              className="
-                                flex
-                                h-9
-                                w-9
-                                items-center
-                                justify-center
-                                rounded-lg
-                                border
-                                border-[#BFCFDF]
-                                bg-[#E6EDF4]
-                                text-[#1B3553]
-                                transition-all
-                                duration-200
-                                hover:border-[#91A9C0]
-                                hover:bg-[#D5E1EC]
-                                hover:text-[#142A43]
-                                active:scale-95
-                              "
+                             className="
+                            flex h-8 w-8 shrink-0 items-center justify-center
+                            rounded-lg border border-[#142A43] bg-[#1B3553]
+                            text-white shadow-sm transition-all duration-200
+                            hover:border-[#0F2035] hover:bg-[#142A43]
+                            active:scale-95
+                  "
                             >
                               <Eye size={17} />
                             </button>
@@ -1312,88 +1301,65 @@ const confirmDelete = () => {
                               aria-label="Edit Student"
                               onClick={() => openEditModal(student)}
                               className="
-                                flex
-                                h-9
-                                w-9
-                                items-center
-                                justify-center
-                                rounded-lg
-                                border
-                                border-blue-200
-                                bg-blue-50
-                                text-blue-600
-                                transition-all
-                                duration-200
-                                hover:bg-blue-100
-                                hover:text-blue-700
-                                active:scale-95
-                              "
+                          flex h-8 w-8 shrink-0 items-center justify-center
+                          rounded-lg border border-[#7C2D12] bg-[#9A3412]
+                          text-white shadow-sm transition-all duration-200
+                          hover:border-[#65240F] hover:bg-[#7C2D12]
+                          active:scale-95
+                        "
                             >
                               <Pencil size={17} />
                             </button>
 
                             <button
-                              type="button"
-                              title={
-                                student.status === "Active"
-                                  ? "Deactivate Account"
-                                  : "Activate Account"
-                              }
-                              aria-label={
-                                student.status === "Active"
-                                  ? "Deactivate Account"
-                                  : "Activate Account"
-                              }
-                              onClick={() =>
-                                toggleAccountStatus(student)
-                              }
-                              className="
-                                flex
-                                h-9
-                                w-9
-                                items-center
-                                justify-center
-                                rounded-lg
-                                border
-                                border-amber-200
-                                bg-amber-50
-                                text-amber-600
-                                transition-all
-                                duration-200
-                                hover:bg-amber-100
-                                hover:text-amber-700
+                          type="button"
+                          title={
+                            student.status === "Active"
+                              ? "Deactivate Account"
+                              : "Activate Account"
+                          }
+                          aria-label={
+                            student.status === "Active"
+                              ? "Deactivate Account"
+                              : "Activate Account"
+                          }
+                          onClick={() => toggleAccountStatus(student)}
+                          className={
+                            student.status === "Active"
+                              ? `
+                                flex h-9 w-9 shrink-0 items-center justify-center
+                                rounded-lg border border-[#475569] bg-[#64748B]
+                                text-white shadow-sm transition-all duration-200
+                                hover:border-[#334155] hover:bg-[#475569]
                                 active:scale-95
-                              "
-                            >
-                              {student.status === "Active" ? (
-                                <UserX size={17} />
-                              ) : (
-                                <UserCheck size={17} />
-                              )}
-                            </button>
-
+                              `
+                              : `
+                                flex h-9 w-9 shrink-0 items-center justify-center
+                                rounded-lg border border-[#166534] bg-[#15803D]
+                                text-white shadow-sm transition-all duration-200
+                                hover:border-[#14532D] hover:bg-[#166534]
+                                active:scale-95
+                              `
+                          }
+                        >
+                          {student.status === "Active" ? (
+                            <UserX size={17} />
+                          ) : (
+                            <UserCheck size={17} />
+                          )}
+                        </button>
                             <button
                               type="button"
                               title="Delete Student"
                               aria-label="Delete Student"
                               onClick={() => setDeleteStudent(student)}
-                              className="
-                                flex
-                                h-9
-                                w-9
-                                items-center
-                                justify-center
-                                rounded-lg
-                                border
-                                border-red-200
-                                bg-red-50
-                                text-red-500
-                                transition-all
-                                duration-200
-                                hover:bg-red-100
-                                hover:text-red-600
-                                active:scale-95
-                              "
+                             className="
+                            flex h-8 w-8 shrink-0 items-center justify-center
+                            rounded-lg border border-[#9F1239] bg-[#BE123C]
+                            text-white shadow-sm transition-all duration-200
+                            hover:border-[#881337] hover:bg-[#9F1239]
+                            active:scale-95
+                          "
                             >
                               <Trash2 size={17} />
                             </button>

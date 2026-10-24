@@ -18,7 +18,13 @@ void createInertiaApp({
             throw new Error(`Page not found: ${name}`);
         }
 
-        return await page();
+        const module = await page();
+
+        if (!module.default) {
+            throw new Error(`Default export not found for page: ${name}`);
+        }
+
+        return module.default;
     },
 
     setup({ el, App, props }) {
