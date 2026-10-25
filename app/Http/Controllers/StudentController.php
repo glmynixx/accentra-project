@@ -13,6 +13,7 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use App\Models\ActivityLog;
+use App\Models\User;
 
 
 class StudentController extends Controller
@@ -60,61 +61,96 @@ class StudentController extends Controller
     }
 
     // 2. Add student
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'student_number' => 'required|string|max:50|unique:students,student_number',
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:students,email',
-            'course' => 'required|string|max:100',
-            'year_level' => 'required|string|max:50',
-            'contact_number' => 'nullable|string|max:30',
-            'address' => 'nullable|string|max:255',
-            'status' => 'required|in:Active,Inactive',
-            'section_id' => [
-                'required',
-                'integer',
-                Rule::exists('sections', 'id')->where('status', 'Active'),
-            ],
-            'section' => 'nullable|string|max:255',
-        ]);
+    
+public function store(Request $request)
+{
+    $validated = $request->validate([
+        'student_number' => [
+            'required',
+            'string',
+            'max:50',
+            'unique:students,student_number',
+        ],
+        'name' => 'required|string|max:255',
+        'email' => [
+            'required',
+            'email',
+            'max:255',
+            'unique:students,email',
+            'unique:users,email',
+        ],
+        'course' => 'required|string|max:100',
+        'year_level' => 'required|string|max:50',
+        'contact_number' => 'nullable|string|max:30',
+        'address' => 'nullable|string|max:255',
+        'status' => 'required|in:Active,Inactive',
+        'section_id' => [
+            'required',
+            'integer',
+            Rule::exists('sections', 'id')
+                ->where('status', 'Active'),
+        ],
+        'section' => 'nullable|string|max:255',
+    ]);
 
-        $password = Str::password(20);
+    // Generate a temporary password.
+    $password = Str::password(20);
 
-        try {
-            DB::transaction(function () use ($validated, $password) {
-                $student = Student::create([
-                    ...$validated,
-                    'password' => Hash::make($password),
-                ]);
+    try {
+        DB::transaction(function () use ($validated, $password) {
 
-                ActivityLog::create([
-                    'actor' => 'Admin',
-                    'action' => 'added a new student',
-                    'module' => 'Student Management',
-                    'description' => $student->name,
-                    'icon' => 'user-plus',
-                ]);
+            // 1. Create the login account in users.
+            $user = User::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => Hash::make($password),
+                'role' => 'Student',
+            ]);
 
-                Mail::to($student->email)->send(new NewAccountCredentials(
+            // 2. Create the student profile.
+            // Password is NOT saved in students.
+            $student = Student::create([
+                ...$validated,
+                'user_id' => $user->id,
+            ]);
+
+            // 3. Record the activity.
+            ActivityLog::create([
+                'actor' => 'Admin',
+                'action' => 'added a new student',
+                'module' => 'Student Management',
+                'description' => $student->name,
+                'icon' => 'user-plus',
+            ]);
+
+            // 4. Send login credentials.
+            Mail::to($student->email)->send(
+                new NewAccountCredentials(
                     $student->name,
                     $student->email,
                     $password,
-                    'Student',
-                ));
-            });
-        } catch (TransportExceptionInterface $exception) {
-            report($exception);
+                    'Student'
+                )
+            );
+        });
 
-            throw ValidationException::withMessages([
-                'email' => 'The student account was not created because its credentials could not be emailed. Check the mail configuration and try again.',
-            ]);
-        }
+    } catch (TransportExceptionInterface $exception) {
 
-        return redirect()
-            ->route('students')
-            ->with('success', 'Student added. Login credentials were sent to the student email address.');
+        report($exception);
+
+        throw ValidationException::withMessages([
+            'email' => 'The student account was not created because its credentials could not be emailed. Check the mail configuration and try again.',
+        ]);
     }
+
+    return redirect()
+        ->route('students')
+        ->with(
+            'success',
+            'Student account created. Login credentials were sent to the student email address.'
+        );
+}
+
 
     // 3. View student information
     public function show(Student $student)
@@ -124,6 +160,7 @@ class StudentController extends Controller
 
     // 4. Edit student information
     
+
 public function update(Request $request, Student $student)
 {
     $validated = $request->validate([
@@ -141,6 +178,8 @@ public function update(Request $request, Student $student)
             'max:255',
             Rule::unique('students', 'email')
                 ->ignore($student->id),
+            Rule::unique('users', 'email')
+                ->ignore($student->user_id),
         ],
         'course' => 'required|string|max:100',
         'year_level' => 'required|string|max:50',
@@ -151,20 +190,39 @@ public function update(Request $request, Student $student)
         'status' => 'required|in:Active,Inactive',
     ]);
 
-    $student->update($validated);
+    DB::transaction(function () use ($student, $validated) {
 
-    ActivityLog::create([
-    'actor' => 'Admin',
-    'action' => 'updated a student',
-    'module' => 'Student Management',
-    'description' => $student->name,
-    'icon' => 'user-pen',
-]);
+        // Update Student information.
+        $student->update($validated);
+
+        // Find the linked User account.
+        $user = User::whereKey($student->user_id)
+            ->where('role', 'Student')
+            ->first();
+
+        // Synchronize the name and email.
+        if ($user) {
+            $user->update([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+            ]);
+        }
+
+        // Record the activity.
+        ActivityLog::create([
+            'actor' => 'Admin',
+            'action' => 'updated a student',
+            'module' => 'Student Management',
+            'description' => $student->name,
+            'icon' => 'user-pen',
+        ]);
+    });
 
     return redirect()
         ->route('students')
-        ->with('success', 'Student updated successfully!');
+        ->with('success', 'Student and user account updated successfully!');
 }
+
 
 
     // 5. Activate or Deactivate Student
