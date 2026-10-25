@@ -1,5 +1,7 @@
 import { createInertiaApp } from '@inertiajs/react';
 import { createRoot } from 'react-dom/client';
+import InstallAppButton from './components/pwa/installAppButton';
+import AppStartupAnimation from './components/pwa/appStartupAnimation';
 
 const pages = import.meta.glob('./pages/**/*.{jsx,tsx}');
 
@@ -32,7 +34,13 @@ void createInertiaApp({
             return <App {...props} />;
         }
 
-        createRoot(el).render(<App {...props} />);
+        createRoot(el).render(
+            <>
+                <App {...props} />
+                <InstallAppButton />
+                <AppStartupAnimation />
+            </>,
+        );
     },
 
     progress: {

@@ -5,7 +5,7 @@ use App\Models\Faculty;
 use App\Models\Section;
 use App\Models\Student;
 use App\Models\User;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Symfony\Component\Mailer\Exception\TransportException;
 
@@ -17,7 +17,7 @@ function signInAsAccountAdmin(): User
     return $admin;
 }
 
-it('creates a faculty account with a generated password and emails the credentials', function () {
+it('creates a faculty account and emails a password setup link', function () {
     Mail::fake();
     signInAsAccountAdmin();
 
@@ -33,19 +33,28 @@ it('creates a faculty account with a generated password and emails the credentia
 
     $faculty = Faculty::where('email', 'new.faculty@example.com')->firstOrFail();
     $user = User::where('email', $faculty->email)->firstOrFail();
+    $setupUrl = null;
 
-    Mail::assertSent(NewAccountCredentials::class, function (NewAccountCredentials $mail) use ($faculty, $user) {
+    Mail::assertSent(NewAccountCredentials::class, function (NewAccountCredentials $mail) use ($faculty, &$setupUrl) {
+        $setupUrl = $mail->setupUrl;
+
         return $mail->hasTo($faculty->email)
             && $mail->accountType === 'Faculty'
-            && strlen($mail->password) === 20
-            && Hash::check($mail->password, $user->password);
+            && $mail->setupUrl !== '';
     });
 
     expect($user->role)->toBe('Faculty')
-        ->and($faculty->user_id)->toBe($user->id);
+        ->and($faculty->user_id)->toBe($user->id)
+        ->and($user->password)->not->toBeEmpty();
+
+    $token = basename(parse_url($setupUrl, PHP_URL_PATH));
+    expect(DB::table('account_password_setup_tokens')
+        ->where('email', $faculty->email)
+        ->where('account_type', 'Faculty')
+        ->value('token_hash'))->toBe(hash('sha256', $token));
 });
 
-it('creates a student account with a generated password and emails the credentials', function () {
+it('creates a student account and emails a password setup link', function () {
     Mail::fake();
     signInAsAccountAdmin();
 
@@ -71,13 +80,22 @@ it('creates a student account with a generated password and emails the credentia
         ->assertRedirect(route('students'));
 
     $student = Student::where('email', 'new.student@example.com')->firstOrFail();
+    $setupUrl = null;
 
-    Mail::assertSent(NewAccountCredentials::class, function (NewAccountCredentials $mail) use ($student) {
+    Mail::assertSent(NewAccountCredentials::class, function (NewAccountCredentials $mail) use ($student, &$setupUrl) {
+        $setupUrl = $mail->setupUrl;
+
         return $mail->hasTo($student->email)
             && $mail->accountType === 'Student'
-            && strlen($mail->password) === 20
-            && Hash::check($mail->password, $student->password);
+            && $mail->setupUrl !== ''
+            && $student->password !== '';
     });
+
+    $token = basename(parse_url($setupUrl, PHP_URL_PATH));
+    expect(DB::table('account_password_setup_tokens')
+        ->where('email', $student->email)
+        ->where('account_type', 'Student')
+        ->value('token_hash'))->toBe(hash('sha256', $token));
 });
 
 it('does not create a faculty account when the credentials email cannot be sent', function () {

@@ -1,0 +1,73 @@
+{
+    "id": "/",
+    "name": "ACCENTRA",
+    "short_name": "ACCENTRA",
+    "description": "ACCENTRA student, faculty, and administration portal.",
+    "lang": "en",
+    "start_url": "/",
+    "scope": "/",
+    "display": "standalone",
+    "display_override": ["standalone", "minimal-ui"],
+    "orientation": "any",
+    "background_color": "#F4F6F8",
+    "theme_color": "#142A43",
+    "categories": ["education", "productivity"],
+    "icons": [
+        {
+            "src": "/icons/accentra-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/icons/accentra-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/icons/accentra-maskable-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "Admin Portal",
+            "short_name": "Admin",
+            "url": "/login",
+            "icons": [
+                {
+                    "src": "/icons/accentra-192.png",
+                    "sizes": "192x192",
+                    "type": "image/png"
+                }
+            ]
+        },
+        {
+            "name": "Student Portal",
+            "short_name": "Student",
+            "url": "/student/login",
+            "icons": [
+                {
+                    "src": "/icons/accentra-192.png",
+                    "sizes": "192x192",
+                    "type": "image/png"
+                }
+            ]
+        },
+        {
+            "name": "Faculty Portal",
+            "short_name": "Faculty",
+            "url": "/faculty/login",
+            "icons": [
+                {
+                    "src": "/icons/accentra-192.png",
+                    "sizes": "192x192",
+                    "type": "image/png"
+                }
+            ]
+        }
+    ]
+}

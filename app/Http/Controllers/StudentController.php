@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use App\Support\PasswordSetupLink;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
@@ -96,11 +97,13 @@ class StudentController extends Controller
                     'icon' => 'user-plus',
                 ]);
 
+                $setupLink = app(PasswordSetupLink::class)->create($student->email, 'Student');
+
                 Mail::to($student->email)->send(new NewAccountCredentials(
                     $student->name,
                     $student->email,
-                    $password,
                     'Student',
+                    $setupLink['url'],
                 ));
             });
         } catch (TransportExceptionInterface $exception) {
@@ -219,4 +222,3 @@ public function update(Request $request, Student $student)
 
     
 }
-
