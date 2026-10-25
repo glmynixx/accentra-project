@@ -4,6 +4,16 @@ use App\Http\Middleware\UseBuiltAssetsForDevTunnels;
 use Illuminate\Foundation\Vite;
 use Illuminate\Http\Request;
 
+it('registers the tunnel asset middleware before rendering web pages', function () {
+    app()->detectEnvironment(fn () => 'local');
+
+    $response = $this->get('https://accentra-8000.asse.devtunnels.ms/student/login');
+
+    $response->assertOk()
+        ->assertDontSee('http://localhost:5173', false)
+        ->assertSee('/build/assets/', false);
+});
+
 it('uses built assets on local dev tunnel requests even when Vite is running', function () {
     app()->detectEnvironment(fn () => 'local');
 

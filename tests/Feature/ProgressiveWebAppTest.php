@@ -88,5 +88,7 @@ it('shows the app icon startup animation on initial launch', function () {
         ->toContain("prefers-reduced-motion: reduce")
         ->and($styles)
         ->toContain('@keyframes accentra-startup-icon')
-        ->toContain('@keyframes accentra-startup-exit');
+        ->toContain('@keyframes accentra-startup-exit')
+        ->toContain('1.35s ease-in 200ms forwards')
+        ->toContain('650ms ease-out 350ms both');
 });

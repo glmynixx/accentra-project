@@ -24,8 +24,10 @@ class PasswordSetupLink
             ],
         );
 
+        $path = route('password.reset.edit', ['token' => $token], absolute: false);
+
         return [
-            'url' => route('password.reset.edit', ['token' => $token]),
+            'url' => rtrim((string) config('app.url'), '/').$path,
             'tokenHash' => $tokenHash,
         ];
     }

@@ -53,7 +53,7 @@ export default function AccountSetupPassword({
                     </h1>
                     <p className="mt-3 text-sm leading-6 text-[#71869E]">
                         Choose a new password for your{' '}
-                        {accountType.toLowerCase()} account. Use at least 12
+                        {accountType.toLowerCase()} account. Use at least 8
                         characters.
                     </p>
 

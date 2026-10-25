@@ -19,6 +19,7 @@ function signInAsAccountAdmin(): User
 
 it('creates a faculty account and emails a password setup link', function () {
     Mail::fake();
+    config(['app.url' => 'https://app.accentra.test']);
     signInAsAccountAdmin();
 
     $this->from(route('faculty'))
@@ -45,7 +46,8 @@ it('creates a faculty account and emails a password setup link', function () {
 
     expect($user->role)->toBe('Faculty')
         ->and($faculty->user_id)->toBe($user->id)
-        ->and($user->password)->not->toBeEmpty();
+        ->and($user->password)->not->toBeEmpty()
+        ->and(parse_url($setupUrl, PHP_URL_HOST))->toBe('app.accentra.test');
 
     $token = basename(parse_url($setupUrl, PHP_URL_PATH));
     expect(DB::table('account_password_setup_tokens')

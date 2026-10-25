@@ -6,6 +6,7 @@ use App\Http\Middleware\EnsureAdminLoginIp;
 use App\Http\Middleware\EnsureFaculty;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\TrustDevTunnelProxy;
+use App\Http\Middleware\UseBuiltAssetsForDevTunnels;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -40,7 +41,10 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         $middleware->web(
-            prepend: [TrustDevTunnelProxy::class],
+            prepend: [
+                UseBuiltAssetsForDevTunnels::class,
+                TrustDevTunnelProxy::class,
+            ],
             append: [
                 HandleInertiaRequests::class,
                 AddLinkHeadersForPreloadedAssets::class,

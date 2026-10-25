@@ -34,7 +34,7 @@ class AccountPasswordSetupController extends Controller
     public function update(Request $request, string $token)
     {
         $validated = $request->validate([
-            'password' => ['required', 'confirmed', PasswordRule::min(12)],
+            'password' => ['required', 'confirmed', PasswordRule::min(8)],
         ]);
 
         $accountType = DB::transaction(function () use ($token, $validated): ?string {
