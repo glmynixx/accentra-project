@@ -2,9 +2,10 @@
 <?php
 
 use App\Http\Controllers\Auth\AdminLoginController;
+use App\Http\Controllers\Auth\AccountPasswordSetupController;
 use App\Http\Controllers\Auth\FacultyLoginController;
 use App\Http\Controllers\Auth\FacultyPasswordController;
-use App\Http\Controllers\Auth\PasswordOtpController;
+use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\StudentLoginController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Faculty\TaskController;
@@ -23,6 +24,12 @@ Route::post('/faculty/setup-password', [FacultyPasswordController::class, 'updat
     ->middleware(['guest', 'throttle:5,1'])
     ->name('faculty.password.update');
 
+Route::get('/password/reset/{token}', [AccountPasswordSetupController::class, 'edit'])
+    ->name('password.reset.edit');
+Route::post('/password/reset/{token}', [AccountPasswordSetupController::class, 'update'])
+    ->middleware('throttle:5,1')
+    ->name('password.reset.update');
+
 /*
 | Authentication Pages (Teammate)
 |--------------------------------------------------------------------------
@@ -31,13 +38,9 @@ Route::post('/faculty/setup-password', [FacultyPasswordController::class, 'updat
 Route::inertia('/forgot-password', 'forgotPassword')
     ->name('password.request');
 
-Route::post('/forgot-password/send-otp', [PasswordOtpController::class, 'sendAdminOtp'])
+Route::post('/forgot-password/send-link', [PasswordResetLinkController::class, 'sendAdminResetLink'])
     ->middleware('throttle:3,1')
-    ->name('password.otp.send');
-
-Route::post('/forgot-password/reset', [PasswordOtpController::class, 'resetAdminPassword'])
-    ->middleware('throttle:5,1')
-    ->name('password.otp.reset');
+    ->name('password.reset-link.send');
 
 // Faculty Login Page
 Route::inertia('/faculty/login', 'facultyLogin')
@@ -51,13 +54,9 @@ Route::post('/faculty/login', [FacultyLoginController::class, 'login'])
 Route::inertia('/faculty/forgot-password', 'facultyForgotPassword')
     ->name('faculty.password.request');
 
-Route::post('/faculty/forgot-password/send-otp', [PasswordOtpController::class, 'sendFacultyOtp'])
+Route::post('/faculty/forgot-password/send-link', [PasswordResetLinkController::class, 'sendFacultyResetLink'])
     ->middleware('throttle:3,1')
-    ->name('faculty.password.otp.send');
-
-Route::post('/faculty/forgot-password/reset', [PasswordOtpController::class, 'resetFacultyPassword'])
-    ->middleware('throttle:5,1')
-    ->name('faculty.password.otp.reset');
+    ->name('faculty.password.reset-link.send');
 
 
 /*
@@ -80,20 +79,11 @@ Route::middleware('guest')->group(function () {
         ->name('student.password.request');
 });
 
-// Student Password Recovery
-Route::post('/student/forgot-password/send-otp', [
-    PasswordOtpController::class,
-    'sendStudentOtp'
-])
-    ->middleware('throttle:3,1')
-    ->name('student.password.otp.send');
 
-Route::post('/student/forgot-password/reset', [
-    PasswordOtpController::class,
-    'resetStudentPassword'
-])
-    ->middleware('throttle:5,1')
-    ->name('student.password.otp.reset');
+
+Route::post('/student/forgot-password/send-link', [PasswordResetLinkController::class, 'sendStudentResetLink'])
+    ->middleware('throttle:3,1')
+    ->name('student.password.reset-link.send');
 
 // Student Dashboard and Logout
 Route::middleware(['auth', 'active.student'])->group(function () {

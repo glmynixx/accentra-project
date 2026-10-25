@@ -15,14 +15,14 @@ class NewAccountCredentials extends Mailable
     public function __construct(
         public string $name,
         public string $email,
-        public string $password,
         public string $accountType,
+        public string $setupUrl,
     ) {}
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Your ACCENTRA '.$this->accountType.' account credentials',
+            subject: 'Create your ACCENTRA '.$this->accountType.' password',
         );
     }
 

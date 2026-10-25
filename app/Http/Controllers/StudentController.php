@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use App\Support\PasswordSetupLink;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
@@ -93,13 +94,12 @@ public function store(Request $request)
         'section' => 'nullable|string|max:255',
     ]);
 
-    // Generate a temporary password.
     $password = Str::password(20);
 
     try {
         DB::transaction(function () use ($validated, $password) {
 
-            // 1. Create the login account in users.
+            // 1. Create user account
             $user = User::create([
                 'name' => $validated['name'],
                 'email' => $validated['email'],
@@ -107,31 +107,34 @@ public function store(Request $request)
                 'role' => 'Student',
             ]);
 
-            // 2. Create the student profile.
-            // Password is NOT saved in students.
+            // 2. Create student record linked to user
             $student = Student::create([
                 ...$validated,
                 'user_id' => $user->id,
             ]);
 
-            // 3. Record the activity.
-            ActivityLog::create([
-                'actor' => 'Admin',
-                'action' => 'added a new student',
-                'module' => 'Student Management',
-                'description' => $student->name,
-                'icon' => 'user-plus',
-            ]);
+            // 3. Generate password setup link
+            $setupLink = app(PasswordSetupLink::class)
+                ->create($student->email, 'Student');
 
-            // 4. Send login credentials.
+            // 4. Send credentials email
             Mail::to($student->email)->send(
                 new NewAccountCredentials(
                     $student->name,
                     $student->email,
-                    $password,
-                    'Student'
+                    'Student',
+                    $setupLink['url']
                 )
             );
+
+            // 5. Record activity
+            ActivityLog::create([
+                'actor' => 'Admin',
+                'action' => 'created a student',
+                'module' => 'Student Management',
+                'description' => $student->name,
+                'icon' => 'user-plus',
+            ]);
         });
 
     } catch (TransportExceptionInterface $exception) {
@@ -277,4 +280,3 @@ public function update(Request $request, Student $student)
 
     
 }
-

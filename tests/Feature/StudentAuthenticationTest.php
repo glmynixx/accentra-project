@@ -1,6 +1,6 @@
 <?php
 
-use App\Mail\PasswordResetOtp;
+use App\Mail\PasswordResetLink;
 use App\Models\Student;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -19,7 +19,7 @@ function createActiveStudent(array $attributes = []): Student
     ], $attributes));
 }
 
-it('allows a student to set a password through email otp and log in', function () {
+it('allows a student to set a password through an email link and log in', function () {
     Mail::fake();
     $student = createActiveStudent();
 
@@ -30,30 +30,27 @@ it('allows a student to set a password through email otp and log in', function (
             ->where('csrfToken', csrf_token()));
 
     $this->from(route('student.password.request'))
-        ->post(route('student.password.otp.send'), ['email' => $student->email])
+        ->post(route('student.password.reset-link.send'), ['email' => $student->email])
         ->assertRedirect(route('student.password.request'));
 
-    $otp = DB::table('password_reset_otps')
-        ->where('role', 'Student')
+    $tokenRecord = DB::table('account_password_setup_tokens')
         ->where('email', $student->email)
         ->first();
 
-    $code = null;
-    Mail::assertSent(PasswordResetOtp::class, function (PasswordResetOtp $mail) use (&$code) {
-        $code = $mail->code;
+    $resetUrl = null;
+    Mail::assertSent(PasswordResetLink::class, function (PasswordResetLink $mail) use (&$resetUrl) {
+        $resetUrl = $mail->resetUrl;
 
-        return true;
+        return $mail->accountType === 'Student';
     });
 
-    expect($otp)->not->toBeNull()
-        ->and(Hash::check($code, $otp->code_hash))->toBeTrue();
+    $token = basename(parse_url($resetUrl, PHP_URL_PATH));
+    expect($tokenRecord)->not->toBeNull()
+        ->and($tokenRecord->token_hash)->toBe(hash('sha256', $token));
 
     $password = 'A-strong-student-password-23';
 
-    $this->from(route('student.password.request'))
-        ->post(route('student.password.otp.reset'), [
-            'email' => $student->email,
-            'code' => $code,
+    $this->post(route('password.reset.update', ['token' => $token]), [
             'password' => $password,
             'password_confirmation' => $password,
         ])
@@ -88,20 +85,20 @@ it('allows a student to log in with their student number', function () {
     $this->assertAuthenticatedAs($student, 'student');
 });
 
-it('does not issue a student otp for inactive student records', function () {
+it('does not issue a password reset link for inactive student records', function () {
     Mail::fake();
     $student = createActiveStudent(['status' => 'Inactive']);
 
     $this->from(route('student.password.request'))
-        ->post(route('student.password.otp.send'), ['email' => $student->email])
+        ->post(route('student.password.reset-link.send'), ['email' => $student->email])
         ->assertRedirect(route('student.password.request'))
         ->assertSessionHas('status');
 
     Mail::assertNothingSent();
-    expect(DB::table('password_reset_otps')->where('role', 'Student')->exists())->toBeFalse();
+    expect(DB::table('account_password_setup_tokens')->where('account_type', 'Student')->exists())->toBeFalse();
 });
 
-it('shows an error and removes the otp if the mail transport fails', function () {
+it('shows an error and removes the reset token if the mail transport fails', function () {
     $student = createActiveStudent();
     $pendingMail = Mockery::mock();
     $pendingMail->shouldReceive('send')
@@ -114,10 +111,10 @@ it('shows an error and removes the otp if the mail transport fails', function ()
         ->andReturn($pendingMail);
 
     $this->from(route('student.password.request'))
-        ->post(route('student.password.otp.send'), ['email' => $student->email])
+        ->post(route('student.password.reset-link.send'), ['email' => $student->email])
         ->assertSessionHasErrors('email');
 
-    expect(DB::table('password_reset_otps')->where('role', 'Student')->exists())->toBeFalse();
+    expect(DB::table('account_password_setup_tokens')->where('account_type', 'Student')->exists())->toBeFalse();
 });
 
 it('rejects a student login if no password has been set', function () {

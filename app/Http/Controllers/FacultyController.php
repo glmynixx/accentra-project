@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use App\Models\ActivityLog;
+use App\Support\PasswordSetupLink;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
 
@@ -77,11 +78,13 @@ public function store(Request $request)
                 'icon' => 'user-plus',
             ]);
 
+            $setupLink = app(PasswordSetupLink::class)->create($faculty->email, 'Faculty');
+
             Mail::to($faculty->email)->send(new NewAccountCredentials(
                 $faculty->name,
                 $faculty->email,
-                $password,
                 'Faculty',
+                $setupLink['url'],
             ));
         });
     } catch (TransportExceptionInterface $exception) {

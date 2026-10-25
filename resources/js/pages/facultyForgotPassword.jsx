@@ -1,12 +1,11 @@
-import ForgotPasswordOtp from '../components/auth/forgotPasswordOtp';
+import ForgotPasswordResetLink from '../components/auth/forgotPasswordResetLink';
 
 export default function FacultyForgotPassword() {
     return (
-        <ForgotPasswordOtp
+        <ForgotPasswordResetLink
             accountType="faculty"
             loginUrl="/faculty/login"
-            sendOtpUrl="/faculty/forgot-password/send-otp"
-            resetPasswordUrl="/faculty/forgot-password/reset"
+            sendResetLinkUrl="/faculty/forgot-password/send-link"
         />
     );
 }

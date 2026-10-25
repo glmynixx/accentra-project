@@ -1,12 +1,11 @@
-import ForgotPasswordOtp from '../components/auth/forgotPasswordOtp';
+import ForgotPasswordResetLink from '../components/auth/forgotPasswordResetLink';
 
 export default function ForgotPassword() {
     return (
-        <ForgotPasswordOtp
+        <ForgotPasswordResetLink
             accountType="administrator"
             loginUrl="/login"
-            sendOtpUrl="/forgot-password/send-otp"
-            resetPasswordUrl="/forgot-password/reset"
+            sendResetLinkUrl="/forgot-password/send-link"
         />
     );
 }
