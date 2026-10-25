@@ -1758,9 +1758,6 @@ export default function StudentTasks() {
                                                         title="View task details"
                                                         aria-label={`View ${task.title}`}
                                                         onClick={() => openTask(task)}
-<<<<<<< HEAD
-                                                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#BFCFDF] bg-[#E6EDF4] text-[#1B3553] transition hover:border-[#91A9C0] hover:bg-[#D5E1EC]"
-=======
                                                        className="
                                                         flex h-8 w-8 shrink-0 items-center justify-center
                                                         rounded-lg border border-[#142A43] bg-[#1B3553]
@@ -1768,7 +1765,6 @@ export default function StudentTasks() {
                                                         hover:border-[#0F2035] hover:bg-[#142A43]
                                                         active:scale-95
                                             "
->>>>>>> origin/johnleo-work
                                                     >
                                                         <Eye size={15} />
                                                     </button>

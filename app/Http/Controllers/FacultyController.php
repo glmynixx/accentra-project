@@ -98,36 +98,74 @@ public function store(Request $request)
 }
 
 
-    public function update(Request $request, Faculty $faculty)
-    {
-        $validated = $request->validate([
-            'faculty_number' => [
-                'required', 'string', 'max:50',
-                Rule::unique('faculties', 'faculty_number')->ignore($faculty->id),
-            ],
-            'name' => 'required|string|max:255',
-            'email' => [
-                'required', 'email', 'max:255',
-                Rule::unique('faculties', 'email')->ignore($faculty->id),
-            ],
-            'specialization' => 'required|string|max:255',
-            'contact_number' => 'nullable|string|max:30',
-            'address' => 'nullable|string',
-            'status' => 'required|in:Active,Inactive',
+    
+public function update(Request $request, Faculty $faculty)
+{
+    $validated = $request->validate([
+        'faculty_number' => [
+            'required',
+            'string',
+            'max:50',
+            Rule::unique('faculties', 'faculty_number')
+                ->ignore($faculty->id),
+        ],
+
+        'name' => 'required|string|max:255',
+
+        'email' => [
+            'required',
+            'email',
+            'max:255',
+            Rule::unique('faculties', 'email')
+                ->ignore($faculty->id),
+            Rule::unique('users', 'email')
+                ->ignore($faculty->user_id),
+        ],
+
+        'specialization' => 'required|string|max:255',
+        'contact_number' => 'nullable|string|max:30',
+        'address' => 'nullable|string',
+        'status' => 'required|in:Active,Inactive',
+    ]);
+
+    DB::transaction(function () use ($faculty, $validated) {
+
+        // Update faculty information.
+        $faculty->update($validated);
+
+        // Find the linked User account.
+        $user = User::query()
+            ->whereKey($faculty->user_id)
+            ->where('role', 'Faculty')
+            ->first();
+
+        // Synchronize name and email.
+        if ($user) {
+            $user->update([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+            ]);
+        }
+
+        // Record the update in Activity Logs.
+        ActivityLog::create([
+            'actor' => 'Admin',
+            'action' => 'updated a faculty member',
+            'module' => 'Faculty Management',
+            'description' => $faculty->name,
+            'icon' => 'user-pen',
         ]);
 
-        $faculty->update($validated);
-        ActivityLog::create([
-        'actor' => 'Admin',
-        'action' => 'updated a faculty member',
-        'module' => 'Faculty Management',
-        'description' => $faculty->name,
-        'icon' => 'user-pen',
-]);
+    });
 
-        return redirect()->route('faculty')
-            ->with('success', 'Faculty updated successfully.');
-    }
+    return redirect()
+        ->route('faculty')
+        ->with(
+            'success',
+            'Faculty information and linked user account updated successfully.'
+        );
+}
+
 
     public function updateStatus(Request $request, Faculty $faculty)
     {
