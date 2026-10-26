@@ -1,3 +1,4 @@
+
 import { useMemo, useState } from "react";
 
 import {
@@ -8,7 +9,6 @@ import {
   Trash2,
   UserCheck,
   UserX,
-  KeyRound,
   X,
   ChevronLeft,
   ChevronRight,
@@ -16,28 +16,177 @@ import {
   UserRoundCheck,
   UserRoundX,
   GraduationCap,
+  Layers,
 } from "lucide-react";
 
 import Sidebar from "../components/layout/sidebar";
 import Navbar from "../components/layout/navbar";
 import MobileOverlay from "../components/layout/mobileOverlay";
-
 import { faculty as initialFaculty } from "../assets/data/facultyData";
+
+const sectionOptions = [
+  "BSAIS-11CA",
+  "BSAIS-21CA",
+  "BSAIS-31CA",
+  "BSAIS-41CA",
+  "BSEN-11CE",
+  "BSEN-21CE",
+  "BSEN-31CE",
+  "BSEN-41CE",
+];
+
+const initialSubjects = [
+  {
+    id: 1,
+    code: "ACC101",
+    name: "Fundamentals of Accounting",
+    description: "Introduction to basic accounting concepts and principles.",
+  },
+  {
+    id: 2,
+    code: "ACC102",
+    name: "Financial Accounting",
+    description: "Recording, classifying, and reporting financial transactions.",
+  },
+  {
+    id: 3,
+    code: "ACC103",
+    name: "Management Accounting",
+    description: "Accounting information for planning and decision-making.",
+  },
+  {
+    id: 4,
+    code: "ACC104",
+    name: "Cost Accounting",
+    description: "Cost measurement, analysis, and control.",
+  },
+  {
+    id: 5,
+    code: "ACC105",
+    name: "Auditing",
+    description: "Examination and evaluation of financial records.",
+  },
+  {
+    id: 6,
+    code: "ACC106",
+    name: "Taxation",
+    description: "Tax principles, regulations, and computations.",
+  },
+  {
+    id: 7,
+    code: "AIS101",
+    name: "Accounting Information Systems",
+    description: "Accounting processes and information systems.",
+  },
+  {
+    id: 8,
+    code: "AIS102",
+    name: "Accounting Information Systems Applications",
+    description: "Practical use of systems in accounting operations.",
+  },
+  {
+    id: 9,
+    code: "BUS101",
+    name: "Business Finance",
+    description: "Financial planning and business financial management.",
+  },
+  {
+    id: 10,
+    code: "BUS102",
+    name: "Business Law",
+    description: "Legal principles relevant to business operations.",
+  },
+];
+
+const activeSubjects = initialSubjects.filter(
+  (subject) => subject.status === "Active" || !subject.status
+);
+
+const glassCard =
+  "overflow-hidden rounded-2xl border border-white/[0.13] bg-gradient-to-br from-white/[0.105] to-white/[0.025] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_18px_55px_rgba(0,0,0,0.18)] backdrop-blur-[22px]";
+
+const fieldClass =
+  "w-full rounded-xl border border-white/20 bg-[#0B1D2D] px-3.5 py-2.5 text-sm font-medium text-white shadow-inner outline-none transition placeholder:text-white/55 hover:border-[#A9E5D2]/40 focus:border-[#A9E5D2]/75 focus:bg-[#102A3D] focus:ring-4 focus:ring-[#A9E5D2]/15 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-[#102337] disabled:text-white/60";
+
+const labelClass = "mb-1.5 block text-xs font-semibold text-white/65";
+
+const primaryButton =
+  "inline-flex items-center justify-center gap-2 rounded-xl border border-[#A9E5D2]/20 bg-[#477F73] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_5px_18px_rgba(71,127,115,0.22)] transition hover:bg-[#568F81] active:scale-[0.98]";
+
+const secondaryButton =
+  "inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/[0.06] px-4 py-2.5 text-sm font-semibold text-white/75 transition hover:border-white/25 hover:bg-white/[0.10] hover:text-white";
+
+const iconButton =
+  "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/[0.045] text-white/65 transition hover:border-white/25 hover:bg-white/[0.10] hover:text-white active:scale-95";
+
+function ModalShell({ children, onClose, wide = false }) {
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-[#020912]/75 px-4 py-6 backdrop-blur-md"
+      onMouseDown={onClose}
+    >
+      <div
+        className={`${glassCard} my-auto max-h-[90vh] w-full ${
+          wide ? "max-w-3xl" : "max-w-lg"
+        } overflow-y-auto`}
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function DetailCard({ label, children }) {
+  return (
+    <div className="min-w-0 rounded-lg border border-white/[0.07] bg-white/[0.025] p-3">
+      <span className={labelClass}>{label}</span>
+      <strong className="mt-1 block break-words text-sm font-semibold text-slate-100">
+        {children || "—"}
+      </strong>
+    </div>
+  );
+}
+
+// Supports multiple subjects and legacy single-subject records.
+function getFacultySubjects(member) {
+  if (Array.isArray(member?.subjects)) {
+    return member.subjects
+      .map((subject) =>
+        typeof subject === "string" ? subject : subject?.name
+      )
+      .filter(Boolean);
+  }
+
+  if (Array.isArray(member?.subject)) {
+    return member.subject
+      .map((subject) =>
+        typeof subject === "string" ? subject : subject?.name
+      )
+      .filter(Boolean);
+  }
+
+  if (member?.subject) {
+    return [
+      typeof member.subject === "string"
+        ? member.subject
+        : member.subject?.name,
+    ].filter(Boolean);
+  }
+
+  return [];
+}
 
 export default function FacultyManagement() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState("Faculty");
   const [faculty, setFaculty] = useState(initialFaculty);
-
   const [searchValue, setSearchValue] = useState("");
   const [sectionFilter, setSectionFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
-
   const [modalType, setModalType] = useState(null);
   const [selectedFaculty, setSelectedFaculty] = useState(null);
   const [deleteFaculty, setDeleteFaculty] = useState(null);
-  const [resetFaculty, setResetFaculty] = useState(null);
-
   const [currentPage, setCurrentPage] = useState(1);
 
   const facultyPerPage = 5;
@@ -47,6 +196,7 @@ export default function FacultyManagement() {
     name: "",
     email: "",
     specialization: "",
+    subjects: [],
     contactNumber: "",
     address: "",
     assignedSections: [],
@@ -54,52 +204,43 @@ export default function FacultyManagement() {
     dateAdded: "",
   });
 
-  /* =======================================================
-     INITIALS
-  ======================================================= */
-
-  const getInitials = (name = "") => {
-    return name
+  const getInitials = (name = "") =>
+    name
       .trim()
       .split(/\s+/)
       .map((word) => word.charAt(0))
       .join("")
       .slice(0, 2)
       .toUpperCase();
-  };
-
-  /* =======================================================
-     SECTIONS
-  ======================================================= */
 
   const sections = useMemo(() => {
     const allSections = faculty.flatMap(
       (member) => member.assignedSections || []
     );
 
-    return ["All", ...new Set(allSections)];
+    return ["All", ...new Set([...allSections, ...sectionOptions])];
   }, [faculty]);
-
-  /* =======================================================
-     FILTER
-  ======================================================= */
 
   const filteredFaculty = useMemo(() => {
     const query = searchValue.trim().toLowerCase();
 
     return faculty.filter((member) => {
+      const searchableValues = [
+        member.id,
+        member.name,
+        member.email,
+        member.specialization,
+        member.contactNumber,
+        member.address,
+        getFacultySubjects(member).join(" "),
+        (member.assignedSections || []).join(" "),
+        member.status,
+      ];
+
       const matchesSearch =
         !query ||
-        [
-          member.id,
-          member.name,
-          member.email,
-          member.specialization,
-          member.contactNumber,
-          member.address,
-          (member.assignedSections || []).join(" "),
-          member.status,
-        ]
+        searchableValues
+          .filter(Boolean)
           .join(" ")
           .toLowerCase()
           .includes(query);
@@ -109,16 +250,11 @@ export default function FacultyManagement() {
         (member.assignedSections || []).includes(sectionFilter);
 
       const matchesStatus =
-        statusFilter === "All" ||
-        member.status === statusFilter;
+        statusFilter === "All" || member.status === statusFilter;
 
       return matchesSearch && matchesSection && matchesStatus;
     });
   }, [faculty, searchValue, sectionFilter, statusFilter]);
-
-  /* =======================================================
-     PAGINATION
-  ======================================================= */
 
   const totalPages = Math.max(
     1,
@@ -126,18 +262,12 @@ export default function FacultyManagement() {
   );
 
   const safeCurrentPage = Math.min(currentPage, totalPages);
-
-  const startIndex =
-    (safeCurrentPage - 1) * facultyPerPage;
+  const startIndex = (safeCurrentPage - 1) * facultyPerPage;
 
   const paginatedFaculty = filteredFaculty.slice(
     startIndex,
     startIndex + facultyPerPage
   );
-
-  /* =======================================================
-     SUMMARY
-  ======================================================= */
 
   const totalFaculty = faculty.length;
 
@@ -150,13 +280,8 @@ export default function FacultyManagement() {
   ).length;
 
   const assignedFaculty = faculty.filter(
-    (member) =>
-      (member.assignedSections || []).length > 0
+    (member) => (member.assignedSections || []).length > 0
   ).length;
-
-  /* =======================================================
-     MENU
-  ======================================================= */
 
   const handleMenuChange = (menu) => {
     setActiveMenu(menu);
@@ -166,16 +291,22 @@ export default function FacultyManagement() {
     }
   };
 
-  /* =======================================================
-     MODALS
-  ======================================================= */
-
   const openAddModal = () => {
+    const nextId =
+      Math.max(
+        0,
+        ...faculty.map((member) => {
+          const match = String(member.id || "").match(/FAC-(\d+)/);
+          return match ? Number(match[1]) : 0;
+        })
+      ) + 1;
+
     setFormData({
-      id: `FAC-${String(faculty.length + 1).padStart(3, "0")}`,
+      id: `FAC-${String(nextId).padStart(3, "0")}`,
       name: "",
       email: "",
       specialization: "",
+      subjects: [],
       contactNumber: "",
       address: "",
       assignedSections: [],
@@ -187,6 +318,7 @@ export default function FacultyManagement() {
       }),
     });
 
+    setSelectedFaculty(null);
     setModalType("add");
   };
 
@@ -195,9 +327,8 @@ export default function FacultyManagement() {
 
     setFormData({
       ...member,
-      assignedSections: [
-        ...(member.assignedSections || []),
-      ],
+      subjects: getFacultySubjects(member),
+      assignedSections: [...(member.assignedSections || [])],
     });
 
     setModalType("edit");
@@ -213,9 +344,8 @@ export default function FacultyManagement() {
 
     setFormData({
       ...member,
-      assignedSections: [
-        ...(member.assignedSections || []),
-      ],
+      subjects: getFacultySubjects(member),
+      assignedSections: [...(member.assignedSections || [])],
     });
 
     setModalType("assign");
@@ -225,10 +355,6 @@ export default function FacultyManagement() {
     setModalType(null);
     setSelectedFaculty(null);
   };
-
-  /* =======================================================
-     FORM
-  ======================================================= */
 
   const handleFormChange = (event) => {
     const { name, value } = event.target;
@@ -241,42 +367,40 @@ export default function FacultyManagement() {
 
   const toggleSection = (section) => {
     setFormData((current) => {
-      const exists =
-        current.assignedSections.includes(section);
+      const assignedSections = Array.isArray(current.assignedSections)
+        ? current.assignedSections
+        : [];
+
+      const exists = assignedSections.includes(section);
 
       return {
         ...current,
         assignedSections: exists
-          ? current.assignedSections.filter(
-              (item) => item !== section
-            )
-          : [
-              ...current.assignedSections,
-              section,
-            ],
+          ? assignedSections.filter((item) => item !== section)
+          : [...assignedSections, section],
+      };
+    });
+  };
+
+  const toggleSubject = (subjectName) => {
+    setFormData((current) => {
+      const subjects = Array.isArray(current.subjects)
+        ? current.subjects
+        : [];
+
+      const exists = subjects.includes(subjectName);
+
+      return {
+        ...current,
+        subjects: exists
+          ? subjects.filter((item) => item !== subjectName)
+          : [...subjects, subjectName],
       };
     });
   };
 
   const handleSubmit = (event) => {
-    event.preventDefault();
-
-    if (modalType === "add") {
-      setFaculty((current) => [
-        ...current,
-        formData,
-      ]);
-    }
-
-    if (modalType === "edit") {
-      setFaculty((current) =>
-        current.map((member) =>
-          member.id === formData.id
-            ? formData
-            : member
-        )
-      );
-    }
+    event?.preventDefault?.();
 
     if (modalType === "assign") {
       setFaculty((current) =>
@@ -284,10 +408,41 @@ export default function FacultyManagement() {
           member.id === formData.id
             ? {
                 ...member,
-                assignedSections:
-                  formData.assignedSections,
+                assignedSections: Array.isArray(formData.assignedSections)
+                  ? [...formData.assignedSections]
+                  : [],
               }
             : member
+        )
+      );
+
+      closeModal();
+      return;
+    }
+
+    const selectedSubjects = Array.isArray(formData.subjects)
+      ? formData.subjects
+      : [];
+
+    const submittedData = {
+      ...formData,
+      subjects: selectedSubjects,
+      // Retain the first subject for compatibility with older records.
+      subject: selectedSubjects[0] || "",
+      assignedSections: Array.isArray(formData.assignedSections)
+        ? formData.assignedSections
+        : [],
+    };
+
+    if (modalType === "add") {
+      setFaculty((current) => [...current, submittedData]);
+      setCurrentPage(1);
+    }
+
+    if (modalType === "edit") {
+      setFaculty((current) =>
+        current.map((member) =>
+          member.id === submittedData.id ? submittedData : member
         )
       );
     }
@@ -295,93 +450,72 @@ export default function FacultyManagement() {
     closeModal();
   };
 
-  /* =======================================================
-     ACCOUNT STATUS
-  ======================================================= */
-
   const toggleAccountStatus = (member) => {
     setFaculty((current) =>
       current.map((item) =>
         item.id === member.id
           ? {
               ...item,
-              status:
-                item.status === "Active"
-                  ? "Inactive"
-                  : "Active",
+              status: item.status === "Active" ? "Inactive" : "Active",
             }
           : item
       )
     );
   };
 
-  /* =======================================================
-     DELETE
-  ======================================================= */
-
   const confirmDelete = () => {
     if (!deleteFaculty) return;
 
     setFaculty((current) =>
-      current.filter(
-        (member) => member.id !== deleteFaculty.id
-      )
+      current.filter((member) => member.id !== deleteFaculty.id)
     );
 
     setDeleteFaculty(null);
   };
 
-  /* =======================================================
-     RESET CREDENTIALS
-  ======================================================= */
-
-  const handleResetCredentials = () => {
-    setResetFaculty(null);
-  };
-
-  /* =======================================================
-     FILTER RESET
-  ======================================================= */
-
-  const resetFilters = () => {
-    setSearchValue("");
-    setSectionFilter("All");
-    setStatusFilter("All");
-    setCurrentPage(1);
-  };
-
-  /* =======================================================
-     SHARED INPUT STYLE
-  ======================================================= */
-
-  const inputClass = `
-    w-full
-    rounded-xl
-    border
-    border-[#C9D6E4]
-    bg-[#F4F7FA]
-    px-3.5
-    py-2.5
-    text-sm
-    font-medium
-    text-[#263A50]
-    outline-none
-    transition-all
-    placeholder:text-[#8A98A8]
-    hover:border-[#9FB3C8]
-    hover:bg-white
-    focus:border-[#1B3553]
-    focus:bg-white
-    focus:ring-4
-    focus:ring-[#1B3553]/10
-  `;
+  const summaryCards = [
+    {
+      label: "Total Faculty",
+      value: totalFaculty,
+      icon: Users,
+      accent: "navy",
+      note: "Faculty accounts",
+    },
+    {
+      label: "Active Accounts",
+      value: activeFaculty,
+      icon: UserRoundCheck,
+      accent: "mint",
+      note: "Currently active",
+    },
+    {
+      label: "Inactive Accounts",
+      value: inactiveFaculty,
+      icon: UserRoundX,
+      accent: "slate",
+      note: "Currently inactive",
+    },
+    {
+      label: "Assigned Faculty",
+      value: assignedFaculty,
+      icon: GraduationCap,
+      accent: "blue",
+      note: "With assigned sections",
+    },
+  ];
 
   return (
-    <div className="min-h-screen w-full overflow-x-hidden bg-[#EEF2F6]">
+    <div className="relative min-h-screen w-full overflow-x-hidden bg-[#071522] font-sans text-white">
+      {/* Background */}
+      <div className="pointer-events-none fixed inset-0">
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-[size:52px_52px]" />
 
-      {/* =====================================================
-          SIDEBAR
-      ===================================================== */}
+        <div className="absolute -left-36 top-16 h-[420px] w-[420px] rounded-full bg-[#477F73]/25 blur-[120px]" />
+
+        <div className="absolute right-[-100px] top-[-60px] h-[420px] w-[420px] rounded-full bg-sky-500/10 blur-[130px]" />
+
+        <div className="absolute bottom-[-100px] left-[35%] h-[320px] w-[480px] rounded-full bg-[#477F73]/10 blur-[110px]" />
+      </div>
 
       <Sidebar
         activeMenu={activeMenu}
@@ -394,29 +528,7 @@ export default function FacultyManagement() {
         onClose={() => setSidebarOpen(false)}
       />
 
-      {/* =====================================================
-          MAIN
-      ===================================================== */}
-
-      <main
-        className="
-          ml-[250px]
-          min-h-screen
-          w-[calc(100%-250px)]
-          min-w-0
-          px-[30px]
-          py-[25px]
-          transition-all
-          duration-300
-          max-[1100px]:px-[24px]
-          max-[768px]:ml-0
-          max-[768px]:w-full
-          max-[768px]:px-[18px]
-          max-[768px]:py-[18px]
-          max-[480px]:px-[14px]
-          max-[480px]:py-[14px]
-        "
-      >
+      <main className="relative z-10 ml-[260px] min-h-screen w-[calc(100%-260px)] min-w-0 px-[30px] py-[25px] transition-all duration-300 max-[1100px]:px-6 max-[768px]:ml-0 max-[768px]:w-full max-[768px]:px-[18px] max-[768px]:py-[18px] max-[480px]:px-[14px] max-[480px]:py-[14px]">
         <Navbar
           onMenuToggle={() => setSidebarOpen(true)}
           showPageInfo={false}
@@ -424,955 +536,351 @@ export default function FacultyManagement() {
         />
 
         <div className="mt-6 min-w-0 space-y-5">
-
-          {/* =================================================
-              PAGE HEADER
-          ================================================= */}
-
-          <div
-            className="
-              flex
-              items-center
-              justify-between
-              gap-4
-              max-[640px]:items-start
-              max-[640px]:flex-col
-            "
-          >
+          {/* Page Heading */}
+          <div className="flex items-center justify-between gap-4 max-[640px]:flex-col max-[640px]:items-start">
             <div className="min-w-0">
-              <span
-                className="
-                  inline-flex
-                  items-center
-                  rounded-full
-                  border
-                  border-[#BFD0E1]
-                  bg-[#DCE6F0]
-                  px-2.5
-                  py-1
-                  text-[10px]
-                  font-bold
-                  uppercase
-                  tracking-[0.12em]
-                  text-[#1B3553]
-                "
-              >
-                User Management
+              <span className="inline-flex items-center gap-2 rounded-full border border-[#A9E5D2]/20 bg-[#477F73]/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#A9E5D2]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#A9E5D2]" />
+                Administration
               </span>
 
-              <h1
-                className="
-                  mt-2
-                  text-2xl
-                  font-bold
-                  tracking-tight
-                  text-[#243A52]
-                  max-[480px]:text-xl
-                "
-              >
+              <h1 className="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">
                 Faculty Management
               </h1>
 
-              <p className="mt-1 text-sm text-[#65768A]">
-                Manage faculty accounts and information.
+              <p className="mt-1 text-sm text-white/55">
+                Manage faculty accounts, academic details, and section assignments.
               </p>
             </div>
 
             <button
               type="button"
               onClick={openAddModal}
-              className="
-                inline-flex
-                h-10
-                shrink-0
-                items-center
-                gap-2
-                rounded-xl
-                bg-[#1B3553]
-                px-4
-                text-sm
-                font-semibold
-                text-white
-                shadow-sm
-                transition-all
-                duration-200
-                hover:bg-[#142A43]
-                hover:shadow-md
-                active:scale-[0.98]
-                max-[640px]:w-full
-                max-[640px]:justify-center
-              "
+              className={`${primaryButton} h-10 shrink-0 max-[640px]:w-full`}
             >
-              <Plus size={18} />
+              <Plus size={17} />
               Add Faculty
             </button>
           </div>
 
-      {/* ===================================================== */}
-{/* SUMMARY CARDS */}
-{/* ===================================================== */}
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {summaryCards.map(({ label, value, icon: Icon, accent, note }) => {
+              const tones = {
+                navy: "bg-[#294B70]/25 text-[#C4D9F0] border-[#7292B4]/20",
+                mint: "bg-[#477F73]/25 text-[#A9E5D2] border-[#A9E5D2]/20",
+                slate: "bg-slate-400/10 text-slate-300 border-slate-300/15",
+                blue: "bg-sky-400/10 text-sky-200 border-sky-200/15",
+              };
 
-<div
-  className="
-    grid
-    grid-cols-1
-    gap-4
-    sm:grid-cols-2
-    xl:grid-cols-4
-  "
->
-  {/* TOTAL FACULTY */}
-  <div
-    className="
-      group
-      relative
-      overflow-hidden
-      rounded-2xl
-      border
-      border-[#AFC1D4]
-      bg-gradient-to-br
-      from-[#E2EAF2]
-      via-[#EDF2F7]
-      to-white
-      p-5
-      shadow-[0_5px_22px_rgba(27,53,83,0.10)]
-      transition-all
-      duration-300
-      hover:-translate-y-1
-      hover:shadow-[0_12px_30px_rgba(27,53,83,0.16)]
-    "
-  >
-    {/* Statistical decoration */}
-    <div className="absolute right-5 top-5 flex h-9 items-end gap-1 opacity-70">
-      <span className="h-3 w-1.5 rounded-sm bg-[#AFC1D4]" />
-      <span className="h-5 w-1.5 rounded-sm bg-[#8FA9C1]" />
-      <span className="h-8 w-1.5 rounded-sm bg-[#6F8CA8]" />
-      <span className="h-6 w-1.5 rounded-sm bg-[#AFC1D4]" />
-    </div>
+              return (
+                <div
+                  key={label}
+                  className={`${glassCard} group relative p-5 transition duration-300 hover:-translate-y-1 hover:border-white/20`}
+                >
+                  <div className="absolute -right-5 -top-6 h-24 w-24 rounded-full bg-white/[0.025] blur-2xl transition group-hover:bg-white/[0.06]" />
 
-    <div className="absolute bottom-0 left-0 h-1 w-full bg-[#1B3553]/20" />
+                  <div className="relative flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <span className="block text-xs font-semibold text-white/55">
+                        {label}
+                      </span>
 
-    <div className="relative flex items-center gap-4">
-      <div
-        className="
-          flex
-          h-12
-          w-12
-          shrink-0
-          items-center
-          justify-center
-          rounded-xl
-          bg-[#1B3553]
-          text-white
-          shadow-[0_5px_12px_rgba(27,53,83,0.20)]
-          transition-transform
-          duration-200
-          group-hover:scale-105
-        "
-      >
-        <Users size={21} />
-      </div>
+                      <strong className="mt-2 block text-3xl font-bold tracking-tight text-white">
+                        {value}
+                      </strong>
 
-      <div className="min-w-0">
-        <span className="block text-xs font-bold text-[#50647A]">
-          Total Faculty
-        </span>
+                      <span className="mt-1.5 block text-[11px] text-white/35">
+                        {note}
+                      </span>
+                    </div>
 
-        <strong className="mt-1 block text-2xl font-bold tracking-tight text-[#142A43]">
-          {totalFaculty}
-        </strong>
-      </div>
-    </div>
-  </div>
+                    <div
+                      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${tones[accent]}`}
+                    >
+                      <Icon size={21} />
+                    </div>
+                  </div>
 
+                  <div
+                    className={`absolute bottom-0 left-0 h-px w-full ${
+                      accent === "mint" ? "bg-[#A9E5D2]/40" : "bg-white/10"
+                    }`}
+                  />
+                </div>
+              );
+            })}
+          </div>
 
-  {/* ACTIVE ACCOUNTS */}
-  <div
-    className="
-      group
-      relative
-      overflow-hidden
-      rounded-2xl
-      border
-      border-[#B9D5C8]
-      bg-gradient-to-br
-      from-[#E3F0EA]
-      via-[#EFF6F2]
-      to-white
-      p-5
-      shadow-[0_5px_22px_rgba(27,53,83,0.08)]
-      transition-all
-      duration-300
-      hover:-translate-y-1
-      hover:shadow-[0_12px_30px_rgba(27,53,83,0.14)]
-    "
-  >
-    {/* Statistical decoration */}
-    <div className="absolute right-5 top-5 flex h-9 items-end gap-1 opacity-70">
-      <span className="h-3 w-1.5 rounded-sm bg-[#B9D9C8]" />
-      <span className="h-5 w-1.5 rounded-sm bg-[#8FC1A7]" />
-      <span className="h-7 w-1.5 rounded-sm bg-[#5E9C7A]" />
-      <span className="h-9 w-1.5 rounded-sm bg-[#31795B]" />
-    </div>
+          {/* Faculty List */}
+          <section className={`${glassCard} min-w-0`}>
+            <div className="border-b border-white/10 px-5 py-4 sm:px-6">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <div className="h-5 w-1 rounded-full bg-[#A9E5D2]" />
+                    <h2 className="text-[15px] font-bold tracking-tight text-white">
+                      Faculty List
+                    </h2>
+                  </div>
 
-    <div className="absolute bottom-0 left-0 h-1 w-full bg-[#31805E]/30" />
-
-    <div className="relative flex items-center gap-4">
-      <div
-        className="
-          flex
-          h-12
-          w-12
-          shrink-0
-          items-center
-          justify-center
-          rounded-xl
-          bg-[#31795B]
-          text-white
-          shadow-[0_5px_12px_rgba(49,121,91,0.18)]
-          transition-transform
-          duration-200
-          group-hover:scale-105
-        "
-      >
-        <UserRoundCheck size={21} />
-      </div>
-
-      <div className="min-w-0">
-        <span className="block text-xs font-bold text-[#587363]">
-          Active Accounts
-        </span>
-
-        <strong className="mt-1 block text-2xl font-bold tracking-tight text-[#142A43]">
-          {activeFaculty}
-        </strong>
-      </div>
-    </div>
-  </div>
-
-
-  {/* INACTIVE ACCOUNTS */}
-  <div
-    className="
-      group
-      relative
-      overflow-hidden
-      rounded-2xl
-      border
-      border-[#C8D0D9]
-      bg-gradient-to-br
-      from-[#E6EAF0]
-      via-[#F0F3F6]
-      to-white
-      p-5
-      shadow-[0_5px_22px_rgba(27,53,83,0.08)]
-      transition-all
-      duration-300
-      hover:-translate-y-1
-      hover:shadow-[0_12px_30px_rgba(27,53,83,0.14)]
-    "
-  >
-    {/* Statistical decoration */}
-    <div className="absolute right-5 top-5 flex h-9 items-end gap-1 opacity-70">
-      <span className="h-8 w-1.5 rounded-sm bg-[#CBD3DC]" />
-      <span className="h-5 w-1.5 rounded-sm bg-[#AAB4BF]" />
-      <span className="h-6 w-1.5 rounded-sm bg-[#7C8794]" />
-      <span className="h-3 w-1.5 rounded-sm bg-[#5E6C7C]" />
-    </div>
-
-    <div className="absolute bottom-0 left-0 h-1 w-full bg-[#64748B]/25" />
-
-    <div className="relative flex items-center gap-4">
-      <div
-        className="
-          flex
-          h-12
-          w-12
-          shrink-0
-          items-center
-          justify-center
-          rounded-xl
-          bg-[#5E6C7C]
-          text-white
-          shadow-[0_5px_12px_rgba(94,108,124,0.18)]
-          transition-transform
-          duration-200
-          group-hover:scale-105
-        "
-      >
-        <UserRoundX size={21} />
-      </div>
-
-      <div className="min-w-0">
-        <span className="block text-xs font-bold text-[#5E6D7E]">
-          Inactive Accounts
-        </span>
-
-        <strong className="mt-1 block text-2xl font-bold tracking-tight text-[#142A43]">
-          {inactiveFaculty}
-        </strong>
-      </div>
-    </div>
-  </div>
-
-
-  {/* ASSIGNED FACULTY */}
-  <div
-    className="
-      group
-      relative
-      overflow-hidden
-      rounded-2xl
-      border
-      border-[#AFC2D8]
-      bg-gradient-to-br
-      from-[#DFE8F2]
-      via-[#EAF0F6]
-      to-white
-      p-5
-      shadow-[0_5px_22px_rgba(27,53,83,0.10)]
-      transition-all
-      duration-300
-      hover:-translate-y-1
-      hover:shadow-[0_12px_30px_rgba(27,53,83,0.16)]
-    "
-  >
-    {/* Statistical decoration */}
-    <div className="absolute right-5 top-5 flex h-9 items-end gap-1 opacity-70">
-      <span className="h-4 w-1.5 rounded-sm bg-[#AFC2D8]" />
-      <span className="h-7 w-1.5 rounded-sm bg-[#7898B8]" />
-      <span className="h-5 w-1.5 rounded-sm bg-[#52789D]" />
-      <span className="h-9 w-1.5 rounded-sm bg-[#294B70]" />
-    </div>
-
-    <div className="absolute bottom-0 left-0 h-1 w-full bg-[#294B70]/30" />
-
-    <div className="relative flex items-center gap-4">
-      <div
-        className="
-          flex
-          h-12
-          w-12
-          shrink-0
-          items-center
-          justify-center
-          rounded-xl
-          bg-[#294B70]
-          text-white
-          shadow-[0_5px_12px_rgba(41,75,112,0.20)]
-          transition-transform
-          duration-200
-          group-hover:scale-105
-        "
-      >
-        <GraduationCap size={21} />
-      </div>
-
-      <div className="min-w-0">
-        <span className="block text-xs font-bold text-[#50677F]">
-          Assigned Faculty
-        </span>
-
-        <strong className="mt-1 block text-2xl font-bold tracking-tight text-[#142A43]">
-          {assignedFaculty}
-        </strong>
-      </div>
-    </div>
-  </div>
-</div>
-
-         {/* =================================================
-    FACULTY LIST
-================================================= */}
-
-<section
-  className="
-    min-w-0
-    overflow-hidden
-    rounded-2xl
-    border
-    border-[#C9D5E2]
-    bg-white
-    shadow-[0_5px_25px_rgba(27,53,83,0.08)]
-  "
->
-  {/* FACULTY LIST HEADER */}
-
-  <div
-    className="
-      border-b
-      border-[#DCE4EC]
-      bg-gradient-to-r
-      from-[#DCE6F0]
-      to-white
-      px-5
-      py-4
-    "
-  >
-   <div className="relative">
-                <div className="flex items-center gap-2">
-                  <div className="h-5 w-1 rounded-full bg-[#1B3553]" />
-
-                  <h2 className="text-[15px] font-bold tracking-tight text-[#142A43]">
-                    Faculty List
-                  </h2>
+                  <p className="mt-1 pl-3 text-xs text-white/45">
+                    View and manage faculty accounts.
+                  </p>
                 </div>
 
-    <p className="mt-0.5 text-xs text-[#7A8999]">
-      View and manage faculty accounts.
-    </p>
-</div>
-</div>
+                <span className="rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-[11px] font-semibold text-white/55">
+                  {filteredFaculty.length}{" "}
+                  {filteredFaculty.length === 1 ? "record" : "records"}
+                </span>
+              </div>
+            </div>
 
-  {/* FILTER ROW */}
+            {/* Search and Filters */}
+            <div className="border-b border-white/10 px-5 py-4 sm:px-6">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_180px_160px] md:items-center">
+                <div className="flex h-10 min-w-0 items-center gap-2.5 rounded-xl border border-white/10 bg-[#071522]/70 px-3.5 text-white/45 transition focus-within:border-[#A9E5D2]/40 focus-within:ring-4 focus-within:ring-[#A9E5D2]/[0.07]">
+                  <Search size={17} className="shrink-0" />
 
-  <div
-    className="
-      border-b
-      border-[#DCE4EC]
-      bg-[#F3F6F9]
-      px-5
-      py-4
-    "
-  >
-    <div
-      className="
-        grid
-        grid-cols-1
-        gap-3
-        md:grid-cols-[minmax(0,1fr)_180px_160px_auto]
-        md:items-center
-      "
-    >
-      {/* SEARCH */}
+                  <input
+                    type="text"
+                    value={searchValue}
+                    onChange={(event) => {
+                      setSearchValue(event.target.value);
+                      setCurrentPage(1);
+                    }}
+                    placeholder="Search faculty or subjects..."
+                    className="min-w-0 flex-1 border-0 bg-transparent text-sm text-white outline-none placeholder:text-white/35"
+                  />
+                </div>
 
-      <div
-        className="
-          flex
-          h-10
-          min-w-0
-          items-center
-          gap-2.5
-          rounded-xl
-          border
-          border-[#C9D6E3]
-          bg-white
-          px-3.5
-          text-[#65768A]
-          transition-all
-          duration-200
-          focus-within:border-[#1B3553]/30
-          focus-within:ring-4
-          focus-within:ring-[#1B3553]/5
-        "
-      >
-        <Search
-          size={17}
-          className="shrink-0"
-        />
+                <select
+                  value={sectionFilter}
+                  onChange={(event) => {
+                    setSectionFilter(event.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className={fieldClass}
+                >
+                  {sections.map((section) => (
+                    <option
+                      value={section}
+                      key={section}
+                      className="bg-[#0A1B2A]"
+                    >
+                      {section === "All" ? "All Sections" : section}
+                    </option>
+                  ))}
+                </select>
 
-        <input
-          type="text"
-          value={searchValue}
-          onChange={(event) => {
-            setSearchValue(event.target.value);
-            setCurrentPage(1);
-          }}
-          placeholder="Search faculty..."
-          className="
-            min-w-0
-            flex-1
-            border-0
-            bg-transparent
-            text-sm
-            text-[#243A52]
-            outline-none
-            placeholder:text-[#8A99AA]
-          "
-        />
-      </div>
+                <select
+                  value={statusFilter}
+                  onChange={(event) => {
+                    setStatusFilter(event.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className={fieldClass}
+                >
+                  <option value="All" className="bg-[#0A1B2A]">
+                    All Status
+                  </option>
+                  <option value="Active" className="bg-[#0A1B2A]">
+                    Active
+                  </option>
+                  <option value="Inactive" className="bg-[#0A1B2A]">
+                    Inactive
+                  </option>
+                </select>
+              </div>
+            </div>
 
-      {/* SECTION FILTER */}
-
-      <select
-        value={sectionFilter}
-        onChange={(event) => {
-          setSectionFilter(event.target.value);
-          setCurrentPage(1);
-        }}
-        className="
-          h-10
-          w-full
-          rounded-xl
-          border
-          border-[#C9D6E3]
-          bg-white
-          px-3
-          text-sm
-          font-medium
-          text-[#526579]
-          outline-none
-          transition-all
-          focus:border-[#1B3553]/30
-          focus:ring-4
-          focus:ring-[#1B3553]/5
-        "
-      >
-        {sections.map((section) => (
-          <option
-            value={section}
-            key={section}
-          >
-            {section === "All"
-              ? "All Sections"
-              : section}
-          </option>
-        ))}
-      </select>
-
-      {/* STATUS FILTER */}
-
-      <select
-        value={statusFilter}
-        onChange={(event) => {
-          setStatusFilter(event.target.value);
-          setCurrentPage(1);
-        }}
-        className="
-          h-10
-          w-full
-          rounded-xl
-          border
-          border-[#C9D6E3]
-          bg-white
-          px-3
-          text-sm
-          font-medium
-          text-[#526579]
-          outline-none
-          transition-all
-          focus:border-[#1B3553]/30
-          focus:ring-4
-          focus:ring-[#1B3553]/5
-        "
-      >
-        <option value="All">
-          All Status
-        </option>
-
-        <option value="Active">
-          Active
-        </option>
-
-        <option value="Inactive">
-          Inactive
-        </option>
-      </select>
-
-    </div>
-  </div>
-
-  {/* TABLE */}
-  <div className="w-full overflow-x-auto">
+            {/* Faculty Table */}
+            <div className="w-full overflow-x-auto">
               <table className="w-full min-w-[980px] border-collapse">
                 <thead>
-                  <tr className="border-b border-[#CDD8E3] bg-[#E7EDF3]">
-                    <th className="px-5 py-3.5 text-left text-[11px] font-bold uppercase tracking-wide text-[#40566E]">
-                      Faculty ID
-                    </th>
-
-                    <th className="px-5 py-3.5 text-left text-[11px] font-bold uppercase tracking-wide text-[#40566E]">
-                      Name
-                    </th>
-
-                    <th className="px-5 py-3.5 text-left text-[11px] font-bold uppercase tracking-wide text-[#40566E]">
-                      Assigned Sections
-                    </th>
-
-                    <th className="px-5 py-3.5 text-left text-[11px] font-bold uppercase tracking-wide text-[#40566E]">
-                      Status
-                    </th>
-
-                    <th className="px-5 py-3.5 text-left text-[11px] font-bold uppercase tracking-wide text-[#40566E]">
-                      Date Added
-                    </th>
-
-                    <th className="px-5 py-3.5 text-center text-[11px] font-bold uppercase tracking-wide text-[#40566E]">
-                      Actions
-                    </th>
+                  <tr className="border-b border-white/10 bg-white/[0.035]">
+                    {[
+                      "Faculty ID",
+                      "Name",
+                      "Assigned Sections",
+                      "Status",
+                      "Date Added",
+                      "Actions",
+                    ].map((heading) => (
+                      <th
+                        key={heading}
+                        className={`px-5 py-3.5 text-left text-[10px] font-bold uppercase tracking-[0.13em] text-white/40 ${
+                          heading === "Actions" ? "text-center" : ""
+                        }`}
+                      >
+                        {heading}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
-      <tbody>
-        {paginatedFaculty.length > 0 ? (
-          paginatedFaculty.map((member) => (
-            <tr
-              key={member.id}
-              className="
-                border-b
-                border-[#E3E9EF]
-                transition-colors
-                duration-150
-                last:border-b-0
-                hover:bg-[#F7F9FB]
-              "
-            >
-              {/* ID */}
 
-              <td className="px-5 py-4">
-                          <span className="text-xs font-bold text-[#1B3553]">
+                <tbody>
+                  {paginatedFaculty.length > 0 ? (
+                    paginatedFaculty.map((member) => (
+                      <tr
+                        key={member.id}
+                        className="border-b border-white/[0.07] transition-colors last:border-b-0 hover:bg-white/[0.035]"
+                      >
+                        <td className="px-5 py-4">
+                          <span className="rounded-md border border-[#A9E5D2]/15 bg-[#477F73]/10 px-2 py-1 text-[11px] font-bold text-[#A9E5D2]">
                             {member.id}
                           </span>
                         </td>
 
-              {/* NAME */}
+                        <td className="px-5 py-4 align-middle">
+                          <div className="flex min-w-0 items-center gap-3">
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#A9E5D2]/15 bg-[#477F73]/20 text-xs font-bold text-[#A9E5D2]">
+                              {getInitials(member.name)}
+                            </div>
 
-              <td className="px-5 py-4 align-middle">
-                <div className="flex min-w-0 items-center gap-3">
-                  <div
-                    className="
-                      flex
-                      h-9
-                      w-9
-                      shrink-0
-                      items-center
-                      justify-center
-                      rounded-full
-                      bg-[#DCE6F0]
-                      text-xs
-                      font-bold
-                      text-[#1B3553]
-                    "
-                  >
-                    {getInitials(member.name)}
-                  </div>
+                            <div className="min-w-0">
+                              <div className="truncate text-sm font-semibold text-white/90">
+                                {member.name}
+                              </div>
 
-                  <div className="min-w-0">
-                    <div
-                      className="
-                        truncate
-                        text-sm
-                        font-semibold
-                        text-[#243A52]
-                      "
-                    >
-                      {member.name}
-                    </div>
+                              <div className="mt-0.5 truncate text-xs text-white/40">
+                                {member.email}
+                              </div>
 
-                    <div
-                      className="
-                        mt-0.5
-                        truncate
-                        text-xs
-                        text-[#7A8999]
-                      "
-                    >
-                      {member.email}
-                    </div>
-                  </div>
-                </div>
-              </td>
+                              <div className="mt-1 text-[10px] text-[#A9E5D2]/75">
+                                {getFacultySubjects(member).length} subject(s)
+                              </div>
+                            </div>
+                          </div>
+                        </td>
 
-              {/* ASSIGNED SECTIONS */}
+                        <td className="px-5 py-4 align-middle">
+                          {(member.assignedSections || []).length > 0 ? (
+                            <div className="flex flex-wrap gap-1.5">
+                              {member.assignedSections.map((section) => (
+                                <span
+                                  key={section}
+                                  className="inline-flex rounded-lg border border-white/10 bg-white/[0.05] px-2 py-1 text-[10px] font-semibold text-white/65"
+                                >
+                                  {section}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-xs italic text-white/35">
+                              Not Assigned
+                            </span>
+                          )}
+                        </td>
 
-              <td className="px-5 py-4 align-middle">
-                {(member.assignedSections || []).length > 0 ? (
-                  <div className="flex flex-wrap gap-1.5">
-                    {member.assignedSections.map((section) => (
-                      <span
-                        key={section}
-                        className="
-                          inline-flex
-                          items-center
-                          rounded-lg
-                          border
-                          border-[#C4D4E3]
-                          bg-[#EAF0F6]
-                          px-2
-                          py-1
-                          text-[11px]
-                          font-semibold
-                          text-[#294B70]
-                        "
-                      >
-                        {section}
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <span
-                    className="
-                      text-xs
-                      italic
-                      text-[#7A8999]
-                    "
-                  >
-                    Not Assigned
-                  </span>
-                )}
-              </td>
+                        <td className="px-5 py-4">
+                          <span
+                            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold leading-none ${
+                              member.status === "Active"
+                                ? "border-emerald-300/20 bg-emerald-400/10 text-emerald-300"
+                                : "border-white/[0.14] bg-white/[0.06] text-white/65"
+                            }`}
+                          >
+                            <span
+                              className={`h-1.5 w-1.5 rounded-full ${
+                                member.status === "Active"
+                                  ? "bg-emerald-400"
+                                  : "bg-gray-400"
+                              }`}
+                            />
+                            {member.status}
+                          </span>
+                        </td>
 
-              {/* STATUS */}
+                        <td className="px-5 py-4 align-middle text-sm text-white/50">
+                          {member.dateAdded || "—"}
+                        </td>
 
-              <td className="px-5 py-4 align-middle">
-                {member.status === "Active" ? (
-                  <span
-                    className="
-                      inline-flex
-                      items-center
-                      gap-1.5
-                      rounded-full
-                      border
-                      border-[#B9D9C8]
-                      bg-[#E1F0E8]
-                      px-2.5
-                      py-1
-                      text-[11px]
-                      font-semibold
-                      text-[#267653]
-                    "
-                  >
-                    <span
-                      className="
-                        h-1.5
-                        w-1.5
-                        rounded-full
-                        bg-[#31805E]
-                      "
-                    />
-                    Active
-                  </span>
-                ) : (
-                  <span
-                    className="
-                      inline-flex
-                      items-center
-                      gap-1.5
-                      rounded-full
-                      border
-                      border-[#CBD3DC]
-                      bg-[#E7EBEF]
-                      px-2.5
-                      py-1
-                      text-[11px]
-                      font-semibold
-                      text-[#647181]
-                    "
-                  >
-                    <span
-                      className="
-                        h-1.5
-                        w-1.5
-                        rounded-full
-                        bg-[#7C8794]
-                      "
-                    />
-                    Inactive
-                  </span>
-                )}
-              </td>
+                        <td className="px-5 py-4 align-middle">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              type="button"
+                              title="View"
+                              onClick={() => openViewModal(member)}
+                              className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] text-slate-300 transition hover:border-[#75A99A]/30 hover:bg-[#477F73]/20 hover:text-[#B5D5CB] active:scale-95"
+                            >
+                              <Eye size={15} />
+                            </button>
 
-              {/* DATE */}
+                            <button
+                              type="button"
+                              title="Edit"
+                              onClick={() => openEditModal(member)}
+                              className="flex h-9 w-9 items-center justify-center rounded-lg border border-sky-400/15 bg-sky-400/[0.06] text-sky-300 transition hover:bg-sky-400/15 active:scale-95"
+                            >
+                              <Pencil size={15} />
+                            </button>
 
-              <td className="px-5 py-4 align-middle">
-                <span className="text-sm text-[#526579]">
-                  {member.dateAdded}
-                </span>
-              </td>
+                            <button
+                              type="button"
+                              title="Assign Sections"
+                              onClick={() => openAssignModal(member)}
+                              className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#36534E]/40 bg-[#36534E]/15 text-[#A9E5D2] transition hover:bg-[#36534E]/30 active:scale-95"
+                            >
+                              <GraduationCap size={15} />
+                            </button>
 
-              {/* ACTIONS */}
+                            <button
+                              type="button"
+                              title={
+                                member.status === "Active"
+                                  ? "Deactivate"
+                                  : "Activate"
+                              }
+                              onClick={() => toggleAccountStatus(member)}
+                              className="flex h-9 w-9 items-center justify-center rounded-lg border border-amber-400/15 bg-amber-400/[0.06] text-amber-300 transition hover:bg-amber-400/15 active:scale-95"
+                            >
+                              {member.status === "Active" ? (
+                                <UserX size={15} />
+                              ) : (
+                                <UserCheck size={15} />
+                              )}
+                            </button>
 
-              <td className="px-5 py-4 align-middle">
-                <div
-                  className="
-                    flex
-                    items-center
-                    justify-end
-                    gap-1.5
-                  "
-                >
-                  <button
-                    type="button"
-                    title="View"
-                    onClick={() => openViewModal(member)}
-                    className="
-                      flex h-8 w-8 shrink-0 items-center justify-center
-                      rounded-lg border border-[#C9D6E3] bg-white
-                      text-[#526579] shadow-sm transition-all
-                      duration-200 hover:border-[#9FB4C9]
-                      hover:bg-[#E7EDF3] hover:text-[#1B3553]
-                      active:scale-95
-                    "
-                  >
-                    <Eye size={15} />
-                  </button>
+                            <button
+                              type="button"
+                              title="Delete"
+                              onClick={() => setDeleteFaculty(member)}
+                              className="flex h-9 w-9 items-center justify-center rounded-lg border border-rose-400/15 bg-rose-400/[0.06] text-rose-300 transition hover:bg-rose-400/15 active:scale-95"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="6" className="px-5 py-14 text-center">
+                        <div className="mx-auto flex max-w-xs flex-col items-center">
+                          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-white/35">
+                            <Users size={24} />
+                          </div>
 
-                  <button
-                    type="button"
-                    title="Edit"
-                    onClick={() => openEditModal(member)}
-                    className="
-                      flex h-8 w-8 shrink-0 items-center justify-center
-                      rounded-lg border border-[#BFD2E5] bg-[#EEF4F9]
-                      text-[#294B70] transition-all duration-200
-                      hover:bg-[#DCE8F2] hover:text-[#1B3553]
-                      active:scale-95
-                    "
-                  >
-                    <Pencil size={15} />
-                  </button>
+                          <strong className="text-sm font-semibold text-white/80">
+                            No faculty found
+                          </strong>
 
-                  <button
-                    type="button"
-                    title="Assign Sections"
-                    onClick={() => openAssignModal(member)}
-                    className="
-                      flex h-8 w-8 shrink-0 items-center justify-center
-                      rounded-lg border border-[#BFD2E5] bg-[#EEF4F9]
-                      text-[#294B70] transition-all duration-200
-                      hover:bg-[#DCE8F2] hover:text-[#1B3553]
-                      active:scale-95
-                    "
-                  >
-                    <GraduationCap size={15} />
-                  </button>
+                          <span className="mt-1 text-xs text-white/40">
+                            Try changing your search or filters.
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
 
-                  <button
-                    type="button"
-                    title={
-                      member.status === "Active"
-                        ? "Deactivate"
-                        : "Activate"
-                    }
-                    onClick={() => toggleAccountStatus(member)}
-                    className={
-                      member.status === "Active"
-                        ? `
-                          flex h-8 w-8 shrink-0 items-center justify-center
-                          rounded-lg border border-[#E6D2A8] bg-[#FFF7E6]
-                          text-[#9A6B16] transition-all duration-200
-                          hover:bg-[#FCEBC3] hover:text-[#80580F]
-                          active:scale-95
-                        `
-                        : `
-                          flex h-8 w-8 shrink-0 items-center justify-center
-                          rounded-lg border border-[#B9D9C8] bg-[#E1F0E8]
-                          text-[#267653] transition-all duration-200
-                          hover:bg-[#D3E9DC] hover:text-[#1D6044]
-                          active:scale-95
-                        `
-                    }
-                  >
-                    {member.status === "Active" ? (
-                      <UserX size={15} />
-                    ) : (
-                      <UserCheck size={15} />
-                    )}
-                  </button>
-
-                  <button
-                    type="button"
-                    title="Reset Credentials"
-                    onClick={() => setResetFaculty(member)}
-                    className="
-                      flex h-8 w-8 shrink-0 items-center justify-center
-                      rounded-lg border border-[#D7C7A8] bg-[#FAF5E9]
-                      text-[#8A6A25] transition-all duration-200
-                      hover:bg-[#F4EBD6] hover:text-[#70551E]
-                      active:scale-95
-                    "
-                  >
-                    <KeyRound size={15} />
-                  </button>
-
-                  <button
-                    type="button"
-                    title="Delete"
-                    onClick={() => setDeleteFaculty(member)}
-                    className="
-                      flex h-8 w-8 shrink-0 items-center justify-center
-                      rounded-lg border border-[#E2BFC3] bg-[#FBEEF0]
-                      text-[#A94A55] transition-all duration-200
-                      hover:bg-[#F7DDE1] hover:text-[#8E3742]
-                      active:scale-95
-                    "
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                </div>
-              </td>
-            </tr>
-          ))
-        ) : (
-          <tr>
-            <td
-              colSpan="6"
-              className="px-5 py-14 text-center"
-            >
-              <div className="flex flex-col items-center justify-center">
-                <div
-                  className="
-                    mb-3
-                    flex
-                    h-12
-                    w-12
-                    items-center
-                    justify-center
-                    rounded-xl
-                    bg-[#E7EDF3]
-                    text-[#7A8999]
-                  "
-                >
-                  <Users size={25} />
-                </div>
-
-                <strong
-                  className="
-                    text-sm
-                    font-semibold
-                    text-[#243A52]
-                  "
-                >
-                  No faculty found
-                </strong>
-
-                <span
-                  className="
-                    mt-1
-                    text-xs
-                    text-[#7A8999]
-                  "
-                >
-                  Try changing your search or filters.
-                </span>
-              </div>
-            </td>
-          </tr>
-        )}
-      </tbody>
-    </table>
-  </div>
-
-   {/* =================================================== */}
-            {/* PAGINATION */}
-            {/* =================================================== */}
-
+            {/* Pagination */}
             {filteredFaculty.length > 0 && (
-              <div
-                className="
-                  flex
-                  items-center
-                  justify-between
-                  gap-4
-                  border-t
-                  border-[#D8E1EA]
-                  bg-[#F3F6F9]
-                  px-5
-                  py-4
-                  max-[600px]:flex-col
-                  max-[600px]:items-start
-                "
-              >
-                <span className="text-xs font-medium text-[#718195]">
+              <div className="flex items-center justify-between gap-4 border-t border-white/10 bg-black/10 px-5 py-4 max-[600px]:flex-col max-[600px]:items-start sm:px-6">
+                <span className="text-xs font-medium text-white/45">
                   Showing {startIndex + 1} to{" "}
                   {Math.min(
                     startIndex + facultyPerPage,
@@ -1384,28 +892,12 @@ export default function FacultyManagement() {
                 <div className="flex items-center gap-1.5">
                   <button
                     type="button"
+                    aria-label="Previous page"
                     disabled={safeCurrentPage === 1}
                     onClick={() =>
                       setCurrentPage((page) => Math.max(1, page - 1))
                     }
-                    className="
-                      flex
-                      h-8
-                      w-8
-                      items-center
-                      justify-center
-                      rounded-lg
-                      border
-                      border-[#C6D3E0]
-                      bg-white
-                      text-[#526579]
-                      transition-all
-                      hover:border-[#9FB3C8]
-                      hover:bg-[#E1E9F1]
-                      hover:text-[#1B3553]
-                      disabled:cursor-not-allowed
-                      disabled:opacity-40
-                    "
+                    className={`${iconButton} disabled:cursor-not-allowed disabled:opacity-30`}
                   >
                     <ChevronLeft size={16} />
                   </button>
@@ -1415,27 +907,14 @@ export default function FacultyManagement() {
                     (_, index) => index + 1
                   ).map((page) => (
                     <button
-                      type="button"
                       key={page}
+                      type="button"
                       onClick={() => setCurrentPage(page)}
-                      className={`
-                        flex
-                        h-8
-                        min-w-8
-                        items-center
-                        justify-center
-                        rounded-lg
-                        px-2
-                        text-xs
-                        font-semibold
-                        transition-all
-                        duration-200
-                        ${
-                          safeCurrentPage === page
-                            ? "bg-[#1B3553] text-white shadow-[0_3px_8px_rgba(27,53,83,0.20)]"
-                            : "border border-[#C6D3E0] bg-white text-[#526579] hover:bg-[#E1E9F1] hover:text-[#1B3553]"
-                        }
-                      `}
+                      className={`flex h-8 min-w-8 items-center justify-center rounded-lg border px-2 text-xs font-semibold transition ${
+                        safeCurrentPage === page
+                          ? "border-[#A9E5D2]/25 bg-[#477F73] text-white shadow-[0_3px_10px_rgba(71,127,115,0.2)]"
+                          : "border-white/10 bg-white/[0.035] text-white/55 hover:bg-white/[0.08] hover:text-white"
+                      }`}
                     >
                       {page}
                     </button>
@@ -1443,30 +922,14 @@ export default function FacultyManagement() {
 
                   <button
                     type="button"
+                    aria-label="Next page"
                     disabled={safeCurrentPage === totalPages}
                     onClick={() =>
                       setCurrentPage((page) =>
                         Math.min(totalPages, page + 1)
                       )
                     }
-                    className="
-                      flex
-                      h-8
-                      w-8
-                      items-center
-                      justify-center
-                      rounded-lg
-                      border
-                      border-[#C6D3E0]
-                      bg-white
-                      text-[#526579]
-                      transition-all
-                      hover:border-[#9FB3C8]
-                      hover:bg-[#E1E9F1]
-                      hover:text-[#1B3553]
-                      disabled:cursor-not-allowed
-                      disabled:opacity-40
-                    "
+                    className={`${iconButton} disabled:cursor-not-allowed disabled:opacity-30`}
                   >
                     <ChevronRight size={16} />
                   </button>
@@ -1477,1315 +940,607 @@ export default function FacultyManagement() {
         </div>
       </main>
 
-     {/* ========================================================= */}
       {/* VIEW FACULTY MODAL */}
-      {/* ========================================================= */}
-
       {modalType === "view" && selectedFaculty && (
-        <div
-          className="
-            fixed
-            inset-0
-            z-[70]
-            flex
-            items-center
-            justify-center
-            overflow-y-auto
-            bg-[#0C1C2D]/60
-            p-4
-            backdrop-blur-sm
-          "
-          onMouseDown={closeModal}
-        >
-          <div
-            className="
-              my-auto
-              w-full
-              max-w-3xl
-              overflow-hidden
-              rounded-2xl
-              border
-              border-[#B8C9DA]
-              bg-white
-              shadow-[0_25px_70px_rgba(10,30,50,0.30)]
-            "
-            onMouseDown={(event) => event.stopPropagation()}
-          >
-            {/* MODAL HEADER */}
-
-            <div
-              className="
-                relative
-                overflow-hidden
-                bg-gradient-to-br
-                from-[#142A43]
-                via-[#1B3553]
-                to-[#294B70]
-                px-6
-                py-6
-              "
-            >
-              <div className="relative flex items-start justify-between gap-4">
-                <div className="flex min-w-0 items-center gap-4">
-                  <div
-                    className="
-                      flex
-                      h-16
-                      w-16
-                      shrink-0
-                      items-center
-                      justify-center
-                      rounded-2xl
-                      border
-                      border-white/25
-                      bg-white/15
-                      text-base
-                      font-bold
-                      text-white
-                      shadow-lg
-                      backdrop-blur-sm
-                    "
-                  >
-                    {getInitials(selectedFaculty.name)}
-                  </div>
-
-                  <div className="min-w-0">
-                    <span
-                      className="
-                        text-[10px]
-                        font-bold
-                        uppercase
-                        tracking-[0.14em]
-                        text-[#C8D8E8]
-                      "
-                    >
-                      Faculty Information
-                    </span>
-
-                    <h2 className="mt-1 text-xl font-bold tracking-tight text-white">
-                      {selectedFaculty.name}
-                    </h2>
-
-                    <div className="mt-1.5 flex items-center gap-2">
-                      <span className="rounded-md bg-white/10 px-2 py-1 text-xs font-semibold text-[#D8E4EF]">
-                        {selectedFaculty.id}
-                      </span>
-
-                      <span className="text-xs text-[#B8C9DA]">
-                        Faculty Account
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  aria-label="Close"
-                  onClick={closeModal}
-                  className="
-                    relative
-                    flex
-                    h-9
-                    w-9
-                    shrink-0
-                    items-center
-                    justify-center
-                    rounded-lg
-                    border
-                    border-white/20
-                    bg-white/10
-                    text-white
-                    transition-all
-                    hover:bg-white/20
-                  "
-                >
-                  <X size={18} />
-                </button>
+        <ModalShell onClose={closeModal} wide>
+          <div className="flex items-center justify-between border-b border-white/10 bg-[#102337] px-6 py-5">
+            <div className="flex items-center gap-4">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] text-[#B5D5CB]">
+                <GraduationCap size={25} />
               </div>
-            </div>
 
-            {/* INFORMATION */}
-
-            <div className="bg-[#EEF2F6] px-6 py-6">
-              <div className="mb-4">
-                <h3 className="text-sm font-bold text-[#1B3553]">
-                  Personal & Academic Details
-                </h3>
-
-                <p className="mt-0.5 text-xs text-[#738396]">
-                  Faculty account information
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#A9E5D2]">
+                  Faculty Information
                 </p>
-              </div>
 
-              {/* 2-COLUMN DETAILS — NO EMPTY RIGHT SIDE */}
+                <h2 className="mt-1 break-words text-xl font-bold text-white">
+                  {selectedFaculty.name}
+                </h2>
 
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {/* FACULTY ID */}
-
-                <div
-                  className="
-                    group
-                    relative
-                    overflow-hidden
-                    rounded-xl
-                    border
-                    border-[#C9D6E3]
-                    bg-white
-                    px-4
-                    py-3.5
-                    shadow-[0_2px_8px_rgba(27,53,83,0.05)]
-                    transition-all
-                    hover:border-[#9FB4C9]
-                    hover:shadow-[0_5px_15px_rgba(27,53,83,0.09)]
-                  "
-                >
-                  <div className="absolute left-0 top-0 h-full w-1 bg-[#BFCFDF] transition-colors group-hover:bg-[#1B3553]" />
-
-                  <span className="block pl-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[#53677D]">
-                    Faculty ID
-                  </span>
-
-                  <strong className="mt-1 block break-words pl-1 text-sm font-semibold text-[#243A52]">
-                    {selectedFaculty.id || "—"}
-                  </strong>
-                </div>
-
-                {/* NAME */}
-
-                <div
-                  className="
-                    group
-                    relative
-                    overflow-hidden
-                    rounded-xl
-                    border
-                    border-[#C9D6E3]
-                    bg-white
-                    px-4
-                    py-3.5
-                    shadow-[0_2px_8px_rgba(27,53,83,0.05)]
-                    transition-all
-                    hover:border-[#9FB4C9]
-                    hover:shadow-[0_5px_15px_rgba(27,53,83,0.09)]
-                  "
-                >
-                  <div className="absolute left-0 top-0 h-full w-1 bg-[#BFCFDF] transition-colors group-hover:bg-[#1B3553]" />
-
-                  <span className="block pl-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[#53677D]">
-                    Name
-                  </span>
-
-                  <strong className="mt-1 block break-words pl-1 text-sm font-semibold text-[#243A52]">
-                    {selectedFaculty.name || "—"}
-                  </strong>
-                </div>
-
-                {/* EMAIL */}
-
-                <div
-                  className="
-                    group
-                    relative
-                    overflow-hidden
-                    rounded-xl
-                    border
-                    border-[#C9D6E3]
-                    bg-white
-                    px-4
-                    py-3.5
-                    shadow-[0_2px_8px_rgba(27,53,83,0.05)]
-                    transition-all
-                    hover:border-[#9FB4C9]
-                    hover:shadow-[0_5px_15px_rgba(27,53,83,0.09)]
-                  "
-                >
-                  <div className="absolute left-0 top-0 h-full w-1 bg-[#BFCFDF] transition-colors group-hover:bg-[#1B3553]" />
-
-                  <span className="block pl-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[#53677D]">
-                    Email Address
-                  </span>
-
-                  <strong className="mt-1 block break-words pl-1 text-sm font-semibold text-[#243A52]">
-                    {selectedFaculty.email || "—"}
-                  </strong>
-                </div>
-
-                {/* SPECIALIZATION */}
-
-                <div
-                  className="
-                    group
-                    relative
-                    overflow-hidden
-                    rounded-xl
-                    border
-                    border-[#C9D6E3]
-                    bg-white
-                    px-4
-                    py-3.5
-                    shadow-[0_2px_8px_rgba(27,53,83,0.05)]
-                    transition-all
-                    hover:border-[#9FB4C9]
-                    hover:shadow-[0_5px_15px_rgba(27,53,83,0.09)]
-                  "
-                >
-                  <div className="absolute left-0 top-0 h-full w-1 bg-[#BFCFDF] transition-colors group-hover:bg-[#1B3553]" />
-
-                  <span className="block pl-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[#53677D]">
-                    Specialization
-                  </span>
-
-                  <strong className="mt-1 block break-words pl-1 text-sm font-semibold text-[#243A52]">
-                    {selectedFaculty.specialization || "—"}
-                  </strong>
-                </div>
-
-                {/* Contact Number*/}
-
-                <div
-                  className="
-                    group
-                    relative
-                    overflow-hidden
-                    rounded-xl
-                    border
-                    border-[#C9D6E3]
-                    bg-white
-                    px-4
-                    py-3.5
-                    shadow-[0_2px_8px_rgba(27,53,83,0.05)]
-                    transition-all
-                    hover:border-[#9FB4C9]
-                    hover:shadow-[0_5px_15px_rgba(27,53,83,0.09)]
-                  "
-                >
-                  <div className="absolute left-0 top-0 h-full w-1 bg-[#BFCFDF] transition-colors group-hover:bg-[#1B3553]" />
-
-                  <span className="block pl-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[#53677D]">
-                    Contact Number
-                  </span>
-
-                  <strong className="mt-1 block break-words pl-1 text-sm font-semibold text-[#243A52]">
-                    {selectedFaculty.contactNumber || "—"}
-                  </strong>
-                </div>
-
-                {/* Assigned Sections */}
-
-                <div
-                  className="
-                    group
-                    relative
-                    overflow-hidden
-                    rounded-xl
-                    border
-                    border-[#C9D6E3]
-                    bg-white
-                    px-4
-                    py-3.5
-                    shadow-[0_2px_8px_rgba(27,53,83,0.05)]
-                    transition-all
-                    hover:border-[#9FB4C9]
-                    hover:shadow-[0_5px_15px_rgba(27,53,83,0.09)]
-                  "
-                >
-                  <div className="absolute left-0 top-0 h-full w-1 bg-[#BFCFDF] transition-colors group-hover:bg-[#1B3553]" />
-
-                  <span className="block pl-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[#53677D]">
-                    Assigned Sections
-                  </span>
-
-                  <strong
-                  className="
-                    mt-1.5
-                    block
-                    break-words
-                    text-sm
-                    font-semibold
-                    text-[#243A52]
-                  "
-                >
-                  {(selectedFaculty.assignedSections || [])
-                    .length > 0
-                    ? selectedFaculty.assignedSections.join(
-                        ", "
-                      )
-                    : "Not Assigned"}
-                </strong>
-              </div>
-                {/* ADDRESS */}
-
-                <div
-                  className="
-                    group
-                    relative
-                    overflow-hidden
-                    rounded-xl
-                    border
-                    border-[#C9D6E3]
-                    bg-white
-                    px-4
-                    py-3.5
-                    shadow-[0_2px_8px_rgba(27,53,83,0.05)]
-                    transition-all
-                    hover:border-[#9FB4C9]
-                    hover:shadow-[0_5px_15px_rgba(27,53,83,0.09)]
-                  "
-                >
-                  <div className="absolute left-0 top-0 h-full w-1 bg-[#BFCFDF] transition-colors group-hover:bg-[#1B3553]" />
-
-                  <span className="block pl-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[#53677D]">
-                    Address
-                  </span>
-
-                  <strong className="mt-1 block break-words pl-1 text-sm font-semibold text-[#243A52]">
-                    {selectedFaculty.address || "—"}
-                  </strong>
-                </div>
-
-                {/* DATE ADDED */}
-
-                <div
-                  className="
-                    group
-                    relative
-                    overflow-hidden
-                    rounded-xl
-                    border
-                    border-[#C9D6E3]
-                    bg-white
-                    px-4
-                    py-3.5
-                    shadow-[0_2px_8px_rgba(27,53,83,0.05)]
-                    transition-all
-                    hover:border-[#9FB4C9]
-                    hover:shadow-[0_5px_15px_rgba(27,53,83,0.09)]
-                  "
-                >
-                  <div className="absolute left-0 top-0 h-full w-1 bg-[#BFCFDF] transition-colors group-hover:bg-[#1B3553]" />
-
-                  <span className="block pl-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[#53677D]">
-                    Date Added
-                  </span>
-
-                  <strong className="mt-1 block break-words pl-1 text-sm font-semibold text-[#243A52]">
-                    {selectedFaculty.dateAdded || "—"}
-                  </strong>
-                </div>
-
-                {/* ACCOUNT STATUS */}
-
-                <div
-                  className="
-                    group
-                    relative
-                    overflow-hidden
-                    rounded-xl
-                    border
-                    border-[#C9D6E3]
-                    bg-white
-                    px-4
-                    py-3.5
-                    shadow-[0_2px_8px_rgba(27,53,83,0.05)]
-                    transition-all
-                    hover:border-[#9FB4C9]
-                    hover:shadow-[0_5px_15px_rgba(27,53,83,0.09)]
-                  "
-                >
-                  <div className="absolute left-0 top-0 h-full w-1 bg-[#BFCFDF] transition-colors group-hover:bg-[#1B3553]" />
-
-                  <span className="block pl-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[#53677D]">
-                    Account Status
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <span className="rounded-md border border-white/10 bg-white/[0.05] px-2 py-1 text-xs text-slate-300">
+                    {selectedFaculty.id || "No ID"}
                   </span>
 
                   <span
-                    className={`
-                      mt-1.5
-                      ml-1
-                      inline-flex
-                      items-center
-                      gap-1.5
-                      rounded-full
-                      border
-                      bg-white
-                      px-2.5
-                      py-1
-                      text-[10px]
-                      font-bold
-                      ${
-                        selectedFaculty.status === "Active"
-                          ? "border-[#B9D9C8] text-[#267653]"
-                          : "border-[#CBD3DC] text-[#647181]"
-                      }
-                    `}
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold ${
+                      selectedFaculty.status === "Active"
+                        ? "border-[#A9E5D2]/20 bg-[#477F73]/15 text-[#A9E5D2]"
+                        : "border-white/10 bg-white/[0.05] text-white/60"
+                    }`}
                   >
                     <span
                       className={`h-1.5 w-1.5 rounded-full ${
                         selectedFaculty.status === "Active"
-                          ? "bg-[#31805E]"
-                          : "bg-[#7C8794]"
+                          ? "bg-[#A9E5D2]"
+                          : "bg-white/40"
                       }`}
                     />
-
-                    {selectedFaculty.status}
+                    {selectedFaculty.status || "Unknown"}
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* FOOTER */}
-
-            <div
-              className="
-                flex
-                items-center
-                justify-end
-                gap-2
-                border-t
-                border-[#DCE4EC]
-                bg-white
-                px-5
-                py-4
-                max-[480px]:flex-col
-                max-[480px]:items-stretch
-              "
+            <button
+              type="button"
+              onClick={closeModal}
+              aria-label="Close modal"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/[0.05] text-slate-300 transition hover:bg-white/10 hover:text-white"
             >
-              <button
-                type="button"
-                onClick={() =>
-                  openEditModal(selectedFaculty)
-                }
-                className="
-                  inline-flex
-                  items-center
-                  justify-center
-                  gap-2
-                  rounded-xl
-                  border
-                  border-[#BFD2E5]
-                  bg-[#EEF4F9]
-                  px-4
-                  py-2.5
-                  text-sm
-                  font-semibold
-                  text-[#294B70]
-                  transition-all
-                  hover:bg-[#DCE8F2]
-                  hover:text-[#1B3553]
-                "
-              >
-                <Pencil size={16} />
-                Edit Faculty
-              </button>
-
-              <button
-                type="button"
-                onClick={closeModal}
-                className="
-                  rounded-xl
-                  border
-                  border-[#C9D6E3]
-                  bg-white
-                  px-4
-                  py-2.5
-                  text-sm
-                  font-semibold
-                  text-[#526579]
-                  shadow-sm
-                  transition-all
-                  hover:bg-[#E7EDF3]
-                  hover:text-[#243A52]
-                "
-              >
-                Close
-              </button>
-            </div>
+              <X size={19} />
+            </button>
           </div>
-        </div>
+
+          <div className="bg-[#0E1A2A] p-5">
+            <section className="overflow-hidden rounded-xl border border-white/10 bg-[#071522]/70">
+              <div className="border-b border-white/[0.07] px-4 py-4">
+                <h3 className="text-sm font-bold text-white">
+                  Faculty Details
+                </h3>
+                <p className="mt-1 text-xs text-white/35">
+                  Personal and academic information.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2">
+                <DetailCard label="Faculty ID">
+                  {selectedFaculty.id}
+                </DetailCard>
+
+                <DetailCard label="Full Name">
+                  {selectedFaculty.name}
+                </DetailCard>
+
+                <DetailCard label="Email Address">
+                  {selectedFaculty.email}
+                </DetailCard>
+
+                <DetailCard label="Contact Number">
+                  {selectedFaculty.contactNumber}
+                </DetailCard>
+
+                <DetailCard label="Account Status">
+                  {selectedFaculty.status || "Unknown"}
+                </DetailCard>
+
+                <DetailCard label="Date Added">
+                  {selectedFaculty.dateAdded}
+                </DetailCard>
+
+                {/* ASSIGNED SUBJECTS */}
+                <div className="rounded-lg border border-white/[0.07] bg-white/[0.025] p-3 sm:col-span-2">
+                  <span className={labelClass}>Assigned Subjects</span>
+
+                  {getFacultySubjects(selectedFaculty).length > 0 ? (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {getFacultySubjects(selectedFaculty).map(
+                        (subjectName) => {
+                          const subject = initialSubjects.find(
+                            (item) => item.name === subjectName
+                          );
+
+                          return (
+                            <span
+                              key={subjectName}
+                              className="inline-flex flex-wrap items-center gap-2 rounded-lg border border-[#A9E5D2]/15 bg-[#477F73]/10 px-3 py-2 text-xs font-medium text-[#B5D5CB]"
+                            >
+                              {subject && (
+                                <span className="font-bold text-[#A9E5D2]">
+                                  {subject.code}
+                                </span>
+                              )}
+                              {subjectName}
+                            </span>
+                          );
+                        }
+                      )}
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-sm text-white/45">
+                      No subjects assigned.
+                    </p>
+                  )}
+                </div>
+
+                {/* ASSIGNED SECTIONS */}
+                <div className="rounded-lg border border-white/[0.07] bg-white/[0.025] p-3 sm:col-span-2">
+                  <span className={labelClass}>Assigned Sections</span>
+
+                  {(selectedFaculty.assignedSections || []).length > 0 ? (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {selectedFaculty.assignedSections.map((section) => (
+                        <span
+                          key={section}
+                          className="rounded-lg border border-white/10 bg-white/[0.05] px-3 py-2 text-xs font-medium text-white/70"
+                        >
+                          {section}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-sm text-white/45">
+                      Not Assigned
+                    </p>
+                  )}
+                </div>
+
+                <div className="rounded-lg border border-white/[0.07] bg-white/[0.025] p-3 sm:col-span-2">
+                  <span className={labelClass}>Address</span>
+                  <strong className="mt-1 block break-words text-sm font-semibold text-slate-100">
+                    {selectedFaculty.address || "—"}
+                  </strong>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <div className="flex justify-end gap-2 border-t border-white/10 bg-[#071522]/70 px-6 py-4 max-[480px]:flex-col">
+            <button
+              type="button"
+              onClick={() => openEditModal(selectedFaculty)}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
+            >
+              <Pencil size={17} />
+              Edit Faculty
+            </button>
+
+            <button
+              type="button"
+              onClick={closeModal}
+              className={primaryButton}
+            >
+              Close
+            </button>
+          </div>
+        </ModalShell>
       )}
 
-      {/* =====================================================
-          ADD / EDIT FACULTY MODAL
-      ===================================================== */}
+      {/* ADD / EDIT FACULTY MODAL */}
+      {(modalType === "add" || modalType === "edit") && (
+        <ModalShell onClose={closeModal} wide>
+          <div>
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-white/10 bg-[#102337] px-6 py-5">
+              <div className="flex items-center gap-4">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] text-[#B5D5CB]">
+                  <Users size={23} />
+                </div>
 
-      {(modalType === "add" ||
-        modalType === "edit") && (
-        <div
-          className="
-            fixed
-            inset-0
-            z-[100]
-            flex
-            items-center
-            justify-center
-            bg-[#142A43]/40
-            px-4
-            py-6
-            backdrop-blur-sm
-          "
-          onClick={closeModal}
-        >
-          <div
-            className="
-              max-h-[90vh]
-              w-full
-              max-w-3xl
-              overflow-y-auto
-              rounded-2xl
-              border
-              border-[#C9D5E2]
-              bg-white
-              shadow-[0_20px_60px_rgba(27,53,83,0.20)]
-            "
-            onClick={(event) =>
-              event.stopPropagation()
-            }
-          >
-            {/* HEADER */}
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#A9E5D2]">
+                    User Management
+                  </p>
 
-            <div
-              className="
-                flex
-                items-center
-                justify-between
-                bg-gradient-to-r
-                from-[#1B3553]
-                via-[#294B70]
-                to-[#365C7E]
-                px-5
-                py-5
-              "
-            >
-              <div>
-                <span
-                  className="
-                    inline-flex
-                    rounded-full
-                    border
-                    border-white/20
-                    bg-white/10
-                    px-2.5
-                    py-1
-                    text-[10px]
-                    font-bold
-                    uppercase
-                    tracking-[0.12em]
-                    text-white/80
-                  "
-                >
-                  User Management
-                </span>
+                  <h2 className="mt-1 text-xl font-bold text-white">
+                    {modalType === "add" ? "Add Faculty" : "Edit Faculty"}
+                  </h2>
 
-                <h2 className="mt-2 text-lg font-bold text-white">
-                  {modalType === "add"
-                    ? "Add Faculty"
-                    : "Edit Faculty"}
-                </h2>
-
-                <p className="mt-0.5 text-xs text-white/65">
-                  {modalType === "add"
-                    ? "Create a new faculty account."
-                    : "Update faculty information."}
-                </p>
+                  <p className="mt-1 text-xs text-white/55">
+                    {modalType === "add"
+                      ? "Create a new faculty account."
+                      : "Update faculty information."}
+                  </p>
+                </div>
               </div>
 
               <button
                 type="button"
                 onClick={closeModal}
-                className="
-                  flex
-                  h-8
-                  w-8
-                  shrink-0
-                  items-center
-                  justify-center
-                  rounded-lg
-                  text-white/70
-                  transition-colors
-                  hover:bg-white/10
-                  hover:text-white
-                "
+                aria-label="Close modal"
+                className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/[0.05] text-slate-300 transition hover:bg-white/10 hover:text-white"
               >
-                <X size={18} />
+                <X size={19} />
               </button>
             </div>
 
             <form onSubmit={handleSubmit}>
-              <div
-                className="
-                  grid
-                  grid-cols-1
-                  gap-4
-                  px-5
-                  py-5
-                  sm:grid-cols-2
-                "
-              >
-                {/* FACULTY ID */}
+              <div className="max-h-[70vh] overflow-y-auto bg-[#0E1A2A] px-6 py-6">
+                {/* Faculty Information Header */}
+                <div className="mb-4 flex items-center gap-3 rounded-xl border border-[#75A99A]/15 bg-[#477F73]/10 px-4 py-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#477F73] text-white">
+                    <Users size={18} />
+                  </div>
 
-                <div>
-                  <label
-                    className="
-                      mb-1.5
-                      block
-                      text-xs
-                      font-semibold
-                      text-[#526579]
-                    "
-                  >
-                    Faculty ID
-                  </label>
+                  <div>
+                    <h3 className="text-sm font-bold text-white">
+                      Faculty Information
+                    </h3>
 
-                  <input
-                    name="id"
-                    value={formData.id}
-                    onChange={handleFormChange}
-                    disabled
-                    className="
-                      w-full
-                      rounded-xl
-                      border
-                      border-[#C9D6E4]
-                      bg-[#E7EDF3]
-                      px-3.5
-                      py-2.5
-                      text-sm
-                      font-medium
-                      text-[#65768A]
-                      outline-none
-                    "
-                  />
+                    <p className="mt-0.5 text-xs text-white/35">
+                      Enter the faculty account details below.
+                    </p>
+                  </div>
                 </div>
 
-                {/* NAME */}
+                <div className="grid grid-cols-1 gap-4 rounded-2xl border border-white/10 bg-[#071522]/70 p-5 shadow-xl sm:grid-cols-2">
+                  {/* Faculty ID */}
+                  <div>
+                    <label htmlFor="faculty-id" className={labelClass}>
+                      Faculty ID
+                    </label>
 
-                <div>
-                  <label
-                    className="
-                      mb-1.5
-                      block
-                      text-xs
-                      font-semibold
-                      text-[#526579]
-                    "
-                  >
-                    Name
-                  </label>
+                    <input
+                      id="faculty-id"
+                      name="id"
+                      value={formData.id}
+                      onChange={handleFormChange}
+                      required
+                      className={fieldClass}
+                    />
+                  </div>
 
-                  <input
-                    name="name"
-                    value={formData.name}
-                    onChange={handleFormChange}
-                    placeholder="Enter full name"
-                    required
-                    className={inputClass}
-                  />
+                  {/* Full Name */}
+                  <div>
+                    <label htmlFor="faculty-name" className={labelClass}>
+                      Full Name
+                    </label>
+
+                    <input
+                      id="faculty-name"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleFormChange}
+                      placeholder="Enter full name"
+                      required
+                      className={fieldClass}
+                    />
+                  </div>
+
+                  {/* Email Address */}
+                  <div>
+                    <label htmlFor="faculty-email" className={labelClass}>
+                      Email Address
+                    </label>
+
+                    <input
+                      id="faculty-email"
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleFormChange}
+                      placeholder="faculty@accentra.edu"
+                      required
+                      className={fieldClass}
+                    />
+                  </div>
+
+                  {/* Contact Number */}
+                  <div>
+                    <label htmlFor="faculty-contact" className={labelClass}>
+                      Contact Number
+                    </label>
+
+                    <input
+                      id="faculty-contact"
+                      name="contactNumber"
+                      value={formData.contactNumber || ""}
+                      onChange={handleFormChange}
+                      placeholder="09XXXXXXXXX"
+                      required
+                      className={fieldClass}
+                    />
+                  </div>
+
+                  {/* Specialization */}
+                  <div>
+                    <label
+                      htmlFor="faculty-specialization"
+                      className={labelClass}
+                    >
+                      Specialization
+                    </label>
+
+                    <input
+                      id="faculty-specialization"
+                      name="specialization"
+                      value={formData.specialization || ""}
+                      onChange={handleFormChange}
+                      placeholder="Enter specialization"
+                      className={fieldClass}
+                    />
+                  </div>
+
+                  {/* Status */}
+                  <div>
+                    <label htmlFor="faculty-status" className={labelClass}>
+                      Status
+                    </label>
+
+                    <select
+                      id="faculty-status"
+                      name="status"
+                      value={formData.status || "Active"}
+                      onChange={handleFormChange}
+                      required
+                      className={fieldClass}
+                    >
+                      <option value="Active" className="bg-[#0A1B2A]">
+                        Active
+                      </option>
+                      <option value="Inactive" className="bg-[#0A1B2A]">
+                        Inactive
+                      </option>
+                    </select>
+                  </div>
+
+                  {/* Address */}
+                  <div className="sm:col-span-2">
+                    <label htmlFor="faculty-address" className={labelClass}>
+                      Address
+                    </label>
+
+                    <input
+                      id="faculty-address"
+                      name="address"
+                      value={formData.address || ""}
+                      onChange={handleFormChange}
+                      placeholder="Enter complete address"
+                      className={fieldClass}
+                    />
+                  </div>
                 </div>
 
-                {/* EMAIL */}
+                {/* Assigned Subjects - separate section at the bottom */}
+                <div className="mt-5 rounded-2xl border border-white/10 bg-[#071522]/70 p-5 shadow-xl">
+                  <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-sm font-bold text-white">
+                        Assigned Subjects
+                      </h3>
 
-                <div>
-                  <label
-                    className="
-                      mb-1.5
-                      block
-                      text-xs
-                      font-semibold
-                      text-[#526579]
-                    "
-                  >
-                    Email Address
-                  </label>
+                      <p className="mt-1 text-xs text-white/40">
+                        Select all subjects assigned to this faculty member.
+                      </p>
+                    </div>
 
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleFormChange}
-                    placeholder="faculty@accentra.edu"
-                    required
-                    className={inputClass}
-                  />
-                </div>
+                    <span className="rounded-lg border border-[#A9E5D2]/20 bg-[#477F73]/15 px-2.5 py-1.5 text-xs font-semibold text-[#A9E5D2]">
+                      {(formData.subjects || []).length} selected
+                    </span>
+                  </div>
 
-                {/* SPECIALIZATION */}
+                  <div className="max-h-64 space-y-2 overflow-y-auto rounded-xl border border-white/10 bg-[#0A1B2A] p-3">
+                    {activeSubjects.map((subject) => {
+                      const selectedSubjects = Array.isArray(formData.subjects)
+                        ? formData.subjects
+                        : [];
 
-                <div>
-                  <label
-                    className="
-                      mb-1.5
-                      block
-                      text-xs
-                      font-semibold
-                      text-[#526579]
-                    "
-                  >
-                    Specialization
-                  </label>
+                      const checked = selectedSubjects.includes(subject.name);
 
-                  <input
-                    name="specialization"
-                    value={formData.specialization}
-                    onChange={handleFormChange}
-                    placeholder="e.g. Financial Accounting"
-                    required
-                    className={inputClass}
-                  />
-                </div>
+                      return (
+                        <label
+                          key={subject.id}
+                          className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition ${
+                            checked
+                              ? "border-[#A9E5D2]/30 bg-[#477F73]/15"
+                              : "border-white/[0.07] bg-white/[0.025] hover:bg-white/[0.06]"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggleSubject(subject.name)}
+                            className="mt-1 h-4 w-4 shrink-0 accent-[#477F73]"
+                          />
 
-                {/* CONTACT */}
+                          <span className="min-w-0">
+                            <span className="block text-sm font-semibold text-white/90">
+                              {subject.name}
+                            </span>
 
-                <div>
-                  <label
-                    className="
-                      mb-1.5
-                      block
-                      text-xs
-                      font-semibold
-                      text-[#526579]
-                    "
-                  >
-                    Contact Number
-                  </label>
+                            <span className="mt-1 block text-xs text-white/45">
+                              {subject.code} · {subject.description}
+                            </span>
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
 
-                  <input
-                    name="contactNumber"
-                    value={formData.contactNumber}
-                    onChange={handleFormChange}
-                    placeholder="Enter contact number"
-                    className={inputClass}
-                  />
-                </div>
-
-                {/* ADDRESS */}
-
-                <div>
-                  <label
-                    className="
-                      mb-1.5
-                      block
-                      text-xs
-                      font-semibold
-                      text-[#526579]
-                    "
-                  >
-                    Address
-                  </label>
-
-                  <input
-                    name="address"
-                    value={formData.address}
-                    onChange={handleFormChange}
-                    placeholder="Enter address"
-                    className={inputClass}
-                  />
-                </div>
-
-                {/* STATUS */}
-
-                <div className="sm:col-span-2">
-                  <label
-                    className="
-                      mb-1.5
-                      block
-                      text-xs
-                      font-semibold
-                      text-[#526579]
-                    "
-                  >
-                    Account Status
-                  </label>
-
-                  <select
-                    name="status"
-                    value={formData.status}
-                    onChange={handleFormChange}
-                    className={inputClass}
-                  >
-                    <option value="Active">
-                      Active
-                    </option>
-
-                    <option value="Inactive">
-                      Inactive
-                    </option>
-                  </select>
+                  <p className="mt-3 text-xs text-white/40">
+                    You can select more than one subject for each faculty member.
+                  </p>
                 </div>
               </div>
 
-              {/* FOOTER */}
-
-              <div
-                className="
-                  flex
-                  items-center
-                  justify-end
-                  gap-2
-                  border-t
-                  border-[#DCE4EC]
-                  bg-[#F5F7FA]
-                  px-5
-                  py-4
-                  max-[480px]:flex-col
-                  max-[480px]:items-stretch
-                "
-              >
+              {/* Modal Footer */}
+              <div className="flex justify-end gap-2 border-t border-white/10 bg-[#071522]/70 px-6 py-4 max-[480px]:flex-col">
                 <button
                   type="button"
                   onClick={closeModal}
-                  className="
-                    rounded-xl
-                    border
-                    border-[#C9D6E3]
-                    bg-white
-                    px-4
-                    py-2.5
-                    text-sm
-                    font-semibold
-                    text-[#526579]
-                    shadow-sm
-                    transition-all
-                    hover:bg-[#E7EDF3]
-                    hover:text-[#243A52]
-                  "
+                  className={secondaryButton}
                 >
                   Cancel
                 </button>
 
-                <button
-                  type="submit"
-                  className="
-                    rounded-xl
-                    bg-[#1B3553]
-                    px-4
-                    py-2.5
-                    text-sm
-                    font-semibold
-                    text-white
-                    shadow-sm
-                    transition-all
-                    duration-200
-                    hover:bg-[#142A43]
-                    hover:shadow-md
-                    active:scale-[0.98]
-                  "
-                >
-                  {modalType === "add"
-                    ? "Add Faculty"
-                    : "Save Changes"}
+                <button type="submit" className={primaryButton}>
+                  {modalType === "add" ? "Add Faculty" : "Save Changes"}
                 </button>
               </div>
             </form>
           </div>
-        </div>
+        </ModalShell>
       )}
 
-      {/* =====================================================
-          ASSIGN SECTIONS MODAL
-      ===================================================== */}
+      {/* ASSIGN FACULTY SECTIONS MODAL */}
+      {modalType === "assign" && selectedFaculty && (
+        <ModalShell onClose={closeModal}>
+          <div className="flex items-center justify-between border-b border-white/10 bg-[#102337] px-6 py-5">
+            <div className="flex items-center gap-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] text-[#B5D5CB]">
+                <Layers size={23} />
+              </div>
 
-      {modalType === "assign" &&
-        selectedFaculty && (
-          <div
-            className="
-              fixed
-              inset-0
-              z-[100]
-              flex
-              items-center
-              justify-center
-              bg-[#142A43]/40
-              px-4
-              py-6
-              backdrop-blur-sm
-            "
-            onClick={closeModal}
-          >
-            <div
-              className="
-                max-h-[90vh]
-                w-full
-                max-w-lg
-                overflow-y-auto
-                rounded-2xl
-                border
-                border-[#C9D5E2]
-                bg-white
-                shadow-[0_20px_60px_rgba(27,53,83,0.20)]
-              "
-              onClick={(event) =>
-                event.stopPropagation()
-              }
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#A9E5D2]">
+                  Faculty Assignment
+                </p>
+
+                <h2 className="mt-1 text-xl font-bold text-white">
+                  Assign Faculty Sections
+                </h2>
+
+                <p className="mt-1 text-xs text-white/55">
+                  Select the sections assigned to this faculty member.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={closeModal}
+              aria-label="Close modal"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/[0.05] text-slate-300 transition hover:bg-white/10 hover:text-white"
             >
-              {/* HEADER */}
+              <X size={19} />
+            </button>
+          </div>
 
-              <div
-                className="
-                  flex
-                  items-center
-                  justify-between
-                  bg-gradient-to-r
-                  from-[#1B3553]
-                  via-[#294B70]
-                  to-[#365C7E]
-                  px-5
-                  py-5
-                "
-              >
-                <div>
-                  <span
-                    className="
-                      inline-flex
-                      rounded-full
-                      border
-                      border-white/20
-                      bg-white/10
-                      px-2.5
-                      py-1
-                      text-[10px]
-                      font-bold
-                      uppercase
-                      tracking-[0.12em]
-                      text-white/80
-                    "
-                  >
-                    Faculty Assignment
-                  </span>
-
-                  <h2 className="mt-2 text-lg font-bold text-white">
-                    Assign Faculty Sections
-                  </h2>
-
-                  <p className="mt-0.5 text-xs text-white/65">
-                    Select the sections assigned to
-                    this faculty member.
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="
-                    flex
-                    h-8
-                    w-8
-                    shrink-0
-                    items-center
-                    justify-center
-                    rounded-lg
-                    text-white/70
-                    transition-colors
-                    hover:bg-white/10
-                    hover:text-white
-                  "
-                >
-                  <X size={18} />
-                </button>
+          <div className="bg-[#0E1A2A] px-6 pt-5">
+            <div className="flex items-center gap-3 rounded-xl border border-[#75A99A]/15 bg-[#477F73]/10 px-4 py-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#A9E5D2]/20 bg-[#477F73]/20 text-sm font-bold text-[#A9E5D2]">
+                {getInitials(selectedFaculty.name)}
               </div>
 
-              {/* FACULTY INFO */}
+              <div className="min-w-0">
+                <h3 className="truncate text-sm font-bold text-white">
+                  {selectedFaculty.name}
+                </h3>
 
-              <div
-                className="
-                  mx-5
-                  mt-5
-                  flex
-                  items-center
-                  gap-3
-                  rounded-xl
-                  border
-                  border-[#C9D6E4]
-                  bg-[#F4F7FA]
-                  p-4
-                "
-              >
-                <div
-                  className="
-                    flex
-                    h-10
-                    w-10
-                    shrink-0
-                    items-center
-                    justify-center
-                    rounded-full
-                    bg-[#DCE6F0]
-                    text-xs
-                    font-bold
-                    text-[#1B3553]
-                  "
-                >
-                  {getInitials(
-                    selectedFaculty.name
-                  )}
-                </div>
-
-                <div className="min-w-0">
-                  <strong
-                    className="
-                      block
-                      truncate
-                      text-sm
-                      font-semibold
-                      text-[#243A52]
-                    "
-                  >
-                    {selectedFaculty.name}
-                  </strong>
-
-                  <span
-                    className="
-                      mt-0.5
-                      block
-                      text-xs
-                      text-[#7A8999]
-                    "
-                  >
-                    {selectedFaculty.id}
-                  </span>
-                </div>
-              </div>
-
-              {/* SECTIONS */}
-
-              <div
-                className="
-                  grid
-                  grid-cols-2
-                  gap-2
-                  px-5
-                  py-5
-                  max-[480px]:grid-cols-1
-                "
-              >
-                {[
-                  "BSAIS-1A",
-                  "BSAIS-1B",
-                  "BSAIS-2A",
-                  "BSAIS-2B",
-                  "BSAIS-3A",
-                  "BSAIS-3B",
-                ].map((section) => (
-                  <label
-                    key={section}
-                    className="
-                      flex
-                      cursor-pointer
-                      items-center
-                      gap-3
-                      rounded-xl
-                      border
-                      border-[#C9D6E4]
-                      bg-white
-                      px-3.5
-                      py-3
-                      text-sm
-                      font-medium
-                      text-[#526579]
-                      transition-all
-                      hover:border-[#9FB3C8]
-                      hover:bg-[#E7EDF3]
-                    "
-                  >
-                    <input
-                      type="checkbox"
-                      checked={formData.assignedSections.includes(
-                        section
-                      )}
-                      onChange={() =>
-                        toggleSection(section)
-                      }
-                      className="
-                        h-4
-                        w-4
-                        accent-[#1B3553]
-                      "
-                    />
-
-                    <span>{section}</span>
-                  </label>
-                ))}
-              </div>
-
-              {/* FOOTER */}
-
-              <div
-                className="
-                  flex
-                  items-center
-                  justify-end
-                  gap-2
-                  border-t
-                  border-[#DCE4EC]
-                  bg-[#F5F7FA]
-                  px-5
-                  py-4
-                  max-[480px]:flex-col
-                  max-[480px]:items-stretch
-                "
-              >
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="
-                    rounded-xl
-                    border
-                    border-[#C9D6E3]
-                    bg-white
-                    px-4
-                    py-2.5
-                    text-sm
-                    font-semibold
-                    text-[#526579]
-                    shadow-sm
-                    transition-all
-                    hover:bg-[#E7EDF3]
-                    hover:text-[#243A52]
-                  "
-                >
-                  Cancel
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleSubmit}
-                  className="
-                    rounded-xl
-                    bg-[#1B3553]
-                    px-4
-                    py-2.5
-                    text-sm
-                    font-semibold
-                    text-white
-                    shadow-sm
-                    transition-all
-                    duration-200
-                    hover:bg-[#142A43]
-                    hover:shadow-md
-                    active:scale-[0.98]
-                  "
-                >
-                  Save Assignments
-                </button>
+                <p className="mt-0.5 text-xs text-white/45">
+                  Faculty ID: {selectedFaculty.id}
+                </p>
               </div>
             </div>
           </div>
-        )}
 
-      {/* =====================================================
-          DELETE MODAL
-      ===================================================== */}
+          <div className="bg-[#0E1A2A] px-6 py-5">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <label className={labelClass}>Available Sections</label>
 
-      {deleteFaculty && (
-        <div
-          className="
-            fixed
-            inset-0
-            z-[100]
-            flex
-            items-center
-            justify-center
-            bg-[#142A43]/40
-            px-4
-            py-6
-            backdrop-blur-sm
-          "
-          onClick={() => setDeleteFaculty(null)}
-        >
-          <div
-            className="
-              w-full
-              max-w-sm
-              overflow-hidden
-              rounded-2xl
-              border
-              border-[#E2BFC3]
-              bg-white
-              shadow-[0_20px_60px_rgba(27,53,83,0.20)]
-            "
-            onClick={(event) =>
-              event.stopPropagation()
-            }
-          >
-            {/* HEADER */}
-
-            <div className="bg-[#FBEEF0] px-5 py-5">
-              <div
-                className="
-                  flex
-                  h-11
-                  w-11
-                  items-center
-                  justify-center
-                  rounded-xl
-                  bg-[#A94A55]
-                  text-white
-                  shadow-sm
-                "
-              >
-                <Trash2 size={21} />
-              </div>
-
-              <h2
-                className="
-                  mt-4
-                  text-base
-                  font-bold
-                  text-[#243A52]
-                "
-              >
-                Delete Faculty?
-              </h2>
-
-              <p
-                className="
-                  mt-2
-                  text-sm
-                  leading-6
-                  text-[#526579]
-                "
-              >
-                Are you sure you want to delete{" "}
-                <strong className="font-semibold text-[#243A52]">
-                  {deleteFaculty.name}
-                </strong>
-                ? This action cannot be undone.
-              </p>
+              <span className="text-xs text-[#A9E5D2]">
+                {(formData.assignedSections || []).length} selected
+              </span>
             </div>
 
-            {/* FOOTER */}
+            <div className="rounded-2xl border border-white/10 bg-[#071522]/70 p-4 shadow-xl">
+              {sectionOptions.length > 0 ? (
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {sectionOptions.map((section) => {
+                    const checked = (
+                      formData.assignedSections || []
+                    ).includes(section);
 
-            <div
-              className="
-                flex
-                justify-end
-                gap-2
-                border-t
-                border-[#E2BFC3]
-                bg-white
-                px-5
-                py-4
-              "
+                    return (
+                      <label
+                        key={section}
+                        className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3.5 py-3 text-sm font-medium transition ${
+                          checked
+                            ? "border-[#A9E5D2]/30 bg-[#477F73]/15 text-[#A9E5D2]"
+                            : "border-white/10 bg-white/[0.02] text-slate-300 hover:border-white/20 hover:bg-white/[0.05]"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleSection(section)}
+                          className="h-4 w-4 accent-[#477F73]"
+                        />
+
+                        <span className="break-words">{section}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="py-6 text-center text-sm text-white/40">
+                  No sections available.
+                </p>
+              )}
+
+              <div className="mt-4 border-t border-white/[0.07] pt-3">
+                <p className="text-xs text-white/40">
+                  Selected sections:{" "}
+                  <span className="font-semibold text-[#A9E5D2]">
+                    {(formData.assignedSections || []).length}
+                  </span>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 border-t border-white/10 bg-[#071522]/70 px-6 py-4 max-[480px]:flex-col">
+            <button
+              type="button"
+              onClick={closeModal}
+              className={secondaryButton}
             >
+              Cancel
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSubmit}
+              className={primaryButton}
+            >
+              Save Assignments
+            </button>
+          </div>
+        </ModalShell>
+      )}
+
+      {/* DELETE FACULTY MODAL */}
+      {deleteFaculty && (
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-[#020912]/75 px-4 py-6 backdrop-blur-md"
+          onMouseDown={() => setDeleteFaculty(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl border border-white/[0.13] bg-gradient-to-br from-white/[0.105] to-white/[0.025] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_18px_55px_rgba(0,0,0,0.35)] backdrop-blur-[22px]"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-red-300/20 bg-red-400/10 text-red-400">
+              <Trash2 size={23} />
+            </div>
+
+            <h2 className="mt-4 text-lg font-bold text-white">
+              Delete Faculty?
+            </h2>
+
+            <p className="mt-2 text-sm leading-6 text-white/65">
+              Are you sure you want to delete{" "}
+              <strong className="font-semibold text-white/85">
+                {deleteFaculty.name}
+              </strong>
+              ? This action cannot be undone.
+            </p>
+
+            <div className="mt-6 flex justify-end gap-2">
               <button
                 type="button"
-                onClick={() =>
-                  setDeleteFaculty(null)
-                }
-                className="
-                  rounded-xl
-                  border
-                  border-[#C9D6E3]
-                  bg-white
-                  px-4
-                  py-2.5
-                  text-sm
-                  font-semibold
-                  text-[#526579]
-                  shadow-sm
-                  transition-all
-                  hover:bg-[#E7EDF3]
-                  hover:text-[#243A52]
-                "
+                onClick={() => setDeleteFaculty(null)}
+                className="h-10 rounded-xl border border-white/[0.14] bg-[#102337] px-4 text-xs font-semibold text-white/75 transition-all hover:bg-white/[0.08]"
               >
                 Cancel
               </button>
@@ -2793,164 +1548,9 @@ export default function FacultyManagement() {
               <button
                 type="button"
                 onClick={confirmDelete}
-                className="
-                  rounded-xl
-                  bg-[#A94A55]
-                  px-4
-                  py-2.5
-                  text-sm
-                  font-semibold
-                  text-white
-                  shadow-sm
-                  transition-all
-                  hover:bg-[#8E3742]
-                  hover:shadow-md
-                "
+                className="h-10 rounded-xl bg-red-500 px-4 text-xs font-semibold text-white shadow-sm transition-all hover:bg-red-600 hover:shadow-md"
               >
                 Delete Faculty
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* =====================================================
-          RESET CREDENTIALS MODAL
-      ===================================================== */}
-
-      {resetFaculty && (
-        <div
-          className="
-            fixed
-            inset-0
-            z-[100]
-            flex
-            items-center
-            justify-center
-            bg-[#142A43]/40
-            px-4
-            py-6
-            backdrop-blur-sm
-          "
-          onClick={() => setResetFaculty(null)}
-        >
-          <div
-            className="
-              w-full
-              max-w-sm
-              overflow-hidden
-              rounded-2xl
-              border
-              border-[#D7C7A8]
-              bg-white
-              shadow-[0_20px_60px_rgba(27,53,83,0.20)]
-            "
-            onClick={(event) =>
-              event.stopPropagation()
-            }
-          >
-            {/* HEADER */}
-
-            <div className="bg-[#FAF5E9] px-5 py-5">
-              <div
-                className="
-                  flex
-                  h-11
-                  w-11
-                  items-center
-                  justify-center
-                  rounded-xl
-                  bg-[#8A6A25]
-                  text-white
-                  shadow-sm
-                "
-              >
-                <KeyRound size={21} />
-              </div>
-
-              <h2
-                className="
-                  mt-4
-                  text-base
-                  font-bold
-                  text-[#243A52]
-                "
-              >
-                Reset Credentials?
-              </h2>
-
-              <p
-                className="
-                  mt-2
-                  text-sm
-                  leading-6
-                  text-[#526579]
-                "
-              >
-                Reset the account credentials for{" "}
-                <strong className="font-semibold text-[#243A52]">
-                  {resetFaculty.name}
-                </strong>
-                ?
-              </p>
-            </div>
-
-            {/* FOOTER */}
-
-            <div
-              className="
-                flex
-                justify-end
-                gap-2
-                border-t
-                border-[#D7C7A8]
-                bg-white
-                px-5
-                py-4
-              "
-            >
-              <button
-                type="button"
-                onClick={() =>
-                  setResetFaculty(null)
-                }
-                className="
-                  rounded-xl
-                  border
-                  border-[#C9D6E3]
-                  bg-white
-                  px-4
-                  py-2.5
-                  text-sm
-                  font-semibold
-                  text-[#526579]
-                  shadow-sm
-                  transition-all
-                  hover:bg-[#E7EDF3]
-                  hover:text-[#243A52]
-                "
-              >
-                Cancel
-              </button>
-
-              <button
-                type="button"
-                onClick={handleResetCredentials}
-                className="
-                  rounded-xl
-                  bg-[#8A6A25]
-                  px-4
-                  py-2.5
-                  text-sm
-                  font-semibold
-                  text-white
-                  shadow-sm
-                  transition-all
-                  hover:bg-[#70551E]
-                  hover:shadow-md
-                "
-              >
-                Reset Credentials
               </button>
             </div>
           </div>
