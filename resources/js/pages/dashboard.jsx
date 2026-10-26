@@ -72,7 +72,7 @@ export default function Dashboard() {
 
     return (
         <div className="relative min-h-screen w-full overflow-x-hidden bg-[#071522] font-sans text-white">
-            {/* Background effects matching the landing page */}
+            
             <div
                 aria-hidden="true"
                 className="pointer-events-none fixed inset-0 overflow-hidden"

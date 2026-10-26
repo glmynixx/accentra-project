@@ -93,6 +93,15 @@ Route::inertia('/faculty/submissions', 'facultySubmissions')
 Route::inertia('/faculty/my-account', 'facultyMyAccount')
     ->name('faculty.my-account');
 
+Route::inertia('/settings/general', 'generalSettings')
+    ->name('settings.general');
+
+Route::inertia('/settings/academic', 'academicSettings')
+    ->name('settings.academic');
+
+Route::inertia('/settings/information', 'systemInformation')
+    ->name('settings.information');
+
  Route::get('/', function () {
     return Inertia::render('landingPage');
 });   

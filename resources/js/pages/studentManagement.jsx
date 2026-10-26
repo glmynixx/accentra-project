@@ -527,7 +527,7 @@ export default function StudentManagement() {
               </h1>
 
               <p className="mt-1 text-sm text-white/55">
-                Manage student accounts, academic details, and enrollment information.
+                Manage student accounts and academic details.
               </p>
             </div>
 
@@ -1089,11 +1089,10 @@ export default function StudentManagement() {
 
 
       
-{/* ADD / EDIT FACULTY MODAL */}
+{/* ADD / EDIT STUDENT MODAL */}
 {(modalType === "add" || modalType === "edit") && (
     <ModalShell onClose={closeModal} wide>
         <div>
-            {/* MODAL HEADER */}
             <div className="flex items-center justify-between border-b border-white/10 bg-[#102337] px-6 py-5">
                 <div className="flex items-center gap-4">
                     <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] text-[#B5D5CB]">
@@ -1104,17 +1103,13 @@ export default function StudentManagement() {
                         <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#A9E5D2]">
                             User Management
                         </p>
-
                         <h2 className="mt-1 text-xl font-bold text-white">
-                            {modalType === "add"
-                                ? "Add Faculty"
-                                : "Edit Faculty"}
+                            {modalType === "add" ? "Add Student" : "Edit Student"}
                         </h2>
-
                         <p className="mt-1 text-xs text-white/55">
                             {modalType === "add"
-                                ? "Create a new faculty account."
-                                : "Update faculty information."}
+                                ? "Create a new student account."
+                                : "Update student information."}
                         </p>
                     </div>
                 </div>
@@ -1129,42 +1124,34 @@ export default function StudentManagement() {
                 </button>
             </div>
 
-            {/* MODAL FORM */}
             <form onSubmit={handleSubmit}>
                 <div className="max-h-[70vh] overflow-y-auto bg-[#0E1A2A] px-6 py-6">
-                    {/* FACULTY INFORMATION HEADER */}
                     <div className="mb-4 flex items-center gap-3 rounded-xl border border-[#75A99A]/15 bg-[#477F73]/10 px-4 py-3">
                         <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#477F73] text-white">
                             <Users size={18} />
                         </div>
-
                         <div>
                             <h3 className="text-sm font-bold text-white">
-                                Faculty Information
+                                Student Information
                             </h3>
-
                             <p className="mt-0.5 text-xs text-white/35">
-                                Enter the faculty account details below.
+                                Enter the student account details below.
                             </p>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 gap-4 rounded-2xl border border-white/10 bg-[#071522]/70 p-5 shadow-xl sm:grid-cols-2">
-                        {/* FACULTY ID */}
+                        {/* STUDENT ID */}
                         <div>
-                            <label
-                                htmlFor="faculty-id"
-                                className={labelClass}
-                            >
-                                Faculty ID
+                            <label htmlFor="student-id" className={labelClass}>
+                                Student ID
                             </label>
-
                             <input
-                                id="faculty-id"
+                                id="student-id"
                                 name="id"
                                 value={formData.id}
                                 onChange={handleFormChange}
-                                placeholder="e.g. FAC-009"
+                                placeholder="e.g. STD-009"
                                 required
                                 className={fieldClass}
                             />
@@ -1172,15 +1159,11 @@ export default function StudentManagement() {
 
                         {/* FULL NAME */}
                         <div>
-                            <label
-                                htmlFor="faculty-name"
-                                className={labelClass}
-                            >
+                            <label htmlFor="student-name" className={labelClass}>
                                 Full Name
                             </label>
-
                             <input
-                                id="faculty-name"
+                                id="student-name"
                                 name="name"
                                 value={formData.name}
                                 onChange={handleFormChange}
@@ -1190,40 +1173,95 @@ export default function StudentManagement() {
                             />
                         </div>
 
-                        {/* EMAIL ADDRESS */}
+                        {/* EMAIL */}
                         <div>
-                            <label
-                                htmlFor="faculty-email"
-                                className={labelClass}
-                            >
+                            <label htmlFor="student-email" className={labelClass}>
                                 Email Address
                             </label>
-
                             <input
-                                id="faculty-email"
+                                id="student-email"
                                 type="email"
                                 name="email"
                                 value={formData.email}
                                 onChange={handleFormChange}
-                                placeholder="faculty@accentra.edu"
+                                placeholder="student@accentra.edu"
                                 required
                                 className={fieldClass}
                             />
                         </div>
 
+                        {/* SECTION */}
+                        <div>
+                            <label htmlFor="student-section" className={labelClass}>
+                                Section
+                            </label>
+                            <input
+                                id="student-section"
+                                name="section"
+                                value={formData.section}
+                                onChange={handleFormChange}
+                                placeholder="e.g. BSAIS-1A"
+                                required
+                                className={fieldClass}
+                            />
+                        </div>
+
+                        {/* COURSE */}
+                        <div>
+                            <label htmlFor="student-course" className={labelClass}>
+                                Course
+                            </label>
+                            <input
+                                id="student-course"
+                                name="course"
+                                value={formData.course}
+                                onChange={handleFormChange}
+                                placeholder="e.g. BS Accounting Information System"
+                                required
+                                className={fieldClass}
+                            />
+                        </div>
+
+                        {/* YEAR LEVEL */}
+                        <div>
+                            <label htmlFor="student-year" className={labelClass}>
+                                Year Level
+                            </label>
+                            <select
+                                id="student-year"
+                                name="yearLevel"
+                                value={formData.yearLevel}
+                                onChange={handleFormChange}
+                                required
+                                className={fieldClass}
+                            >
+                                <option value="" className="bg-[#0A1B2A]">
+                                    Select year level
+                                </option>
+                                <option value="1st Year" className="bg-[#0A1B2A]">
+                                    1st Year
+                                </option>
+                                <option value="2nd Year" className="bg-[#0A1B2A]">
+                                    2nd Year
+                                </option>
+                                <option value="3rd Year" className="bg-[#0A1B2A]">
+                                    3rd Year
+                                </option>
+                                <option value="4th Year" className="bg-[#0A1B2A]">
+                                    4th Year
+                                </option>
+                            </select>
+                        </div>
+
                         {/* CONTACT NUMBER */}
                         <div>
-                            <label
-                                htmlFor="faculty-contact"
-                                className={labelClass}
-                            >
+                            <label htmlFor="student-contact" className={labelClass}>
                                 Contact Number
                             </label>
-
                             <input
-                                id="faculty-contact"
+                                id="student-contact"
                                 name="contactNumber"
-                                value={formData.contactNumber || ""}
+                                value={formData.contactNumber}
                                 onChange={handleFormChange}
                                 placeholder="09XXXXXXXXX"
                                 required
@@ -1231,101 +1269,37 @@ export default function StudentManagement() {
                             />
                         </div>
 
-                        {/* SPECIALIZATION */}
-                        <div>
-                            <label
-                                htmlFor="faculty-specialization"
-                                className={labelClass}
-                            >
-                                Specialization
-                            </label>
-
-                            <input
-                                id="faculty-specialization"
-                                name="specialization"
-                                value={formData.specialization || ""}
-                                onChange={handleFormChange}
-                                placeholder="Enter specialization"
-                                className={fieldClass}
-                            />
-                        </div>
-
-                        {/* STATUS */}
-                        <div>
-                            <label
-                                htmlFor="faculty-status"
-                                className={labelClass}
-                            >
-                                Status
-                            </label>
-
-                            <select
-                                id="faculty-status"
-                                name="status"
-                                value={formData.status || "Active"}
-                                onChange={handleFormChange}
-                                required
-                                className={fieldClass}
-                            >
-                                <option
-                                    value="Active"
-                                    className="bg-[#0A1B2A]"
-                                >
-                                    Active
-                                </option>
-
-                                <option
-                                    value="Inactive"
-                                    className="bg-[#0A1B2A]"
-                                >
-                                    Inactive
-                                </option>
-                            </select>
-                        </div>
-
                         {/* ADDRESS */}
-                        <div className="sm:col-span-2">
-                            <label
-                                htmlFor="faculty-address"
-                                className={labelClass}
-                            >
+                        
+                        <div>
+                            <label htmlFor="student-address" className={labelClass}>
                                 Address
                             </label>
-
                             <input
-                                id="faculty-address"
+                                id="student-address"
                                 name="address"
-                                value={formData.address || ""}
+                                value={formData.address}
                                 onChange={handleFormChange}
                                 placeholder="Enter complete address"
+                                required
                                 className={fieldClass}
                             />
                         </div>
-
-                        {/* ASSIGNED SUBJECTS */}
+                          {/* MULTIPLE SUBJECTS */}
                         <div className="sm:col-span-2">
-                            <div className="mb-3">
-                                <label className={labelClass}>
-                                    Assigned Subjects
-                                </label>
+                            <label className={labelClass}>
+                                Assigned Subjects
+                            </label>
 
-                                <p className="mt-1 text-xs text-white/40">
-                                    Select all subjects assigned to this
-                                    faculty member.
-                                </p>
-                            </div>
+                            <p className="mb-3 text-xs text-white/40">
+                                Select all subjects assigned to this student.
+                            </p>
 
                             <div className="max-h-64 space-y-2 overflow-y-auto rounded-xl border border-white/10 bg-[#0A1B2A] p-3">
                                 {activeSubjects.map((subject) => {
-                                    const selectedSubjects =
-                                        Array.isArray(formData.subjects)
-                                            ? formData.subjects
-                                            : [];
-
-                                    const checked =
-                                        selectedSubjects.includes(
-                                            subject.name
-                                        );
+                                    const checked = formData.subjects.includes(
+                                        subject.name
+                                    );
 
                                     return (
                                         <label
@@ -1340,9 +1314,7 @@ export default function StudentManagement() {
                                                 type="checkbox"
                                                 checked={checked}
                                                 onChange={() =>
-                                                    toggleSubject(
-                                                        subject.name
-                                                    )
+                                                    toggleSubject(subject.name)
                                                 }
                                                 className="mt-1 h-4 w-4 shrink-0 accent-[#477F73]"
                                             />
@@ -1351,10 +1323,8 @@ export default function StudentManagement() {
                                                 <span className="block text-sm font-semibold text-white/90">
                                                     {subject.name}
                                                 </span>
-
                                                 <span className="mt-1 block text-xs text-white/45">
-                                                    {subject.code} ·{" "}
-                                                    {subject.description}
+                                                    {subject.code} · {subject.description}
                                                 </span>
                                             </span>
                                         </label>
@@ -1363,11 +1333,7 @@ export default function StudentManagement() {
                             </div>
 
                             <p className="mt-2 text-xs text-[#A9E5D2]">
-                                {(Array.isArray(formData.subjects)
-                                    ? formData.subjects
-                                    : []
-                                ).length}{" "}
-                                subject(s) selected
+                                {formData.subjects.length} subject(s) selected
                             </p>
                         </div>
                     </div>
@@ -1387,9 +1353,7 @@ export default function StudentManagement() {
                         type="submit"
                         className="rounded-xl border border-[#A9E5D2]/20 bg-[#477F73] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#568F81]"
                     >
-                        {modalType === "add"
-                            ? "Add Faculty"
-                            : "Save Changes"}
+                        {modalType === "add" ? "Add Student" : "Save Changes"}
                     </button>
                 </div>
             </form>
