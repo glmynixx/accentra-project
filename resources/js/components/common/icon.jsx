@@ -41,6 +41,7 @@ import {
   Scale,
   Landmark,
   NotebookPen,
+  UserRoundPen,
 
 } from "lucide-react";
 
@@ -87,6 +88,7 @@ const icons = {
   "scale":Scale,
   "landmark":Landmark,
   "notebook-pen":NotebookPen,
+  "user-round-pen": UserRoundPen,
 
 };
 

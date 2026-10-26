@@ -6,7 +6,7 @@ use Inertia\Inertia;
 // Admin
 Route::inertia('/login', 'login')->name('login');
 
-Route::inertia('/', 'dashboard')->name('dashboard');
+Route::inertia('/admin', 'dashboard')->name('dashboard');
 
 Route::inertia('/faculty', 'facultyManagement')->name('faculty');
 
@@ -92,3 +92,7 @@ Route::inertia('/faculty/submissions', 'facultySubmissions')
 
 Route::inertia('/faculty/my-account', 'facultyMyAccount')
     ->name('faculty.my-account');
+
+ Route::get('/', function () {
+    return Inertia::render('landingPage');
+});   

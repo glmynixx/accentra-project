@@ -1,0 +1,73 @@
+
+export const initialSubjects = [
+  {
+    id: 1,
+    code: "ACC101",
+    name: "Fundamentals of Accounting",
+    description: "Introduction to basic accounting concepts and principles.",
+    status: "Active",
+  },
+  {
+    id: 2,
+    code: "ACC102",
+    name: "Financial Accounting",
+    description: "Recording, classifying, and reporting financial transactions.",
+    status: "Active",
+  },
+  {
+    id: 3,
+    code: "ACC103",
+    name: "Management Accounting",
+    description: "Accounting information for planning and decision-making.",
+    status: "Active",
+  },
+  {
+    id: 4,
+    code: "ACC104",
+    name: "Cost Accounting",
+    description: "Cost measurement, analysis, and control.",
+    status: "Active",
+  },
+  {
+    id: 5,
+    code: "ACC105",
+    name: "Auditing",
+    description: "Examination and evaluation of financial records.",
+    status: "Active",
+  },
+  {
+    id: 6,
+    code: "ACC106",
+    name: "Taxation",
+    description: "Tax principles, regulations, and computations.",
+    status: "Active",
+  },
+  {
+    id: 7,
+    code: "AIS101",
+    name: "Accounting Information Systems",
+    description: "Accounting processes and information systems.",
+    status: "Active",
+  },
+  {
+    id: 8,
+    code: "AIS102",
+    name: "Accounting Information Systems Applications",
+    description: "Practical use of systems in accounting operations.",
+    status: "Active",
+  },
+  {
+    id: 9,
+    code: "BUS101",
+    name: "Business Finance",
+    description: "Financial planning and business financial management.",
+    status: "Active",
+  },
+  {
+    id: 10,
+    code: "BUS102",
+    name: "Business Law",
+    description: "Legal principles relevant to business operations.",
+    status: "Active",
+  },
+];
