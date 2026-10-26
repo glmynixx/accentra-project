@@ -1,9 +1,19 @@
+
 import { createInertiaApp } from '@inertiajs/react';
 import { createRoot } from 'react-dom/client';
 import InstallAppButton from './components/pwa/installAppButton';
 import AppStartupAnimation from './components/pwa/appStartupAnimation';
 
-const pages = import.meta.glob('./pages/**/*.{jsx,tsx}');
+
+import type { ComponentType } from 'react';
+
+type InertiaPageModule = {
+    default: ComponentType<any>;
+};
+
+const pages = import.meta.glob<InertiaPageModule>(
+    './pages/**/*.{jsx,tsx}'
+);
 
 void createInertiaApp({
     title: (title) => title || 'ACCENTRA',
@@ -31,7 +41,7 @@ void createInertiaApp({
 
     setup({ el, App, props }) {
         if (!el) {
-            return <App {...props} />;
+            return;
         }
 
         createRoot(el).render(
@@ -39,7 +49,7 @@ void createInertiaApp({
                 <App {...props} />
                 <InstallAppButton />
                 <AppStartupAnimation />
-            </>,
+            </>
         );
     },
 

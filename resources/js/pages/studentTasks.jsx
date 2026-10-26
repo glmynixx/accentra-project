@@ -1765,7 +1765,7 @@ export default function StudentTasks() {
                                                         hover:border-[#0F2035] hover:bg-[#142A43]
                                                         active:scale-95
                                             "
-                                                    >
+                                                    >   
                                                         <Eye size={15} />
                                                     </button>
 

@@ -1,373 +1,413 @@
-import { Link, router, usePage } from "@inertiajs/react";
 import { useState } from "react";
-
+import { Link } from "@inertiajs/react";
 import {
-Mail,
-LockKeyhole,
-Eye,
-EyeOff,
-ArrowRight,
-CircleAlert,
-} from "lucide-react";
+    Head,
+    useForm,
+} from "@inertiajs/react";
 
-export default function FacultyLogin() {
-const { csrfToken } = usePage().props;
-const [email, setEmail] = useState("");
-const [password, setPassword] = useState("");
-const [showPassword, setShowPassword] = useState(false);
-const [rememberMe, setRememberMe] = useState(false);
-const [errors, setErrors] = useState({});
-const [message, setMessage] = useState("");
-const [loading, setLoading] = useState(false);
-
-const inputClass = (hasError) => `     w-full rounded-xl border bg-white px-4 py-3
-    text-sm text-[#142A43] outline-none transition-all
-    placeholder:text-[#8FA3BA]
-    ${
-      hasError
-        ? "border-red-400 focus:border-red-500 focus:ring-4 focus:ring-red-100"
-        : "border-[#D9E1EA] focus:border-[#142A43] focus:ring-4 focus:ring-[#142A43]/10"
-    }
-  `;
-
-
-const handleSubmit = (event) => {
-    event.preventDefault();
-
-    const newErrors = {};
-
-    if (!email.trim()) {
-        newErrors.email = "Email address is required.";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        newErrors.email = "Please enter a valid email address.";
+function FieldIcon({ type }) {
+    if (type === "usn") {
+        return (
+            <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                className="h-5 w-5"
+                aria-hidden="true"
+            >
+                <rect x="3" y="4" width="18" height="16" rx="3" />
+                <circle cx="8" cy="10" r="2" />
+                <path d="M5.5 15a2.5 2.5 0 0 1 5 0" />
+                <path d="M13 9h4M13 13h4M13 16h3" />
+            </svg>
+        );
     }
 
-    if (!password) {
-        newErrors.password = "Password is required.";
-    }
-
-    setErrors(newErrors);
-    setMessage("");
-
-    if (Object.keys(newErrors).length > 0) {
-        return;
-    }
-
-    router.post(
-        "/faculty/login",
-        {
-            email: email.trim(),
-            password,
-            remember: rememberMe,
-        },
-        {
-            preserveScroll: true,
-
-            onStart: () => {
-                setLoading(true);
-            },
-
-            onError: (serverErrors) => {
-                setErrors(serverErrors);
-            },
-
-            onFinish: () => {
-                setLoading(false);
-            },
-        }
+    return (
+        <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            className="h-5 w-5"
+            aria-hidden="true"
+        >
+            <rect x="5" y="10" width="14" height="11" rx="2.5" />
+            <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+            <path d="M12 14v3" />
+        </svg>
     );
-};
+}
 
+export default function FacultyLogin({ status }) {
+    const [showPassword, setShowPassword] = useState(false);
 
-return ( <div className="min-h-screen bg-[#F4F6F8] text-[#142A43]"> <div className="grid min-h-screen lg:grid-cols-2">
+    const {
+        data,
+        setData,
+        post,
+        processing,
+        errors,
+        reset,
+    } = useForm({
+        email: "",
+        password: "",
+        remember: false,
+    });
 
-    {/* LEFT BRAND PANEL */}
-    <section
-      className="relative hidden overflow-hidden bg-[#142A43] bg-cover bg-center px-12 py-12 text-white lg:flex lg:flex-col lg:justify-between xl:px-16"
-      style={{
-        backgroundImage: "url('/images/login-bg.jpg')",
-      }}
-    >
-      {/* OVERLAY */}
-      <div className="pointer-events-none absolute inset-0 bg-[#142A43]/80" />
+    const handleSubmit = (event) => {
+        event.preventDefault();
 
-      {/* BACKGROUND */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -right-32 -top-32 h-96 w-96 rounded-full bg-[#36534E]/30 blur-3xl" />
-        <div className="absolute -bottom-40 -left-32 h-[28rem] w-[28rem] rounded-full bg-[#294B70]/40 blur-3xl" />
-      </div>
+        post("/faculty/login", {
+            onFinish: () => reset("password"),
+        });
+    };
 
-      {/* LOGO */}
-      <div className="relative z-10 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#142A43] shadow-[0_6px_18px_rgba(0,0,0,0.15)]">
-          <span className="text-lg font-extrabold">A</span>
-        </div>
+    return (
+        <>
+            <Head title="Faculty Log In | ACCENTRA" />
 
-        <div>
-          <div className="text-[21px] font-bold tracking-tight text-white">
-            ACCENTRA
-          </div>
-          <div className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-[#8FA3BA]">
-            Accounting System
-          </div>
-        </div>
-      </div>
+            <main className="relative min-h-screen overflow-hidden bg-[#101F30] font-sans text-white selection:bg-[#8FD6BF]/30">
+                {/* Background */}
+                <div
+                    className="absolute inset-0 scale-[1.02] bg-cover bg-center"
+                    style={{
+                        backgroundImage: "url('/images/fac-login-bg.jpg')",
+                    }}
+                />
 
-      {/* QUOTE */}
-      <div className="relative z-10 max-w-lg">
-        <div className="mb-5 inline-flex items-center rounded-full border border-white/15 bg-white/[0.07] px-4 py-2 text-xs font-medium tracking-wide text-[#A5B5BF]">
-          FACULTY PORTAL
-        </div>
+                {/* Cinematic overlays */}
+                <div className="absolute inset-0 bg-[#10243A]/55" />
+                <div className="absolute inset-0 bg-gradient-to-r from-[#10243A]/90 via-[#10243A]/65 to-[#10243A]/20" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#071522]/70 via-transparent to-[#071522]/10" />
 
-        <h1 className="text-4xl font-bold leading-tight tracking-tight xl:text-5xl">
-          Manage learning.
-          <br />
-          <span className="text-[#A5B5BF]">
-            Simplify accounting.
-          </span>
-        </h1>
+                {/* Ambient green lighting */}
+                <div className="pointer-events-none absolute -left-40 top-1/4 h-[450px] w-[450px] rounded-full bg-[#477F73]/25 blur-[140px]" />
+                <div className="pointer-events-none absolute -right-40 bottom-0 h-[500px] w-[500px] rounded-full bg-[#75B8A6]/15 blur-[150px]" />
 
-        <p className="mt-6 max-w-md text-sm leading-7 text-[#B8C6D6]">
-          Welcome to the ACCENTRA faculty portal. Access your dashboard
-          to manage classes, deliver lessons, create assessments, and
-          monitor student progress.
-        </p>
+                {/* Subtle decorative grid */}
+                <div
+                    className="pointer-events-none absolute inset-0 opacity-[0.06]"
+                    style={{
+                        backgroundImage:
+                            "linear-gradient(rgba(255,255,255,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.4) 1px, transparent 1px)",
+                        backgroundSize: "80px 80px",
+                    }}
+                />
 
-        <div className="mt-10 flex items-center gap-2">
-          <div className="h-1.5 w-12 rounded-full bg-[#9E2B25]" />
-          <div className="h-1.5 w-7 rounded-full bg-white/20" />
-          <div className="h-1.5 w-7 rounded-full bg-white/20" />
-        </div>
-      </div>
+                <div className="relative z-10 mx-auto grid min-h-screen max-w-[1600px] grid-cols-1 items-center gap-12 px-6 py-10 sm:px-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:px-16 xl:px-24">
+                    {/* Left branding */}
+                    <section className="flex flex-col justify-center py-5 lg:-translate-y-6 lg:py-6">
+                        <Link
+                            href="/"
+                            aria-label="ACCENTRA home"
+                            className="mb-10 flex w-fit items-center gap-3 sm:mb-12"
+                        >
+                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/25 bg-white/10 shadow-lg backdrop-blur-xl">
+                                <span className="text-2xl font-bold text-[#A9E5D2]">
+                                    A
+                                </span>
+                            </div>
 
-      {/* FOOTER */}
-      <div className="relative z-10 border-t border-white/10 pt-6">
-      </div>
-    </section>
+                            <span className="text-2xl font-semibold tracking-[0.2em] sm:text-3xl">
+                                ACCENTRA
+                            </span>
+                        </Link>
 
-    {/* RIGHT LOGIN PANEL */}
-    <section className="flex min-h-screen flex-col justify-center px-5 py-10 sm:px-10 lg:px-12 xl:px-20">
+                        <div className="mb-5 flex items-center gap-3">
+                            <span className="h-px w-9 bg-[#9CD6C5]" />
+                            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#A9E5D2] sm:text-sm">
+                                Accounting Information System
+                            </p>
+                        </div>
 
-      {/* MOBILE LOGO */}
-      <div className="mb-10 flex items-center gap-3 lg:hidden">
-        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#142A43] text-white shadow-md">
-          <span className="text-lg font-extrabold">A</span>
-        </div>
+                        <h1 className="max-w-2xl text-5xl font-bold leading-[1.08] tracking-tight sm:text-6xl xl:text-7xl">
+                            Build Better
+                            <span className="mt-2 block whitespace-nowrap bg-gradient-to-r from-[#B7E8D9] via-[#8FD6BF] to-[#65B49E] bg-clip-text pb-2 text-transparent">
+                                Accountants
+                            </span>
+                        </h1>
 
-        <div>
-          <div className="text-xl font-bold tracking-tight text-[#142A43]">
-            ACCENTRA
-          </div>
-          <div className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-[#8FA3BA]">
-            Accounting System
-          </div>
-        </div>
-      </div>
+                        <p className="mt-6 max-w-xl text-base leading-8 text-white/75 sm:text-lg">
+                            Welcome to the ACCENTRA faculty portal. Access
+                            your dashboard to manage classes, deliver lessons,
+                            create assessments, and monitor student progress.
+                        </p>
+                    </section>
 
-      <div className="mx-auto w-full max-w-md">
+                    {/* Faculty login card */}
+                    <section className="mx-auto w-full max-w-[500px] lg:ml-auto">
+                        <div className="relative overflow-hidden rounded-[28px] border border-white/25 bg-[#172B3C]/45 p-7 shadow-[0_30px_100px_rgba(0,0,0,0.38)] backdrop-blur-2xl sm:p-10 lg:p-11">
+                            {/* Card highlights */}
+                            <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/70 to-transparent" />
+                            <div className="pointer-events-none absolute -right-20 -top-24 h-52 w-52 rounded-full bg-[#75B8A6]/10 blur-[70px]" />
 
-        {/* FORM HEADING */}
-        <div className="mb-8">
-          <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#E8EDF3] text-[#142A43]">
-            <LockKeyhole size={23} strokeWidth={1.8} />
-          </div>
+                            <div className="relative mb-8">
+                                <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl border border-[#9CD6C5]/30 bg-[#9CD6C5]/10 text-[#A9E5D2]">
+                                    <svg
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="1.6"
+                                        className="h-6 w-6"
+                                        aria-hidden="true"
+                                    >
+                                        <path d="M15 3h6v6" />
+                                        <path d="M10 14 21 3" />
+                                        <path d="M21 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6" />
+                                    </svg>
+                                </div>
 
-          <h2 className="text-3xl font-bold tracking-tight text-[#142A43]">
-            Welcome back
-          </h2>
+                                <p className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#A9E5D2]">
+                                    Faculty Portal
+                                </p>
 
-          <p className="mt-2 text-sm leading-6 text-[#71869E]">
-            Log in to your account to access the faculty dashboard.
-          </p>
-        </div>
+                                <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+                                    Welcome Back
+                                </h2>
 
-        {/* LOGIN FORM */}
-        <form action="/faculty/login" method="post" onSubmit={handleSubmit} noValidate>
-          <input type="hidden" name="_token" value={csrfToken} />
-          <input
-            type="hidden"
-            name="remember"
-            value={rememberMe ? "1" : "0"}
-          />
+                                <p className="mt-3 text-sm leading-6 text-white/65">
+                                    Log in to your account to access the faculty
+                                    dashboard.
+                                </p>
+                            </div>
 
-          {/* EMAIL */}
-          <div className="mb-5">
-            <label
-              htmlFor="email"
-              className="mb-2 block text-sm font-semibold text-[#263B55]"
-            >
-              Email address
-            </label>
+                            {status && (
+                                <div
+                                    role="status"
+                                    className="mb-5 rounded-xl border border-emerald-300/25 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-100"
+                                >
+                                    {status}
+                                </div>
+                            )}
 
-            <div className="relative">
-              <Mail
-                size={18}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8FA3BA]"
-              />
+                            <form
+                                onSubmit={handleSubmit}
+                                className="relative space-y-5"
+                            >
+                                {/* USN */}
+                                <div>
+                                    <label
+                                        htmlFor="email"
+                                        className="mb-2.5 block text-sm font-medium text-white/90"
+                                    >
+                                       Email:
+                                    </label>
 
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                placeholder="Enter your email address"
-                value={email}
-                onChange={(event) => {
-                  setEmail(event.target.value);
-                  setErrors((current) => ({
-                    ...current,
-                    email: "",
-                  }));
-                  setMessage("");
-                }}
-                className={`${inputClass(!!errors.email)} pl-11`}
-                aria-invalid={!!errors.email}
-                aria-describedby={
-                  errors.email ? "email-error" : undefined
-                }
-              />
-            </div>
+                                    <div
+                                        className={`flex items-center rounded-xl border bg-[#071522]/25 transition duration-200 focus-within:bg-[#071522]/40 ${
+                                            errors.usn
+                                                ? "border-red-300/80 focus-within:border-red-300"
+                                                : "border-white/15 focus-within:border-[#9CD6C5]/70"
+                                        }`}
+                                    >
+                                        <span className="pl-4 text-white/55">
+                                            <FieldIcon type="usn" />
+                                        </span>
 
-            {errors.email && (
-              <p
-                id="email-error"
-                className="mt-2 flex items-center gap-1.5 text-xs text-red-600"
-              >
-                <CircleAlert size={14} />
-                {errors.email}
-              </p>
-            )}
-          </div>
+                                        <input
+                                            id="email"
+                                            type="email"
+                                            name="email"
+                                            autoComplete="email"
+                                            value={data.email}
+                                            onChange={(event) => setData("email", event.target.value)}
+                                            placeholder="Enter your email address"
+                                            aria-invalid={Boolean(errors.email)}
+                                            aria-describedby={errors.email ? "email-error" : undefined}
+                                            className="w-full border-0 bg-transparent px-3.5 py-4 text-sm text-white outline-none placeholder:text-white/35 focus:ring-0"
+                                        />
+                                    </div>
 
-          {/* PASSWORD */}
-          <div className="mb-4">
-            <label
-              htmlFor="password"
-              className="mb-2 block text-sm font-semibold text-[#263B55]"
-            >
-              Password
-            </label>
+                                    {errors.usn && (
+                                        <p
+                                            id="usn-error"
+                                            role="alert"
+                                            className="mt-2 text-sm text-red-200"
+                                        >
+                                            {errors.usn}
+                                        </p>
+                                    )}
+                                </div>
 
-            <div className="relative">
-              <LockKeyhole
-                size={18}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8FA3BA]"
-              />
+                                {/* Password */}
+                                <div>
+                                    <label
+                                        htmlFor="password"
+                                        className="mb-2.5 block text-sm font-medium text-white/90"
+                                    >
+                                        Password:
+                                    </label>
 
-              <input
-                id="password"
-                name="password"
-                type={showPassword ? "text" : "password"}
-                autoComplete="current-password"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(event) => {
-                  setPassword(event.target.value);
-                  setErrors((current) => ({
-                    ...current,
-                    password: "",
-                  }));
-                  setMessage("");
-                }}
-                className={`${inputClass(!!errors.password)} pl-11 pr-12`}
-                aria-invalid={!!errors.password}
-                aria-describedby={
-                  errors.password ? "password-error" : undefined
-                }
-              />
+                                    <div
+                                        className={`flex items-center rounded-xl border bg-[#071522]/25 transition duration-200 focus-within:bg-[#071522]/40 ${
+                                            errors.password
+                                                ? "border-red-300/80 focus-within:border-red-300"
+                                                : "border-white/15 focus-within:border-[#9CD6C5]/70"
+                                        }`}
+                                    >
+                                        <span className="pl-4 text-white/55">
+                                            <FieldIcon type="password" />
+                                        </span>
 
-              <button
-                type="button"
-                onClick={() =>
-                  setShowPassword((current) => !current)
-                }
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-[#8FA3BA] transition-colors hover:text-[#142A43]"
-                aria-label={
-                  showPassword ? "Hide password" : "Show password"
-                }
-              >
-                {showPassword ? (
-                  <EyeOff size={18} />
-                ) : (
-                  <Eye size={18} />
-                )}
-              </button>
-            </div>
+                                        <input
+                                            id="password"
+                                            type={showPassword ? "text" : "password"}
+                                            name="password"
+                                            autoComplete="current-password"
+                                            required
+                                            value={data.password}
+                                            onChange={(event) =>
+                                                setData("password", event.target.value)
+                                            }
+                                            placeholder="Enter your password"
+                                            aria-invalid={Boolean(errors.password)}
+                                            aria-describedby={
+                                                errors.password
+                                                    ? "password-error"
+                                                    : undefined
+                                            }
+                                            className="w-full border-0 bg-transparent px-3.5 py-4 text-sm text-white outline-none placeholder:text-white/35 focus:ring-0"
+                                        />
 
-            {errors.password && (
-              <p
-                id="password-error"
-                className="mt-2 flex items-center gap-1.5 text-xs text-red-600"
-              >
-                <CircleAlert size={14} />
-                {errors.password}
-              </p>
-            )}
-          </div>
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setShowPassword((current) => !current)
+                                            }
+                                            aria-label={
+                                                showPassword
+                                                    ? "Hide password"
+                                                    : "Show password"
+                                            }
+                                            aria-pressed={showPassword}
+                                            className="mr-2 flex items-center justify-center rounded-lg p-2 text-white/50 transition hover:text-[#A9E5D2] focus:outline-none focus:ring-2 focus:ring-[#9CD6C5]/50"
+                                        >
+                                            {showPassword ? (
+                                                <svg
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth="1.7"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    className="h-5 w-5"
+                                                    aria-hidden="true"
+                                                >
+                                                    <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" />
+                                                    <circle cx="12" cy="12" r="3" />
+                                                </svg>
+                                            ) : (
+                                                <svg
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth="1.7"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    className="h-5 w-5"
+                                                    aria-hidden="true"
+                                                >
+                                                    <path d="m3 3 18 18" />
+                                                    <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" />
+                                                    <path d="M9.9 5.2A10.8 10.8 0 0 1 12 5c6.4 0 10 7 10 7a16 16 0 0 1-3.1 3.9" />
+                                                    <path d="M6.2 6.2C3.5 8 2 12 2 12s3.6 7 10 7c1.3 0 2.5-.3 3.6-.8" />
+                                                </svg>
+                                            )}
+                                        </button>
+                                    </div>
 
-          {/* REMEMBER ME / FORGOT PASSWORD */}
-          <div className="mb-7 flex flex-wrap items-center justify-between gap-3">
-            <label className="flex cursor-pointer items-center gap-2 text-sm text-[#607895]">
-              <input
-                type="checkbox"
-                checked={rememberMe}
-                onChange={(event) =>
-                  setRememberMe(event.target.checked)
-                }
-                className="h-4 w-4 rounded border-[#C7D2E0] accent-[#142A43]"
-              />
-              Remember me
-            </label>
+                                    {errors.password && (
+                                        <p
+                                            id="password-error"
+                                            role="alert"
+                                            className="mt-2 text-sm text-red-200"
+                                        >
+                                            {errors.password}
+                                        </p>
+                                    )}
+                                </div>
 
-            <Link
-            href="/faculty/forgot-password"
-            className="text-sm font-semibold text-[#294B70] transition-colors hover:text-[#142A43]"
-            >
-            Forgot password?
-            </Link>
+                                {/* Remember and forgot password */}
+                                <div className="flex flex-wrap items-center justify-between gap-3 pt-1 text-sm">
+                                    <label className="flex cursor-pointer items-center gap-2.5 text-white/75">
+                                        <input
+                                            type="checkbox"
+                                            name="remember"
+                                            checked={data.remember}
+                                            onChange={(event) =>
+                                                setData("remember", event.target.checked)
+                                            }
+                                            className="h-4 w-4 rounded border-white/30 bg-white/10 text-[#528F80] focus:ring-[#9CD6C5] focus:ring-offset-0 focus:ring-offset-transparent"
+                                        />
+                                        Remember me
+                                    </label>
 
-          </div>
+                                    <Link
+                                        href="/faculty/forgot-password"
+                                        className="font-medium text-[#A9E5D2] underline-offset-4 transition hover:text-white hover:underline"
+                                    >
+                                        Forgot password?
+                                    </Link>
+                                </div>
 
-          {/* MESSAGE */}
-          {message && (
-            <div
-              role="status"
-              className="mb-5 rounded-xl border border-[#D9E1EA] bg-[#E8EDF3] px-4 py-3 text-sm leading-6 text-[#294B70]"
-            >
-              {message}
-            </div>
-          )}
+                                {/* Submit */}
+                                <button
+                                    type="submit"
+                                    disabled={processing}
+                                    className="group flex w-full items-center justify-center gap-3 rounded-xl border border-[#B7E8D9]/40 bg-gradient-to-r from-[#477F73] to-[#528F80] px-5 py-4 font-semibold text-white shadow-[0_8px_25px_rgba(40,100,85,0.25)] transition duration-300 hover:-translate-y-0.5 hover:from-[#548F80] hover:to-[#65A795] hover:shadow-[0_12px_32px_rgba(40,100,85,0.35)] focus:outline-none focus:ring-2 focus:ring-[#A9E5D2] focus:ring-offset-2 focus:ring-offset-[#172B3C] disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                    <span>
+                                        {processing
+                                            ? "Logging in..."
+                                            : "Log In"}
+                                    </span>
 
-          {/* LOG IN BUTTON */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="group flex w-full items-center justify-center gap-2 rounded-xl bg-[#142A43] px-5 py-3.5 text-sm font-semibold text-white shadow-[0_6px_18px_rgba(20,42,67,0.18)] transition-all duration-200 hover:bg-[#1F3A5B] hover:shadow-[0_8px_22px_rgba(20,42,67,0.25)] disabled:cursor-not-allowed disabled:opacity-70"
-          >
-            Log in
-            <ArrowRight
-              size={17}
-              className="transition-transform duration-200 group-hover:translate-x-1"
-            />
-          </button>
-        </form>
+                                    {!processing && (
+                                        <svg
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="1.8"
+                                            className="h-5 w-5 transition-transform group-hover:translate-x-1"
+                                            aria-hidden="true"
+                                        >
+                                            <path d="M5 12h14" />
+                                            <path d="m13 6 6 6-6 6" />
+                                        </svg>
+                                    )}
+                                </button>
+                            </form>
 
-        {/* SECURITY NOTE */}
-        <div className="mt-8 flex items-start gap-3 rounded-xl border border-[#E1E7EE] bg-white p-4">
-          <LockKeyhole
-            size={17}
-            className="mt-0.5 shrink-0 text-[#6FA58F]"
-          />
+                            {/* Card footer */}
+                            <div className="mt-8 border-t border-white/15 pt-6">
+                                <div className="flex items-center justify-center gap-2 text-xs text-white/55">
+                                    <svg
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="1.5"
+                                        className="h-4 w-4 shrink-0 text-[#9CD6C5]"
+                                        aria-hidden="true"
+                                    >
+                                        <path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11Z" />
+                                        <path d="m9 12 2 2 4-4" />
+                                    </svg>
+                                    <span className="text-center">
+                                        This portal is exclusively for authorized ACCENTRA faculty members.
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
 
-          <p className="text-xs leading-5 text-[#71869E]">
-            This portal is exclusively for authorized ACCENTRA
-            faculty members.
-          </p>
-        </div>
-      </div>
-    </section>
-  </div>
-</div>
-
-);
+                        <p className="mt-6 text-center text-xs text-white/50">
+                            © {new Date().getFullYear()} ACCENTRA. All rights
+                            reserved.
+                        </p>
+                    </section>
+                </div>
+            </main>
+        </>
+    );
 }

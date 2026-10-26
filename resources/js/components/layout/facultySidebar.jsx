@@ -163,7 +163,7 @@ export default function FacultySidebar({
           })}
         </nav>
 
-        {/* Logout */}
+        {/* Logout - original navigation style */}
         <div className="relative shrink-0 border-t border-white/10 px-3 py-4">
           <a
             href="/logout"
@@ -200,6 +200,7 @@ export default function FacultySidebar({
             aria-describedby="logout-modal-description"
             className="w-full max-w-[400px] overflow-hidden rounded-2xl border border-[#DCE3EA] bg-white shadow-[0_24px_70px_rgba(7,17,31,0.25)]"
           >
+            {/* Navy Header */}
             <div className="flex items-center justify-between border-b border-white/10 bg-[#142A43] px-6 py-5">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.08] text-[#D5A2A2]">
@@ -231,6 +232,7 @@ export default function FacultySidebar({
               </button>
             </div>
 
+            {/* White Body */}
             <div className="bg-white px-6 py-6">
               <p
                 id="logout-modal-description"
@@ -252,6 +254,7 @@ export default function FacultySidebar({
               </div>
             </div>
 
+            {/* White Footer */}
             <div className="flex flex-col-reverse gap-3 border-t border-[#E7ECF1] bg-white px-6 py-4 sm:flex-row sm:justify-end">
               <button
                 type="button"

@@ -17,52 +17,48 @@ class StudentLoginController extends Controller
     public function login(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'login' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255'],
             'password' => ['required', 'string'],
             'remember' => ['sometimes', 'boolean'],
         ]);
 
-        $identifier = trim($validated['login']);
+        $email = Str::lower(trim($validated['email']));
 
-        // Find the active student by email or student number.
+        // Find an active student using their email address.
         $student = Student::query()
-            ->where(function ($query) use ($identifier) {
-                $query->whereRaw(
-                    'LOWER(email) = ?',
-                    [Str::lower($identifier)]
-                )->orWhere('student_number', $identifier);
-            })
+            ->whereRaw('LOWER(email) = ?', [$email])
             ->where('status', 'Active')
             ->first();
 
         if (!$student || !$student->user_id) {
             throw ValidationException::withMessages([
-                'login' => 'Invalid student email, student number, or password.',
+                'email' => 'Invalid student email or password.',
             ]);
         }
 
-        // Find the student's linked login account.
+        // Find the linked Student user account.
         $user = User::query()
             ->whereKey($student->user_id)
             ->where('role', 'Student')
             ->first();
 
-        // Verify password from users table.
+        // Verify that the user exists and the password matches.
         if (
             !$user ||
             !Hash::check($validated['password'], $user->password)
         ) {
             throw ValidationException::withMessages([
-                'login' => 'Invalid student email, student number, or password.',
+                'email' => 'Invalid student email or password.',
             ]);
         }
 
-        // Authenticate using Laravel's web guard.
+        // Log in the authenticated student.
         Auth::guard('web')->login(
             $user,
             $request->boolean('remember')
         );
 
+        // Regenerate the session to prevent session fixation.
         $request->session()->regenerate();
 
         return redirect()->route('student.dashboard');

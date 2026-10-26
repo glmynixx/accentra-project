@@ -1,214 +1,144 @@
+
 import CardHeader from "../common/cardHeader";
-import StatusBadge from "../common/statusBadge";
 
-export default function RecentUsers({ users }) {
-  return (
-    <section
-      className="
-        min-w-0
-        overflow-hidden
-        rounded-2xl
-        border
-        border-[#C9D5E2]
-        bg-white
-        shadow-[0_5px_25px_rgba(27,53,83,0.08)]
-      "
-    >
-      {/* HEADER */}
-      <CardHeader
-        title="Recent Users Summary"
-        description="Recently added users in the system"
-      />
+export default function RecentUsers({ users = [] }) {
+    const formattedUsers = users.map((user) => {
+        const roleValue =
+            typeof user.role === "object"
+                ? user.role?.name
+                : user.role;
 
-      {/* TABLE */}
-     <div className="w-full overflow-x-auto">
-              <table className="w-full min-w-[980px] border-collapse">
-                <thead>
-                  <tr className="border-b border-[#CDD8E3] bg-[#E7EDF3]">
-                    <th className="px-5 py-3.5 text-left text-[11px] font-bold uppercase tracking-wide text-[#40566E]">
-                      ID
-                    </th>
+        const role = String(roleValue || "").toLowerCase();
 
-                    <th className="px-5 py-3.5 text-left text-[11px] font-bold uppercase tracking-wide text-[#40566E]">
-                      Name
-                    </th>
+        return {
+            ...user,
+            displayId:
+                user.faculty_number ??
+                user.student_number ??
+                user.displayId ??
+                user.id ??
+                "—",
+            displayRole: roleValue || "—",
+            normalizedRole: role,
+        };
+    });
 
-                    <th className="px-5 py-3.5 text-left text-[11px] font-bold uppercase tracking-wide text-[#40566E]">
-                     Role
-                    </th>
+    return (
+        <section className="min-w-0">
+            <CardHeader
+                title="Recent Users"
+                subtitle="Recently registered accounts"
+            />
 
-                    <th className="px-5 py-3.5 text-center text-[11px] font-bold uppercase tracking-wide text-[#40566E]">
-                      Section
-                    </th>
-                    <th className="px-5 py-3.5 text-left text-[11px] font-bold uppercase tracking-wide text-[#40566E]">
-                      Status
-                    </th>
+            <div className="overflow-hidden rounded-xl border border-white/[0.08] bg-[#071522]/30">
+                <div className="overflow-x-auto">
+                    <table className="w-full min-w-[600px] text-left">
+                        <thead className="border-b border-white/10 bg-white/[0.025]">
+                            <tr className="text-xs uppercase tracking-wider text-white/45">
+                                <th className="px-5 py-3 font-medium">ID</th>
+                                <th className="px-5 py-3 font-medium">User</th>
+                                <th className="px-5 py-3 font-medium">Role</th>
+                                <th className="px-5 py-3 font-medium">Status</th>
+                            </tr>
+                        </thead>
 
-                    <th className="px-5 py-3.5 text-left text-[11px] font-bold uppercase tracking-wide text-[#40566E]">
-                      Date Added
-                    </th>
-                  </tr>
-                </thead>
+                        <tbody className="divide-y divide-white/[0.07]">
+                            {formattedUsers.length > 0 ? (
+                                formattedUsers.map((user, index) => {
+                                    const name =
+                                        user.name ||
+                                        user.full_name ||
+                                        "Unnamed User";
 
-          <tbody>
-            {users.length > 0 ? (
-              users.map((user) => {
-                const isFaculty = user.role === "Faculty";
+                                    const status = String(
+                                        user.status || "Active"
+                                    );
 
-                return (
-                  <tr
-                    key={`${user.role}-${user.id}`}
-                    className="
-                      border-b
-                      border-[#E5EBF1]
-                      last:border-b-0
-                      transition-colors
-                      duration-150
-                      hover:bg-[#F7F9FB]
-                    "
-                  >
-                    {/* ID */}
-                    <td className="px-5 py-4 align-middle">
-                      <span
-                        className="
-                          text-sm
-                          font-semibold
-                          text-[#294B70]
-                        "
-                      >
-                        {user.id}
-                      </span>
-                    </td>
+                                    const isActive =
+                                        status.toLowerCase() === "active";
 
-                    {/* NAME */}
-                    <td className="px-5 py-4 align-middle">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`
-                            flex
-                            h-9
-                            w-9
-                            shrink-0
-                            items-center
-                            justify-center
-                            rounded-full
-                            text-[11px]
-                            font-bold
-                            ${
-                              isFaculty
-                                ? "bg-blue-50 text-blue-600"
-                                : "bg-[#36534E]/10 text-[#36534E]"
-                            }
-                          `}
-                        >
-                          {user.initials}
-                        </div>
+                                    const role = user.normalizedRole;
 
-                        <div className="flex min-w-0 flex-col">
-                          <strong
-                            className="
-                              whitespace-nowrap
-                              text-sm
-                              font-semibold
-                              text-[#243A52]
-                            "
-                          >
-                            {user.name}
-                          </strong>
+                                    return (
+                                        <tr
+                                            key={`${role}-${user.id ?? index}`}
+                                            className="transition-colors hover:bg-white/[0.035]"
+                                        >
+                                            <td className="whitespace-nowrap px-5 py-4 text-sm font-medium text-[#A9E5D2]">
+                                                {user.displayId}
+                                            </td>
 
-                          <small
-                            className="
-                              mt-0.5
-                              whitespace-nowrap
-                              text-xs
-                              text-[#9AA7B5]
-                            "
-                          >
-                            {user.username}
-                          </small>
-                        </div>
-                      </div>
-                    </td>
+                                            <td className="px-5 py-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-sm font-semibold text-[#A9E5D2]">
+                                                        {String(name)
+                                                            .charAt(0)
+                                                            .toUpperCase()}
+                                                    </div>
 
-                    {/* ROLE */}
-                    <td className="px-5 py-4 align-middle">
-                    <span
-                      className={`
-                        inline-flex
-                        h-[24px]
-                        min-w-[68px]
-                        items-center
-                        justify-center
-                        rounded-full
-                        border
-                        px-2.5
-                        text-[11px]
-                        font-semibold
-                        leading-none
-                        ${
-                          user.role?.toLowerCase() === "faculty"
-                            ? "border-[#C9D8EA] bg-[#EAF1F9] text-[#3B6FA5]"
-                            : "border-[#B9D9C8] bg-[#E1F0E8] text-[#267653]"
-                        }
-                      `}
-                    >
-                      {user.role}
-                    </span>
-                    </td>
+                                                    <div className="min-w-0">
+                                                        <p className="truncate text-sm font-medium text-white">
+                                                            {name}
+                                                        </p>
 
-                    {/* SECTION */}
-                    <td
-                      className="
-                        px-5
-                        py-4
-                        text-sm
-                        font-medium
-                        text-[#536477]
-                      "
-                    >
-                      {user.section}
-                    </td>
+                                                        <p className="mt-1 truncate text-xs text-white/45">
+                                                            {user.email ||
+                                                                user.username ||
+                                                                "No email"}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </td>
 
-                    {/* STATUS */}
-                    <td className="px-5 py-4 align-middle ">
-                      <StatusBadge status={user.status} />
-                    
-                    </td>
-                   
-                    {/* DATE */}
-                    <td
-                      className="
-                        whitespace-nowrap
-                        px-5
-                        py-4
-                        text-sm
-                        text-[#7A8999]
-                      "
-                    >
-                      {user.dateAdded}
-                    </td>
-                  </tr>
-                );
-              })
-            ) : (
-              <tr>
-                <td
-                  colSpan="6"
-                  className="
-                    px-5
-                    py-10
-                    text-center
-                    text-sm
-                    text-[#7A8999]
-                  "
-                >
-                  No users found.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </section>
-  );
+                                            <td className="whitespace-nowrap px-5 py-4">
+                                                <span
+                                                    className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium ${
+                                                        role === "faculty"
+                                                            ? "border-blue-300/20 bg-blue-400/10 text-blue-200"
+                                                            : role === "student"
+                                                              ? "border-[#A9E5D2]/20 bg-[#A9E5D2]/10 text-[#A9E5D2]"
+                                                              : "border-white/10 bg-white/[0.05] text-white/65"
+                                                    }`}
+                                                >
+                                                    {user.displayRole}
+                                                </span>
+                                            </td>
+
+                                            <td className="whitespace-nowrap px-5 py-4">
+                                                <span
+                                                    className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs font-medium ${
+                                                        isActive
+                                                            ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300"
+                                                            : "border-white/10 bg-white/[0.05] text-white/55"
+                                                    }`}
+                                                >
+                                                    <span
+                                                        className={`h-1.5 w-1.5 rounded-full ${
+                                                            isActive
+                                                                ? "bg-emerald-400"
+                                                                : "bg-white/40"
+                                                        }`}
+                                                    />
+                                                    {status}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            ) : (
+                                <tr>
+                                    <td
+                                        colSpan={4}
+                                        className="px-5 py-10 text-center text-sm text-white/45"
+                                    >
+                                        No recent users found.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    );
 }

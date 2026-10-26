@@ -1,4 +1,3 @@
-
 <?php
 
 use App\Http\Controllers\Auth\AdminLoginController;
@@ -14,260 +13,112 @@ use App\Http\Controllers\SectionController;
 use App\Http\Controllers\StudentController;
 use Illuminate\Support\Facades\Route;
 
-// Faculty password setup form
+
+// Public landing page
+Route::inertia('/landingpage', 'landingPage')->name('landingpage');
+
+
 Route::get('/faculty/setup-password/{token}', [FacultyPasswordController::class, 'edit'])
-    ->middleware('guest')
-    ->name('faculty.password.setup');
-
-// Save new Faculty password
+    ->middleware('guest')->name('faculty.password.setup');
 Route::post('/faculty/setup-password', [FacultyPasswordController::class, 'update'])
-    ->middleware(['guest', 'throttle:5,1'])
-    ->name('faculty.password.update');
-
+    ->middleware(['guest', 'throttle:5,1'])->name('faculty.password.update');
 Route::get('/password/reset/{token}', [AccountPasswordSetupController::class, 'edit'])
     ->name('password.reset.edit');
 Route::post('/password/reset/{token}', [AccountPasswordSetupController::class, 'update'])
-    ->middleware('throttle:5,1')
-    ->name('password.reset.update');
+    ->middleware('throttle:5,1')->name('password.reset.update');
 
-/*
-| Authentication Pages (Teammate)
-|--------------------------------------------------------------------------
-*/
-
-Route::inertia('/forgot-password', 'forgotPassword')
-    ->name('password.request');
-
+// Admin authentication
+Route::redirect('/', '/landingpage');
+Route::middleware(['guest', 'admin.ip'])->group(function () {
+    Route::inertia('/login', 'login')->name('login');
+    Route::post('/login', [AdminLoginController::class, 'login'])
+        ->middleware('throttle:5,1')->name('admin.login.submit');
+});
+Route::inertia('/forgot-password', 'forgotPassword')->name('password.request');
 Route::post('/forgot-password/send-link', [PasswordResetLinkController::class, 'sendAdminResetLink'])
-    ->middleware('throttle:3,1')
-    ->name('password.reset-link.send');
+    ->middleware('throttle:3,1')->name('password.reset-link.send');
+Route::post('/logout', [AdminLoginController::class, 'logout'])
+    ->middleware('auth')->name('logout');
 
-// Faculty Login Page
-Route::inertia('/faculty/login', 'facultyLogin')
-    ->name('faculty.login');
-
-// Process Faculty Login
+// Faculty authentication
+Route::inertia('/faculty/login', 'facultyLogin')->name('faculty.login');
 Route::post('/faculty/login', [FacultyLoginController::class, 'login'])
-    ->middleware('throttle:5,1')
-    ->name('faculty.login.submit');
-
+    ->middleware('throttle:5,1')->name('faculty.login.submit');
 Route::inertia('/faculty/forgot-password', 'facultyForgotPassword')
     ->name('faculty.password.request');
-
 Route::post('/faculty/forgot-password/send-link', [PasswordResetLinkController::class, 'sendFacultyResetLink'])
-    ->middleware('throttle:3,1')
-    ->name('faculty.password.reset-link.send');
+    ->middleware('throttle:3,1')->name('faculty.password.reset-link.send');
+Route::post('/faculty/logout', [FacultyLoginController::class, 'logout'])
+    ->middleware(['auth', 'faculty'])->name('faculty.logout');
 
-
-/*
-|--------------------------------------------------------------------------
-| Student Authentication
-|--------------------------------------------------------------------------
-*/
-
-// Student Login and Forgot Password pages
+// Student authentication
 Route::middleware('guest')->group(function () {
-
-    Route::inertia('/student/login', 'studentLogin')
-        ->name('student.login');
-
+    Route::inertia('/student/login', 'studentLogin')->name('student.login');
     Route::post('/student/login', [StudentLoginController::class, 'login'])
-        ->middleware('throttle:5,1')
-        ->name('student.login.submit');
-
+        ->middleware('throttle:5,1')->name('student.login.submit');
     Route::inertia('/student/forgot-password', 'studentForgotPassword')
         ->name('student.password.request');
 });
-
-
-
 Route::post('/student/forgot-password/send-link', [PasswordResetLinkController::class, 'sendStudentResetLink'])
-    ->middleware('throttle:3,1')
-    ->name('student.password.reset-link.send');
-
-// Student Dashboard and Logout
+    ->middleware('throttle:3,1')->name('student.password.reset-link.send');
 Route::middleware(['auth', 'active.student'])->group(function () {
-
-    Route::inertia('/student/dashboard', 'studentDashboard')
-        ->name('student.dashboard');
-
-    Route::post('/student/logout', [
-        StudentLoginController::class,
-        'logout'
-    ])->name('student.logout');
-
+    Route::inertia('/student/dashboard', 'studentDashboard')->name('student.dashboard');
+    Route::post('/student/logout', [StudentLoginController::class, 'logout'])->name('student.logout');
+    Route::inertia('/student/content', 'studentContent')->name('student.content');
+    Route::inertia('/student/tasks', 'studentTasks')->name('student.tasks');
+    Route::inertia('/student/accounting/chart-of-accounts', 'studentChartOfAccounts')->name('student.accounting.chart-of-accounts');
+    Route::inertia('/student/accounting/journal-entries', 'studentJournalEntries')->name('student.accounting.journal-entries');
+    Route::inertia('/student/accounting/general-ledger', 'studentGeneralLedger')->name('student.accounting.general-ledger');
+    Route::inertia('/student/accounting/trial-balance', 'studentTrialBalance')->name('student.accounting.trial-balance');
+    Route::inertia('/student/accounting/income-sheet', 'studentIncomeSheet')->name('student.accounting.income-sheet');
+    Route::inertia('/student/accounting/balance-sheet', 'studentBalanceSheet')->name('student.accounting.balance-sheet');
+    Route::inertia('/student/submissions', 'studentSubmissions')->name('student.submissions');
+    Route::inertia('/student/results', 'studentResults')->name('student.results');
+    Route::inertia('/student/account', 'studentAccount')->name('student.account');
 });
 
-
-/*
-|--------------------------------------------------------------------------
-| Admin Authentication
-|--------------------------------------------------------------------------
-*/
-
-Route::redirect('/', '/student/login');
-
-// Admin Login
-Route::middleware(['guest', 'admin.ip'])->group(function () {
-
-    Route::inertia('/login', 'login')
-        ->name('login');
-
-    Route::post('/login', [AdminLoginController::class, 'login'])
-        ->middleware('throttle:5,1')
-        ->name('admin.login.submit');
-
-});
-
-// Admin Logout - OUTSIDE the guest group
-Route::post('/logout', [AdminLoginController::class, 'logout'])
-    ->middleware('auth')
-    ->name('logout');
-
+// Admin portal
 Route::middleware(['auth', 'admin'])->group(function () {
-    /*
-    |--------------------------------------------------------------------------
-    | Admin Dashboard
-    |--------------------------------------------------------------------------
-    */
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/students', [StudentController::class, 'index'])->name('students');
+    Route::post('/students', [StudentController::class, 'store'])->name('students.store');
+    Route::put('/students/{student}', [StudentController::class, 'update'])->name('students.update');
+    Route::patch('/students/{student}/status', [StudentController::class, 'updateStatus'])->name('students.status');
+    Route::delete('/students/{student}', [StudentController::class, 'destroy'])->name('students.destroy');
 
-    Route::get('/dashboard', [DashboardController::class, 'index'])
-        ->middleware(['auth', 'admin'])
-        ->name('dashboard');
+    Route::get('/faculty', [FacultyController::class, 'index'])->name('faculty');
+    Route::post('/faculty', [FacultyController::class, 'store'])->name('faculty.store');
+    Route::get('/faculty/{faculty}', [FacultyController::class, 'show'])->whereNumber('faculty')->name('faculty.show');
+    Route::put('/faculty/{faculty}', [FacultyController::class, 'update'])->name('faculty.update');
+    Route::patch('/faculty/{faculty}/status', [FacultyController::class, 'updateStatus'])->name('faculty.status');
+    Route::delete('/faculty/{faculty}', [FacultyController::class, 'destroy'])->name('faculty.destroy');
+    Route::put('/faculty/{faculty}/sections', [FacultyController::class, 'assignSections'])->name('faculty.sections');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Student Management
-    |--------------------------------------------------------------------------
-    */
-
-    Route::get('/students', [StudentController::class, 'index'])
-        ->name('students');
-
-    Route::post('/students', [StudentController::class, 'store'])
-        ->name('students.store');
-
-    Route::put('/students/{student}', [StudentController::class, 'update'])
-        ->name('students.update');
-
-    Route::patch('/students/{student}/status', [StudentController::class, 'updateStatus'])
-        ->name('students.status');
-
-    Route::delete('/students/{student}', [StudentController::class, 'destroy'])
-        ->name('students.destroy');
-
-    /*
-    |--------------------------------------------------------------------------
-    | Faculty Management
-    |--------------------------------------------------------------------------
-    */
-
-    Route::get('/faculty', [FacultyController::class, 'index'])
-        ->name('faculty');
-
-    Route::post('/faculty', [FacultyController::class, 'store'])
-        ->name('faculty.store');
-
-    Route::get('/faculty/{faculty}', [FacultyController::class, 'show'])
-        ->whereNumber('faculty')
-        ->name('faculty.show');
-
-    Route::put('/faculty/{faculty}', [FacultyController::class, 'update'])
-        ->name('faculty.update');
-
-    Route::patch('/faculty/{faculty}/status', [FacultyController::class, 'updateStatus'])
-        ->name('faculty.status');
-
-    Route::delete('/faculty/{faculty}', [FacultyController::class, 'destroy'])
-        ->name('faculty.destroy');
-
-    Route::put('/faculty/{faculty}/sections', [FacultyController::class, 'assignSections'])
-        ->name('faculty.sections');
-
-    /*
-    |--------------------------------------------------------------------------
-    | Section Management
-    |--------------------------------------------------------------------------
-    */
-
-    Route::get('/sections', [SectionController::class, 'index'])
-        ->name('sections');
-
-    Route::post('/sections', [SectionController::class, 'store'])
-        ->name('sections.store');
-
-    Route::get('/sections/{section}', [SectionController::class, 'show'])
-        ->name('sections.show');
-
-    Route::put('/sections/{section}', [SectionController::class, 'update'])
-        ->name('sections.update');
-
-    Route::patch('/sections/{section}/status', [SectionController::class, 'updateStatus'])
-        ->name('sections.status');
-
-    Route::delete('/sections/{section}', [SectionController::class, 'destroy'])
-        ->name('sections.destroy');
-
+    Route::get('/sections', [SectionController::class, 'index'])->name('sections');
+    Route::post('/sections', [SectionController::class, 'store'])->name('sections.store');
+    Route::get('/sections/{section}', [SectionController::class, 'show'])->name('sections.show');
+    Route::put('/sections/{section}', [SectionController::class, 'update'])->name('sections.update');
+    Route::patch('/sections/{section}/status', [SectionController::class, 'updateStatus'])->name('sections.status');
+    Route::delete('/sections/{section}', [SectionController::class, 'destroy'])->name('sections.destroy');
 });
 
-/*
-|--------------------------------------------------------------------------
-| Faculty Portal
-|--------------------------------------------------------------------------
-*/
-
+// Faculty portal
 Route::middleware(['auth', 'faculty'])->group(function () {
+    Route::inertia('/faculty/dashboard', 'facultyDashboard')->name('faculty.dashboard');
+    Route::inertia('/faculty/content', 'contentManagement')->name('faculty.content');
+    Route::inertia('/faculty/sections', 'facultySections')->name('faculty.portal.sections');
+    Route::inertia('/faculty/submissions', 'facultySubmissions')->name('faculty.submissions');
+    Route::inertia('/faculty/my-account', 'facultyMyAccount')->name('faculty.my-account');
 
-    // Faculty Dashboard
-    Route::inertia('/faculty/dashboard', 'facultyDashboard')
-        ->name('faculty.dashboard');
+    Route::get('/faculty/tasks', [TaskController::class, 'index'])->name('faculty.tasks');
+    Route::post('/faculty/tasks', [TaskController::class, 'store'])->name('faculty.tasks.store');
+    Route::post('/faculty/tasks/{id}', [TaskController::class, 'update'])->whereNumber('id')->name('faculty.tasks.update');
+    Route::patch('/faculty/tasks/{id}/publish', [TaskController::class, 'publish'])->whereNumber('id')->name('faculty.tasks.publish');
+    Route::patch('/faculty/tasks/{id}/cancel', [TaskController::class, 'cancel'])->whereNumber('id')->name('faculty.tasks.cancel');
+    Route::delete('/faculty/tasks/{id}', [TaskController::class, 'destroy'])->whereNumber('id')->name('faculty.tasks.destroy');
+    Route::get('/faculty/tasks/{id}/attachment', [TaskController::class, 'downloadAttachment'])->whereNumber('id')->name('faculty.tasks.attachment');
 
-    // Faculty Content Management
-    Route::inertia('/faculty/content', 'contentManagement')
-        ->name('faculty.content');
+   
 
-    /*
-    |--------------------------------------------------------------------------
-    | Faculty Task Management
-    |--------------------------------------------------------------------------
-    */
+    });
 
-    // Display Task Management
-    Route::get('/faculty/tasks', [TaskController::class, 'index'])
-        ->name('faculty.tasks');
-
-    // Create Task
-    Route::post('/faculty/tasks', [TaskController::class, 'store'])
-        ->name('faculty.tasks.store');
-
-    // Update Task
-    Route::post('/faculty/tasks/{id}', [TaskController::class, 'update'])
-        ->whereNumber('id')
-        ->name('faculty.tasks.update');
-
-    // Publish Task
-    Route::patch('/faculty/tasks/{id}/publish', [TaskController::class, 'publish'])
-        ->whereNumber('id')
-        ->name('faculty.tasks.publish');
-
-    // Cancel Task
-    Route::patch('/faculty/tasks/{id}/cancel', [TaskController::class, 'cancel'])
-        ->whereNumber('id')
-        ->name('faculty.tasks.cancel');
-
-    // Delete Task
-    Route::delete('/faculty/tasks/{id}', [TaskController::class, 'destroy'])
-        ->whereNumber('id')
-        ->name('faculty.tasks.destroy');
-
-    // Download Task Attachment
-    Route::get('/faculty/tasks/{id}/attachment', [TaskController::class, 'downloadAttachment'])
-        ->whereNumber('id')
-        ->name('faculty.tasks.attachment');
-
-});
-
-// Faculty Logout
-Route::post('/faculty/logout', [FacultyLoginController::class, 'logout'])
-    ->middleware(['auth', 'faculty'])
-    ->name('faculty.logout');

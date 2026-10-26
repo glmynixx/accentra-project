@@ -33,6 +33,16 @@ import {
   Files,
   FolderCheck,
   ChartNoAxesColumn,
+  FileCheck2,
+  Calculator,
+  ListTree,
+  BookOpen,
+  BookCopy,
+  Scale,
+  Landmark,
+  NotebookPen,
+  UserRoundPen,
+
 } from "lucide-react";
 
 const icons = {
@@ -70,6 +80,16 @@ const icons = {
   "files": Files,
   "folder-check": FolderCheck,
   "chart-no-axes-column": ChartNoAxesColumn,
+  "file-check-2":FileCheck2,
+  "calculator":Calculator,
+  "list-tree":ListTree,
+  "book-open":BookOpen,
+  "book-copy":BookCopy,
+  "scale":Scale,
+  "landmark":Landmark,
+  "notebook-pen":NotebookPen,
+  "user-round-pen": UserRoundPen,
+
 };
 
 export default function Icon({

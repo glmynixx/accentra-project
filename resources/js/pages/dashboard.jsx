@@ -4,229 +4,141 @@ import { usePage } from "@inertiajs/react";
 import Sidebar from "../components/layout/sidebar";
 import Navbar from "../components/layout/navbar";
 import MobileOverlay from "../components/layout/mobileOverlay";
-
 import StatsGrid from "../components/dashboard/statsGrid";
 import RecentUsers from "../components/dashboard/recentUsers";
 import SectionList from "../components/dashboard/sectionList";
 import RecentActivities from "../components/dashboard/recentActivities";
-import {
-    stats as staticStats,
-} from "../assets/data/dashboardData";
+import { stats as staticStats } from "../assets/data/dashboardData";
 
 export default function Dashboard() {
-  
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeMenu, setActiveMenu] = useState("Dashboard");
-  const [searchValue, setSearchValue] = useState("");
-  
-  const {
-    stats: dashboardStats = {},
-    recentUsers = [],
-    sectionEnrollment = [],
-    recentActivities = [],
-} = usePage().props;
-const activities = recentActivities;
-console.log("DASHBOARD SECTIONS:", sectionEnrollment);
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [activeMenu, setActiveMenu] = useState("Dashboard");
+    const [searchValue, setSearchValue] = useState("");
 
+    const {
+        stats: dashboardStats = {},
+        recentUsers = [],
+        sectionEnrollment = [],
+        recentActivities = [],
+    } = usePage().props;
 
+    const users = useMemo(
+        () => recentUsers.map((user) => ({
+            ...user,
+            initials: user.name
+                ? user.name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase()
+                : "?",
+        })),
+        [recentUsers],
+    );
 
+    const stats = useMemo(() => {
+        const databaseValues = {
+            "Total Users": dashboardStats.totalUsers ?? 0,
+            Faculty: dashboardStats.totalFaculty ?? 0,
+            Students: dashboardStats.totalStudents ?? 0,
+            Sections: dashboardStats.totalSections ?? 0,
+        };
+        return staticStats.map((stat) => ({
+            ...stat,
+            value: databaseValues[stat.label] ?? stat.value,
+        }));
+    }, [dashboardStats.totalUsers, dashboardStats.totalFaculty, dashboardStats.totalStudents, dashboardStats.totalSections]);
 
-const users = useMemo(() => {
-    return recentUsers.map((user) => ({
-        ...user,
-        initials: user.name
-            ? user.name
-                  .trim()
-                  .split(/\s+/)
-                  .slice(0, 2)
-                  .map((part) => part[0])
-                  .join("")
-                  .toUpperCase()
-            : "?",
-    }));
-}, [recentUsers]);
+    const sections = useMemo(
+        () => sectionEnrollment.map((section) => ({
+            id: section.id,
+            name: section.section_name,
+            program: section.course,
+            year: section.year_level,
+            adviser: section.faculty?.name ?? "Unassigned",
+            students: Number(section.students_count ?? 0),
+            status: section.status,
+        })),
+        [sectionEnrollment],
+    );
 
-  console.log("DASHBOARD DATA FROM LARAVEL:", dashboardStats);
+    const filteredUsers = useMemo(() => {
+        const query = searchValue.trim().toLowerCase();
+        if (!query) return users;
+        return users.filter((user) =>
+            [user.id, user.name, user.username, user.role, user.section, user.status, user.dateAdded]
+                .map((value) => String(value ?? ""))
+                .join(" ")
+                .toLowerCase()
+                .includes(query),
+        );
+    }, [searchValue, users]);
 
+    const filteredSections = useMemo(() => {
+        const query = searchValue.trim().toLowerCase();
+        if (!query) return sections;
+        return sections.filter((section) =>
+            [section.name, section.program, section.year, section.adviser, section.students, section.status]
+                .map((value) => String(value ?? ""))
+                .join(" ")
+                .toLowerCase()
+                .includes(query),
+        );
+    }, [searchValue, sections]);
 
-
-const stats = useMemo(() => {
-    const databaseValues = {
-        "Total Users": dashboardStats.totalUsers ?? 0,
-        "Faculty": dashboardStats.totalFaculty ?? 0,
-        "Students": dashboardStats.totalStudents ?? 0,
-        "Sections": dashboardStats.totalSections ?? 0,
+    const handleMenuChange = (menu) => {
+        setActiveMenu(menu);
+        if (window.innerWidth <= 768) setSidebarOpen(false);
     };
 
-    return staticStats.map((stat) => ({
-        ...stat,
-        value: databaseValues[stat.label] ?? stat.value,
-    }));
-}, [
-    dashboardStats.totalUsers,
-    dashboardStats.totalFaculty,
-    dashboardStats.totalStudents,
-    dashboardStats.totalSections,
-]);
-
-
-const sections = useMemo(() => {
-    return sectionEnrollment.map((section) => ({
-        id: section.id,
-        name: section.section_name,
-        program: section.course,
-        year: section.year_level,
-        adviser: section.faculty?.name ?? "Unassigned",
-        students: Number(section.students_count ?? 0),
-        status: section.status,
-    }));
-}, [sectionEnrollment]);
-
-
-
-
-  /* FILTER USERS */
-
-  const filteredUsers = useMemo(() => {
-    const query = searchValue.trim().toLowerCase();
-
-    if (!query) {
-      return users;
-    }
-
-    return users.filter((user) =>
-      [
-        user.id,
-        user.name,
-        user.username,
-        user.role,
-        user.section,
-        user.status,
-        user.dateAdded,
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(query)
-    );
-  }, [searchValue]);
-
-  /* FILTER SECTIONS */
-
-  
-const filteredSections = useMemo(() => {
-    const query = searchValue.trim().toLowerCase();
-
-    if (!query) {
-        return sections;
-    }
-
-    return sections.filter((section) =>
-        [
-            section.name,
-            section.program,
-            section.year,
-            section.adviser,
-            section.students,
-            section.status,
-        ]
-            .map((value) => String(value ?? ""))
-            .join(" ")
-            .toLowerCase()
-            .includes(query)
-    );
-}, [searchValue, sections]);
-
-
-  /* MENU HANDLER */
-
-  const handleMenuChange = (menu) => {
-    setActiveMenu(menu);
-
-    if (window.innerWidth <= 768) {
-      setSidebarOpen(false);
-    }
-  };
-
-  return (
-    <div className="min-h-screen w-full overflow-x-hidden bg-[#f4f6f8]">
-      {/* SIDEBAR */}
-
-      <Sidebar
-        activeMenu={activeMenu}
-        onMenuChange={handleMenuChange}
-        open={sidebarOpen}
-      />
-
-      {/* MOBILE OVERLAY*/}
-
-      <MobileOverlay
-        open={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-      />
-
-      {/* MAIN CONTENT*/}
-
-      <main
-        className="
-          ml-62.5
-          min-h-screen
-          w-[calc(100%-250px)]
-          min-w-0
-          px-7.5
-          py-6.25
-          transition-all
-          duration-300
-
-          max-[1100px]:px-6
-
-          max-[768px]:ml-0
-          max-[768px]:w-full
-          max-[768px]:px-4.5
-          max-[768px]:py-4.5
-
-          max-[480px]:px-3.5
-          max-[480px]:py-3.5
-        "
-      >
-        {/* NAVBAR */}
-
-        <Navbar
-          onMenuToggle={() => setSidebarOpen(true)}
-          searchValue={searchValue}
-          onSearchChange={setSearchValue}
-        />
-
-        {/* PAGE CONTENT*/}
-        <div className="mt-5 min-w-0 space-y-5">
-
-          <div className="min-w-0">
-            <StatsGrid stats={stats} />
-          </div>
-
-          <div className="min-w-0">
-            <RecentUsers users={filteredUsers} />
-          </div>
-
-          <section
-            className="
-              grid
-              min-w-0
-              grid-cols-[minmax(0,1.4fr)_minmax(280px,1fr)]
-              gap-5
-
-              max-[1100px]:grid-cols-1
-            "
-          >
-            <div className="min-w-0">
-              <SectionList sections={filteredSections} />
+    return (
+        <div className="relative min-h-screen w-full overflow-x-hidden bg-[#071522] font-sans text-white">
+            <div aria-hidden="true" className="pointer-events-none fixed inset-0 overflow-hidden">
+                <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-[size:52px_52px]" />
+                <div className="absolute -left-40 -top-40 h-[28rem] w-[28rem] rounded-full bg-[#477F73]/25 blur-[120px]" />
+                <div className="absolute -right-40 top-1/4 h-[28rem] w-[28rem] rounded-full bg-sky-500/10 blur-[130px]" />
+                <div className="absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-[#477F73]/10 blur-[110px]" />
             </div>
 
-            <div className="min-w-0">
-              <RecentActivities activities={activities} />
-            </div>
-          </section>
+            <Sidebar activeMenu={activeMenu} onMenuChange={handleMenuChange} open={sidebarOpen} />
+            <MobileOverlay open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
+            <main className="relative z-10 ml-[260px] min-h-screen w-[calc(100%-260px)] min-w-0 px-[30px] py-[25px] transition-all duration-300 max-[1100px]:px-6 max-[768px]:ml-0 max-[768px]:w-full max-[768px]:px-[18px] max-[768px]:py-[18px] max-[480px]:px-[14px] max-[480px]:py-[14px]">
+                <Navbar
+                    onMenuToggle={() => setSidebarOpen(true)}
+                    searchValue={searchValue}
+                    onSearchChange={setSearchValue}
+                    pageTitle="Dashboard"
+                    welcomeText="Welcome back, Admin!"
+                    showPageInfo={false}
+                    searchPlaceholder="Search users, sections..."
+                />
+
+                <div className="mt-6 min-w-0 space-y-6">
+                    <section className="flex min-w-0 flex-wrap items-end justify-between gap-4">
+                        <div className="min-w-0">
+                            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#A9E5D2]">Administration</p>
+                            <h1 className="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">Dashboard Overview</h1>
+                            <p className="mt-2 max-w-2xl text-sm leading-6 text-white/55">
+                                Monitor users, academic sections, and recent system activities in one place.
+                            </p>
+                        </div>
+                        <div className="inline-flex items-center gap-2 rounded-xl border border-[#A9E5D2]/20 bg-[#477F73]/10 px-4 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+                            <span className="h-2 w-2 rounded-full bg-[#A9E5D2] shadow-[0_0_10px_rgba(169,229,210,0.45)]" />
+                            <span className="text-xs font-medium text-[#A9E5D2]">Admin Workspace</span>
+                        </div>
+                    </section>
+
+                    <section className="min-w-0"><StatsGrid stats={stats} /></section>
+                    <section className="min-w-0 overflow-hidden rounded-2xl border border-white/[0.13] bg-gradient-to-br from-white/[0.105] to-white/[0.025] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_18px_55px_rgba(0,0,0,0.18)] backdrop-blur-[22px] sm:p-6">
+                        <RecentUsers users={filteredUsers} />
+                    </section>
+                    <section className="grid min-w-0 grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] gap-5 max-[1100px]:grid-cols-1">
+                        <div className="min-w-0 overflow-hidden rounded-2xl border border-white/[0.13] bg-gradient-to-br from-white/[0.105] to-white/[0.025] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_18px_55px_rgba(0,0,0,0.18)] backdrop-blur-[22px] sm:p-6">
+                            <SectionList sections={filteredSections} />
+                        </div>
+                        <div className="min-w-0 overflow-hidden rounded-2xl border border-white/[0.13] bg-gradient-to-br from-white/[0.105] to-white/[0.025] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_18px_55px_rgba(0,0,0,0.18)] backdrop-blur-[22px] sm:p-6">
+                            <RecentActivities activities={recentActivities} />
+                        </div>
+                    </section>
+                </div>
+            </main>
         </div>
-      </main>
-    </div>
-  );
+    );
 }
