@@ -10,6 +10,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Faculty\TaskController;
 use App\Http\Controllers\FacultyController;
 use App\Http\Controllers\SectionController;
+use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\StudentController;
 use Illuminate\Support\Facades\Route;
 
@@ -52,7 +53,7 @@ Route::post('/faculty/logout', [FacultyLoginController::class, 'logout'])
     ->middleware(['auth', 'faculty'])->name('faculty.logout');
 
 // Student authentication
-Route::middleware('guest')->group(function () {
+Route::middleware('guest:student,web')->group(function () {
     Route::inertia('/student/login', 'studentLogin')->name('student.login');
     Route::post('/student/login', [StudentLoginController::class, 'login'])
         ->middleware('throttle:5,1')->name('student.login.submit');
@@ -61,7 +62,7 @@ Route::middleware('guest')->group(function () {
 });
 Route::post('/student/forgot-password/send-link', [PasswordResetLinkController::class, 'sendStudentResetLink'])
     ->middleware('throttle:3,1')->name('student.password.reset-link.send');
-Route::middleware(['auth', 'active.student'])->group(function () {
+Route::middleware(['auth:student,web', 'active.student'])->group(function () {
     Route::inertia('/student/dashboard', 'studentDashboard')->name('student.dashboard');
     Route::post('/student/logout', [StudentLoginController::class, 'logout'])->name('student.logout');
     Route::inertia('/student/content', 'studentContent')->name('student.content');
@@ -80,6 +81,11 @@ Route::middleware(['auth', 'active.student'])->group(function () {
 // Admin portal
 Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/settings/general', [SettingsController::class, 'general'])->name('settings.general');
+    Route::post('/settings/general', [SettingsController::class, 'updateGeneral'])->name('settings.general.update');
+    Route::get('/settings/academic', [SettingsController::class, 'academic'])->name('settings.academic');
+    Route::post('/settings/academic', [SettingsController::class, 'updateAcademic'])->name('settings.academic.update');
+    Route::get('/settings/information', [SettingsController::class, 'information'])->name('settings.information');
     Route::get('/students', [StudentController::class, 'index'])->name('students');
     Route::post('/students', [StudentController::class, 'store'])->name('students.store');
     Route::put('/students/{student}', [StudentController::class, 'update'])->name('students.update');
@@ -121,4 +127,3 @@ Route::middleware(['auth', 'faculty'])->group(function () {
    
 
     });
-

@@ -16,6 +16,7 @@ class Faculty extends Model
      protected $fillable = [
         'user_id',
         'faculty_number',
+        'subjects',
         'name',
         'email',
         'specialization',
@@ -24,7 +25,12 @@ class Faculty extends Model
         'status',
     ];
 
-    
+    protected function casts(): array
+    {
+        return [
+            'subjects' => 'array',
+        ];
+    }
 
 public function user()
 {

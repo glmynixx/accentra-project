@@ -357,14 +357,13 @@ export default function StudentLogin({ status }) {
                                 <div>
 
                                     <label
-
                                         htmlFor="email"
 
                                         className="mb-2.5 block text-sm font-medium text-white/90"
 
                                     >
 
-                                        Email or Student Number:
+                                        Student ID or Email:
 
                                     </label>
 
@@ -396,11 +395,11 @@ export default function StudentLogin({ status }) {
 
                                             id="email"
 
-                                            type="email"
+                                            type="text"
 
                                             name="email"
 
-                                            autoComplete="email"
+                                            autoComplete="username"
 
                                             autoFocus
 
@@ -414,7 +413,7 @@ export default function StudentLogin({ status }) {
 
                                             }
 
-                                            placeholder="Enter your email or student number"
+                                            placeholder="Enter your student ID or email"
 
                                             aria-invalid={Boolean(errors.email)}
 

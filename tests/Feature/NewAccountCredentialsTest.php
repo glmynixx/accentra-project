@@ -6,6 +6,7 @@ use App\Models\Section;
 use App\Models\Student;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Symfony\Component\Mailer\Exception\TransportException;
 
@@ -17,6 +18,20 @@ function signInAsAccountAdmin(): User
     return $admin;
 }
 
+it('shows the next faculty and student IDs in their creation forms', function () {
+    signInAsAccountAdmin();
+
+    $this->get(route('faculty'))
+        ->assertInertia(fn ($page) => $page
+            ->component('facultyManagement')
+            ->where('nextFacultyId', 'FAC-001'));
+
+    $this->get(route('students'))
+        ->assertInertia(fn ($page) => $page
+            ->component('studentManagement')
+            ->where('nextStudentId', 'STD-001'));
+});
+
 it('creates a faculty account and emails a password setup link', function () {
     Mail::fake();
     config(['app.url' => 'https://app.accentra.test']);
@@ -24,10 +39,10 @@ it('creates a faculty account and emails a password setup link', function () {
 
     $this->from(route('faculty'))
         ->post(route('faculty.store'), [
-            'faculty_number' => 'FAC-001',
             'name' => 'New Faculty',
             'email' => 'new.faculty@example.com',
             'specialization' => 'Accounting',
+            'subjects' => ['Fundamentals of Accounting', 'Auditing'],
             'status' => 'Active',
         ])
         ->assertRedirect(route('faculty'));
@@ -41,10 +56,15 @@ it('creates a faculty account and emails a password setup link', function () {
 
         return $mail->hasTo($faculty->email)
             && $mail->accountType === 'Faculty'
-            && $mail->setupUrl !== '';
+            && $mail->setupUrl !== ''
+            && $mail->loginId === 'FAC-001'
+            && $mail->accountDetails['Specialization'] === 'Accounting'
+            && $mail->accountDetails['Assigned subjects'] === 'Fundamentals of Accounting, Auditing';
     });
 
     expect($user->role)->toBe('Faculty')
+        ->and($faculty->faculty_number)->toBe('FAC-001')
+        ->and($faculty->subjects)->toBe(['Fundamentals of Accounting', 'Auditing'])
         ->and($faculty->user_id)->toBe($user->id)
         ->and($user->password)->not->toBeEmpty()
         ->and(parse_url($setupUrl, PHP_URL_HOST))->toBe('app.accentra.test');
@@ -54,6 +74,39 @@ it('creates a faculty account and emails a password setup link', function () {
         ->where('email', $faculty->email)
         ->where('account_type', 'Faculty')
         ->value('token_hash'))->toBe(hash('sha256', $token));
+
+    $password = 'A-strong-faculty-password-23';
+    $this->post(route('password.reset.update', ['token' => $token]), [
+        'password' => $password,
+        'password_confirmation' => $password,
+    ])->assertRedirect(route('faculty.login'));
+
+    $this->post(route('faculty.login.submit'), [
+        'email' => $faculty->faculty_number,
+        'password' => $password,
+    ])->assertRedirect(route('faculty.dashboard'));
+});
+
+it('updates assigned subjects for an existing faculty member', function () {
+    $admin = signInAsAccountAdmin();
+    $faculty = Faculty::create([
+        'faculty_number' => 'FAC-100',
+        'name' => 'Existing Faculty',
+        'email' => 'existing.faculty@example.com',
+        'specialization' => 'Accounting',
+        'subjects' => ['Auditing'],
+        'status' => 'Active',
+    ]);
+
+    $this->put(route('faculty.update', $faculty), [
+        'name' => $faculty->name,
+        'email' => $faculty->email,
+        'specialization' => $faculty->specialization,
+        'status' => $faculty->status,
+        'subjects' => ['Auditing', 'Taxation'],
+    ])->assertRedirect(route('faculty'));
+
+    expect($faculty->fresh()->subjects)->toBe(['Auditing', 'Taxation']);
 });
 
 it('creates a student account and emails a password setup link', function () {
@@ -70,7 +123,6 @@ it('creates a student account and emails a password setup link', function () {
 
     $this->from(route('students'))
         ->post(route('students.store'), [
-            'student_number' => 'STU-001',
             'name' => 'New Student',
             'email' => 'new.student@example.com',
             'course' => 'BS Accountancy',
@@ -90,14 +142,30 @@ it('creates a student account and emails a password setup link', function () {
         return $mail->hasTo($student->email)
             && $mail->accountType === 'Student'
             && $mail->setupUrl !== ''
+            && $mail->loginId === 'STD-001'
+            && $mail->accountDetails['Course'] === 'BS Accountancy'
             && $student->password !== '';
     });
+    expect($student->student_number)->toBe('STD-001');
 
     $token = basename(parse_url($setupUrl, PHP_URL_PATH));
     expect(DB::table('account_password_setup_tokens')
         ->where('email', $student->email)
         ->where('account_type', 'Student')
         ->value('token_hash'))->toBe(hash('sha256', $token));
+
+    $password = 'A-strong-student-password-23';
+    $this->post(route('password.reset.update', ['token' => $token]), [
+        'password' => $password,
+        'password_confirmation' => $password,
+    ])->assertRedirect(route('student.login'));
+
+    Auth::guard('web')->logout();
+
+    $this->post(route('student.login.submit'), [
+        'email' => $student->student_number,
+        'password' => $password,
+    ])->assertRedirect(route('student.dashboard'));
 });
 
 it('does not create a faculty account when the credentials email cannot be sent', function () {
@@ -115,7 +183,6 @@ it('does not create a faculty account when the credentials email cannot be sent'
 
     $this->from(route('faculty'))
         ->post(route('faculty.store'), [
-            'faculty_number' => 'FAC-002',
             'name' => 'New Faculty',
             'email' => 'new.faculty@example.com',
             'specialization' => 'Accounting',
@@ -123,7 +190,7 @@ it('does not create a faculty account when the credentials email cannot be sent'
         ])
         ->assertSessionHasErrors('email');
 
-    expect(Faculty::where('faculty_number', 'FAC-002')->exists())->toBeFalse()
+    expect(Faculty::where('email', 'new.faculty@example.com')->exists())->toBeFalse()
         ->and(User::where('email', 'new.faculty@example.com')->exists())->toBeFalse();
 });
 
@@ -150,7 +217,6 @@ it('does not create a student account when the credentials email cannot be sent'
 
     $this->from(route('students'))
         ->post(route('students.store'), [
-            'student_number' => 'STU-002',
             'name' => 'New Student',
             'email' => 'new.student@example.com',
             'course' => 'BS Accountancy',
@@ -161,5 +227,5 @@ it('does not create a student account when the credentials email cannot be sent'
         ])
         ->assertSessionHasErrors('email');
 
-    expect(Student::where('student_number', 'STU-002')->exists())->toBeFalse();
+    expect(Student::where('email', 'new.student@example.com')->exists())->toBeFalse();
 });

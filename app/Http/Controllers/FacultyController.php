@@ -14,6 +14,7 @@ use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use App\Models\ActivityLog;
 use App\Support\PasswordSetupLink;
+use App\Support\AccountIdGenerator;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
 
@@ -29,6 +30,7 @@ public function index()
 
         'availableSections' => \App\Models\Section::orderBy('section_name')
             ->get(['id', 'section_name', 'faculty_id']),
+        'nextFacultyId' => app(AccountIdGenerator::class)->preview('Faculty'),
     ]);
 }
 
@@ -38,10 +40,6 @@ public function index()
 public function store(Request $request)
 {
     $validated = $request->validate([
-        'faculty_number' => [
-            'required', 'string', 'max:50',
-            'unique:faculties,faculty_number',
-        ],
         'name' => 'required|string|max:255',
         'email' => [
             'required', 'email', 'max:255',
@@ -52,12 +50,16 @@ public function store(Request $request)
         'contact_number' => 'nullable|string|max:30',
         'address' => 'nullable|string',
         'status' => 'required|in:Active,Inactive',
+        'subjects' => 'nullable|array',
+        'subjects.*' => 'required|string|max:255|distinct',
     ]);
 
     $password = Str::password(20);
 
     try {
         DB::transaction(function () use ($validated, $password) {
+            $facultyNumber = app(AccountIdGenerator::class)->next('Faculty');
+
             $user = User::create([
                 'name' => $validated['name'],
                 'email' => $validated['email'],
@@ -67,6 +69,7 @@ public function store(Request $request)
 
             $faculty = Faculty::create([
                 ...$validated,
+                'faculty_number' => $facultyNumber,
                 'user_id' => $user->id,
             ]);
 
@@ -85,6 +88,16 @@ public function store(Request $request)
                 $faculty->email,
                 'Faculty',
                 $setupLink['url'],
+                $faculty->faculty_number,
+                [
+                    'Name' => $faculty->name,
+                    'Email' => $faculty->email,
+                    'Specialization' => $faculty->specialization,
+                    'Contact number' => $faculty->contact_number,
+                    'Address' => $faculty->address,
+                    'Status' => $faculty->status,
+                    'Assigned subjects' => implode(', ', $faculty->subjects ?? []),
+                ],
             ));
         });
     } catch (TransportExceptionInterface $exception) {
@@ -105,14 +118,6 @@ public function store(Request $request)
 public function update(Request $request, Faculty $faculty)
 {
     $validated = $request->validate([
-        'faculty_number' => [
-            'required',
-            'string',
-            'max:50',
-            Rule::unique('faculties', 'faculty_number')
-                ->ignore($faculty->id),
-        ],
-
         'name' => 'required|string|max:255',
 
         'email' => [
@@ -129,6 +134,8 @@ public function update(Request $request, Faculty $faculty)
         'contact_number' => 'nullable|string|max:30',
         'address' => 'nullable|string',
         'status' => 'required|in:Active,Inactive',
+        'subjects' => 'nullable|array',
+        'subjects.*' => 'required|string|max:255|distinct',
     ]);
 
     DB::transaction(function () use ($faculty, $validated) {

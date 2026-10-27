@@ -26,6 +26,7 @@ import MobileOverlay from "../components/layout/mobileOverlay";
 const mapFaculty = (member) => ({
     databaseId: member.id,
     id: member.faculty_number,
+    subjects: Array.isArray(member.subjects) ? member.subjects : [],
     name: member.name,
     email: member.email,
     specialization: member.specialization,
@@ -206,6 +207,7 @@ export default function FacultyManagement() {
 const {
     faculty: databaseFaculty = [],
     availableSections = [],
+    nextFacultyId = "",
 } = usePage().props;
 
 const [faculty, setFaculty] = useState(() =>
@@ -228,7 +230,7 @@ useEffect(() => {
   const facultyPerPage = 5;
 
   const [formData, setFormData] = useState({
-    id: "",
+    id: nextFacultyId,
     name: "",
     email: "",
     specialization: "",
@@ -328,17 +330,8 @@ useEffect(() => {
   };
 
   const openAddModal = () => {
-    const nextId =
-      Math.max(
-        0,
-        ...faculty.map((member) => {
-          const match = String(member.id || "").match(/FAC-(\d+)/);
-          return match ? Number(match[1]) : 0;
-        })
-      ) + 1;
-
     setFormData({
-      id: "",
+      id: nextFacultyId,
       name: "",
       email: "",
       specialization: "",
@@ -401,6 +394,21 @@ useEffect(() => {
     }));
   };
 
+  const toggleSubject = (subjectName) => {
+    setFormData((current) => {
+      const selectedSubjects = Array.isArray(current.subjects)
+        ? current.subjects
+        : [];
+
+      return {
+        ...current,
+        subjects: selectedSubjects.includes(subjectName)
+          ? selectedSubjects.filter((name) => name !== subjectName)
+          : [...selectedSubjects, subjectName],
+      };
+    });
+  };
+
   
 const toggleSection = (sectionId) => {
     setFormData((current) => {
@@ -450,10 +458,10 @@ const handleSubmit = (event) => {
 
     // ADD / EDIT FACULTY
     const payload = {
-        faculty_number: formData.id,
         name: formData.name,
         email: formData.email,
         specialization: formData.specialization,
+        subjects: formData.subjects || [],
         contact_number: formData.contactNumber || null,
         address: formData.address || null,
         status: formData.status,
@@ -1251,10 +1259,15 @@ const confirmDelete = () => {
                       id="faculty-id"
                       name="id"
                       value={formData.id}
-                      onChange={handleFormChange}
-                      required
+                      placeholder="Generated when saved"
+                      readOnly
                       className={fieldClass}
                     />
+                    {modalType === "add" && (
+                      <p className="mt-1.5 text-xs text-white/45">
+                        This ID will be assigned when you save the account.
+                      </p>
+                    )}
                   </div>
 
                   {/* Full Name */}

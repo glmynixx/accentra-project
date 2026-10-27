@@ -11,18 +11,28 @@ class EnsureActiveStudent
 {
     public function handle(Request $request, Closure $next): Response
     {
-        // Get the authenticated user from the web guard.
-        $user = $request->user();
+        $student = Auth::guard('student')->user();
 
-        // Check that the user has the Student role.
-        if (!$user || $user->role !== 'Student') {
+        if ($student) {
+            if ($student->status !== 'Active') {
+                Auth::guard('student')->logout();
+
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                return redirect()->route('student.login')
+                    ->withErrors(['login' => 'Your student account is inactive or unavailable.']);
+            }
+
+            return $next($request);
+        }
+
+        $user = Auth::guard('web')->user();
+        if (! $user || $user->role !== 'Student') {
             abort(403, 'Unauthorized student access.');
         }
 
-        // Get the Student profile linked to this user.
         $student = $user->student;
-
-        // Check that the Student profile exists and is active.
         if (!$student || $student->status !== 'Active') {
             Auth::guard('web')->logout();
 

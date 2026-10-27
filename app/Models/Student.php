@@ -10,6 +10,7 @@ use Illuminate\Notifications\Notifiable;
 
 #[Fillable([
     'student_number',
+    'user_id',
     'name',
     'email',
     'password',

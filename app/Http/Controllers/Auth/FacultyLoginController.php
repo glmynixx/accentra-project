@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\Faculty;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
@@ -13,12 +14,24 @@ class FacultyLoginController extends Controller
     public function login(Request $request)
     {
         $credentials = $request->validate([
-            'email' => ['required', 'email'],
+            'email' => ['required', 'string', 'max:255'],
             'password' => ['required', 'string'],
         ]);
 
-        $authenticated = Auth::attempt([
-            'email' => $credentials['email'],
+        $identifier = trim($credentials['email']);
+        $faculty = Faculty::query()
+            ->where(function ($query) use ($identifier) {
+                $query->where('faculty_number', $identifier)
+                    ->orWhereRaw('LOWER(email) = ?', [strtolower($identifier)]);
+            })
+            ->first();
+
+        $user = $faculty
+            ? User::query()->whereKey($faculty->user_id)->where('role', 'Faculty')->first()
+            : null;
+
+        $authenticated = $user && Auth::attempt([
+            'email' => $user->email,
             'password' => $credentials['password'],
             'role' => 'Faculty',
         ], $request->boolean('remember'));
@@ -28,8 +41,6 @@ class FacultyLoginController extends Controller
                 'email' => 'Invalid faculty email or password.',
             ]);
         }
-
-        $faculty = Faculty::where('user_id', Auth::id())->first();
 
         if (! $faculty || $faculty->status !== 'Active') {
             Auth::logout();

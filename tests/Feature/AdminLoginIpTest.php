@@ -2,9 +2,9 @@
 
 use App\Models\User;
 
-it('redirects the root page to student login', function () {
+it('redirects the root page to the landing page', function () {
     $this->get('/')
-        ->assertRedirect('/student/login');
+        ->assertRedirect('/landingpage');
 });
 
 it('blocks the admin login page and submission from an unlisted ip', function () {

@@ -186,18 +186,18 @@ export default function FacultyLogin({ status }) {
                                 onSubmit={handleSubmit}
                                 className="relative space-y-5"
                             >
-                                {/* USN */}
+                                {/* Faculty ID or email */}
                                 <div>
                                     <label
                                         htmlFor="email"
                                         className="mb-2.5 block text-sm font-medium text-white/90"
                                     >
-                                       Email:
+                                       Faculty ID or Email:
                                     </label>
 
                                     <div
                                         className={`flex items-center rounded-xl border bg-[#071522]/25 transition duration-200 focus-within:bg-[#071522]/40 ${
-                                            errors.usn
+                                            errors.email
                                                 ? "border-red-300/80 focus-within:border-red-300"
                                                 : "border-white/15 focus-within:border-[#9CD6C5]/70"
                                         }`}
@@ -208,25 +208,25 @@ export default function FacultyLogin({ status }) {
 
                                         <input
                                             id="email"
-                                            type="email"
+                                            type="text"
                                             name="email"
-                                            autoComplete="email"
+                                            autoComplete="username"
                                             value={data.email}
                                             onChange={(event) => setData("email", event.target.value)}
-                                            placeholder="Enter your email address"
+                                            placeholder="Enter your faculty ID or email"
                                             aria-invalid={Boolean(errors.email)}
                                             aria-describedby={errors.email ? "email-error" : undefined}
                                             className="w-full border-0 bg-transparent px-3.5 py-4 text-sm text-white outline-none placeholder:text-white/35 focus:ring-0"
                                         />
                                     </div>
 
-                                    {errors.usn && (
+                                    {                                    errors.email && (
                                         <p
-                                            id="usn-error"
+                                        id="email-error"
                                             role="alert"
                                             className="mt-2 text-sm text-red-200"
                                         >
-                                            {errors.usn}
+                                            {errors.email}
                                         </p>
                                     )}
                                 </div>

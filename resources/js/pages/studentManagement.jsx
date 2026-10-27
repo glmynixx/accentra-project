@@ -121,6 +121,7 @@ export default function StudentManagement() {
   const {
     students: databaseStudents = [],
     availableSections = [],
+    nextStudentId = "",
    } = usePage().props;
 
   
@@ -339,7 +340,7 @@ useEffect(() => {
   /* MODALS */
 
   const openAddModal = () => {
-    setFormData({ id: "", name: "", email: "", section: "", course: "BS Accounting Information System", subjects: [], yearLevel: "", contactNumber: "", address: "", sectionId: "", status: "Active" });
+    setFormData({ id: nextStudentId, name: "", email: "", section: "", course: "BS Accounting Information System", subjects: [], yearLevel: "", contactNumber: "", address: "", sectionId: "", status: "Active" });
     setSelectedStudent(null);
     setModalType("add");
   };
@@ -389,7 +390,6 @@ useEffect(() => {
 const handleSubmit = (event) => {
     event.preventDefault();
     const studentData = {
-      student_number: formData.id,
       name: formData.name,
       email: formData.email,
       course: formData.course,
@@ -1070,7 +1070,6 @@ const handleSubmit = (event) => {
       <div className="max-h-[70vh] overflow-y-auto bg-[#0E1A2A] p-6">
         <div className="grid grid-cols-1 gap-4 rounded-2xl border border-white/10 bg-[#071522]/70 p-5 sm:grid-cols-2">
           {[
-            ["Student ID", "id", "text", true],
             ["Full Name", "name", "text", true],
             ["Email Address", "email", "email", true],
             ["Course", "course", "text", true],
@@ -1082,6 +1081,22 @@ const handleSubmit = (event) => {
               <input id={`student-${name}`} name={name} type={type} value={formData[name] ?? ""} onChange={handleFormChange} required={required} className={fieldClass} />
             </div>
           ))}
+          <div>
+            <label htmlFor="student-id" className={labelClass}>Student ID</label>
+            <input
+              id="student-id"
+              name="id"
+              value={formData.id ?? ""}
+              placeholder="Generated when saved"
+              readOnly
+              className={fieldClass}
+            />
+            {modalType === "add" && (
+              <p className="mt-1.5 text-xs text-white/45">
+                This ID will be assigned when you save the account.
+              </p>
+            )}
+          </div>
           <div><label htmlFor="student-section" className={labelClass}>Section</label>
             <select id="student-section" name="sectionId" value={formData.sectionId ?? ""} onChange={handleFormChange} className={fieldClass}>
               <option value="">Unassigned</option>

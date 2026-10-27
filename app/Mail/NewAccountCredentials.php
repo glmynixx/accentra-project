@@ -17,6 +17,8 @@ class NewAccountCredentials extends Mailable
         public string $email,
         public string $accountType,
         public string $setupUrl,
+        public string $loginId,
+        public array $accountDetails,
     ) {}
 
     public function envelope(): Envelope

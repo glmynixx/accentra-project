@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use App\Support\PasswordSetupLink;
+use App\Support\AccountIdGenerator;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
@@ -56,6 +57,7 @@ class StudentController extends Controller
             'availableSections' => \App\Models\Section::where('status', 'Active')
                 ->orderBy('section_name')
                 ->get(['id', 'section_name', 'course', 'year_level']),
+            'nextStudentId' => app(AccountIdGenerator::class)->preview('Student'),
 
         ]);
         
@@ -66,12 +68,6 @@ class StudentController extends Controller
 public function store(Request $request)
 {
     $validated = $request->validate([
-        'student_number' => [
-            'required',
-            'string',
-            'max:50',
-            'unique:students,student_number',
-        ],
         'name' => 'required|string|max:255',
         'email' => [
             'required',
@@ -98,6 +94,7 @@ public function store(Request $request)
 
     try {
         DB::transaction(function () use ($validated, $password) {
+            $studentNumber = app(AccountIdGenerator::class)->next('Student');
 
             // 1. Create user account
             $user = User::create([
@@ -110,6 +107,8 @@ public function store(Request $request)
             // 2. Create student record linked to user
             $student = Student::create([
                 ...$validated,
+                'student_number' => $studentNumber,
+                'password' => Hash::make($password),
                 'user_id' => $user->id,
             ]);
 
@@ -123,7 +122,18 @@ public function store(Request $request)
                     $student->name,
                     $student->email,
                     'Student',
-                    $setupLink['url']
+                    $setupLink['url'],
+                    $student->student_number,
+                    [
+                        'Name' => $student->name,
+                        'Email' => $student->email,
+                        'Course' => $student->course,
+                        'Year level' => $student->year_level,
+                        'Section' => $student->section,
+                        'Contact number' => $student->contact_number,
+                        'Address' => $student->address,
+                        'Status' => $student->status,
+                    ],
                 )
             );
 
@@ -167,13 +177,6 @@ public function store(Request $request)
 public function update(Request $request, Student $student)
 {
     $validated = $request->validate([
-        'student_number' => [
-            'required',
-            'string',
-            'max:50',
-            Rule::unique('students', 'student_number')
-                ->ignore($student->id),
-        ],
         'name' => 'required|string|max:255',
         'email' => [
             'required',

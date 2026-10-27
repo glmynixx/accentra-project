@@ -12,8 +12,25 @@ const userManagementItems = [
     { label: "Sections", icon: "layout-list", path: "/sections" },
 ];
 
+const settingsItems = [
+    {
+        label: "General Settings",
+        icon: "settings",
+        path: "/settings/general",
+    },
+    {
+        label: "Academic Settings",
+        icon: "graduation-cap",
+        path: "/settings/academic",
+    },
+    {
+        label: "System Information",
+        icon: "info",
+        path: "/settings/information",
+    },
+];
+
 const bottomMenuItems = [
-    { label: "System Settings", icon: "settings", path: "/settings" },
     { label: "Logout", icon: "log-out", path: null },
 ];
 
@@ -21,7 +38,11 @@ export default function Sidebar({ activeMenu, onMenuChange, open = false }) {
     const isUserManagementActive = userManagementItems.some(
         (item) => activeMenu === item.label,
     );
+    const isSettingsActive = settingsItems.some(
+        (item) => activeMenu === item.label,
+    );
     const [userManagementOpen, setUserManagementOpen] = useState(isUserManagementActive);
+    const [settingsOpen, setSettingsOpen] = useState(isSettingsActive);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -29,12 +50,12 @@ export default function Sidebar({ activeMenu, onMenuChange, open = false }) {
         if (isUserManagementActive) setUserManagementOpen(true);
     }, [isUserManagementActive]);
 
+    useEffect(() => {
+        if (isSettingsActive) setSettingsOpen(true);
+    }, [isSettingsActive]);
+
     const handleNavigation = (event, item) => {
         event.preventDefault();
-        if (item.label === "Logout") {
-            setShowLogoutModal(true);
-            return;
-        }
         onMenuChange?.(item.label);
         if (item.path) router.visit(item.path);
     };
@@ -56,6 +77,21 @@ export default function Sidebar({ activeMenu, onMenuChange, open = false }) {
 
     const renderItem = (item) => {
         const isActive = activeMenu === item.label;
+
+        if (item.label === "Logout") {
+            return (
+                <button
+                    key={item.label}
+                    type="button"
+                    className={getMenuItemClasses(false)}
+                    onClick={() => setShowLogoutModal(true)}
+                >
+                    <Icon name={item.icon} className="h-[18px] w-[18px] shrink-0" />
+                    <span>{item.label}</span>
+                </button>
+            );
+        }
+
         return (
             <a
                 key={item.label}
@@ -130,9 +166,42 @@ export default function Sidebar({ activeMenu, onMenuChange, open = false }) {
                         </div>
                     </div>
 
-                    <div className="mt-auto pt-8">
+                    <div className="mt-6">
+                        <p className="mb-3 px-4 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/30">Settings</p>
+                        <button
+                            type="button"
+                            aria-expanded={settingsOpen}
+                            onClick={() => setSettingsOpen((current) => !current)}
+                            className={`group flex w-full items-center justify-between rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 ${
+                                isSettingsActive
+                                    ? "bg-white/[0.05] text-white"
+                                    : "text-white/65 hover:bg-white/[0.06] hover:text-white"
+                            }`}
+                        >
+                            <span className="flex items-center gap-3">
+                                <Icon name="user-cog" className="h-[18px] w-[18px] text-[#A9E5D2]" />
+                                Settings
+                            </span>
+                            <span className={`transition-transform duration-200 ${settingsOpen ? "rotate-180" : ""}`}>
+                                <Icon name="chevron-down" className="h-4 w-4" />
+                            </span>
+                        </button>
+                        <div className={`grid transition-all duration-200 ${
+                            settingsOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+                        }`}>
+                            <div className="overflow-hidden">
+                                <div className="relative ml-5 mt-2 space-y-1 border-l border-white/[0.10] pl-3">
+                                    {settingsItems.map(renderItem)}
+                                </div>
+                            </div>
+                            </div>
+                        </div>
+
+                        <div className="mt-auto pt-8">
                         <div className="mb-4 border-t border-white/[0.08]" />
-                        <div className="space-y-1">{bottomMenuItems.map(renderItem)}</div>
+                        <div className="space-y-1">
+                            {bottomMenuItems.map(renderItem)}
+                        </div>
                     </div>
                 </nav>
             </aside>

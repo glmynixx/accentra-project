@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\Student;
-use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,44 +16,30 @@ class StudentLoginController extends Controller
     public function login(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'email' => ['required', 'email', 'max:255'],
+            'email' => ['required_without:login', 'string', 'max:255'],
+            'login' => ['required_without:email', 'string', 'max:255'],
             'password' => ['required', 'string'],
             'remember' => ['sometimes', 'boolean'],
         ]);
 
-        $email = Str::lower(trim($validated['email']));
+        $identifier = trim($validated['login'] ?? $validated['email']);
 
-        // Find an active student using their email address.
         $student = Student::query()
-            ->whereRaw('LOWER(email) = ?', [$email])
+            ->where(function ($query) use ($identifier) {
+                $query->where('student_number', $identifier)
+                    ->orWhereRaw('LOWER(email) = ?', [Str::lower($identifier)]);
+            })
             ->where('status', 'Active')
             ->first();
 
-        if (!$student || !$student->user_id) {
+        if (! $student || ! $student->password || ! Hash::check($validated['password'], $student->password)) {
             throw ValidationException::withMessages([
-                'email' => 'Invalid student email or password.',
+                'email' => 'Invalid student ID or password.',
             ]);
         }
 
-        // Find the linked Student user account.
-        $user = User::query()
-            ->whereKey($student->user_id)
-            ->where('role', 'Student')
-            ->first();
-
-        // Verify that the user exists and the password matches.
-        if (
-            !$user ||
-            !Hash::check($validated['password'], $user->password)
-        ) {
-            throw ValidationException::withMessages([
-                'email' => 'Invalid student email or password.',
-            ]);
-        }
-
-        // Log in the authenticated student.
-        Auth::guard('web')->login(
-            $user,
+        Auth::guard('student')->login(
+            $student,
             $request->boolean('remember')
         );
 
@@ -66,6 +51,7 @@ class StudentLoginController extends Controller
 
     public function logout(Request $request): RedirectResponse
     {
+        Auth::guard('student')->logout();
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();

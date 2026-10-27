@@ -49,6 +49,11 @@ export default function Login({ status }) {
         e.preventDefault();
 
         post("/login", {
+            headers: {
+                "X-CSRF-TOKEN": document.querySelector(
+                    'meta[name="csrf-token"]',
+                ).content,
+            },
             onFinish: () => reset("password"),
         });
     };

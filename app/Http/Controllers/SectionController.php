@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Section;
+use App\Models\SystemSetting;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -14,7 +15,18 @@ class SectionController extends Controller
     
     public function index()
 {
+    $academicSettings = SystemSetting::where('key', 'academic')->first()?->value ?? [
+        'academicYear' => '2026-2027',
+        'defaultProgram' => 'Bachelor of Science in Accounting Information Systems',
+        'yearLevels' => ['1st Year', '2nd Year', '3rd Year', '4th Year'],
+    ];
+
     return Inertia::render('sectionManagement', [
+        'academicSettings' => $academicSettings,
+        'availablePrograms' => [
+            'Bachelor of Science in Accounting Information Systems',
+            'Bachelor of Science in Entrepreneurship',
+        ],
         'sections' => Section::with([
             'faculty',
             'students' => function ($query) {

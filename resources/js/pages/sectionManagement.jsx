@@ -16,7 +16,6 @@ import {
 
   Users,
 
-  GraduationCap,
 
   UserCheck,
 
@@ -30,11 +29,6 @@ import {
 
   ChevronRight,
 
-  RotateCcw,
-
-  SlidersHorizontal,
-
-  CalendarDays,
 
 } from "lucide-react";
 
@@ -81,6 +75,12 @@ export default function SectionManagement() {
     const {
         sections: databaseSections = [],
         availableFaculty = [],
+        academicSettings = {
+            academicYear: "2026-2027",
+            defaultProgram: "Bachelor of Science in Accounting Information Systems",
+            yearLevels: ["1st Year", "2nd Year", "3rd Year", "4th Year"],
+        },
+        availablePrograms = [],
     } = usePage().props;
 
 
@@ -144,7 +144,7 @@ const [formData, setFormData] = useState({
 
     yearLevel: "",
 
-    schoolYear: "2026-2027",
+    schoolYear: academicSettings.academicYear,
 
     facultyAssigned: "",
 
@@ -196,17 +196,17 @@ const [formData, setFormData] = useState({
 
   const programs = useMemo(
 
-    () => [...new Set(sections.map((section) => section.program))],
+    () => [...new Set([...availablePrograms, ...sections.map((section) => section.program)])],
 
-    [sections]
+    [availablePrograms, sections]
 
   );
 
   const yearLevels = useMemo(
 
-    () => [...new Set(sections.map((section) => section.yearLevel))],
+    () => [...new Set([...academicSettings.yearLevels, ...sections.map((section) => section.yearLevel)])],
 
-    [sections]
+    [academicSettings.yearLevels, sections]
 
   );
 
@@ -312,11 +312,9 @@ const openAddModal = () => {
 
         name: "",
 
-        program: "",
-
-        yearLevel: "",
-
-        schoolYear: "2026-2027",
+        program: academicSettings.defaultProgram,
+        yearLevel: academicSettings.yearLevels[0] ?? "",
+        schoolYear: academicSettings.academicYear,
 
         facultyAssigned: "",
 
@@ -362,7 +360,7 @@ const openAddModal = () => {
 
         yearLevel: section.yearLevel,
 
-        schoolYear: section.schoolYear || "2026-2027",
+        schoolYear: section.schoolYear || academicSettings.academicYear,
 
         facultyAssigned: section.facultyAssigned,
 
@@ -1256,15 +1254,15 @@ const confirmDelete = () => {
 
                   <div className={modalField}><label className={labelClass}>Section Name</label><input type="text" name="name" value={formData.name} onChange={handleFormChange} placeholder="e.g. BSAIS-1A" required className={inputClass} /></div>
 
-                  <div className={modalField}><label className={labelClass}>Program</label><select name="program" value={formData.program} onChange={handleFormChange} required className={inputClass}><option value="">Select Program</option><option value="BS Accounting Information System">BS Accounting Information System</option><option value="BS Entrepreneurship">BS Entrepreneurship</option></select></div>
+                  <div className={modalField}><label className={labelClass}>Program</label><select name="program" value={formData.program} onChange={handleFormChange} required className={inputClass}><option value="">Select Program</option>{programs.map((program) => <option key={program} value={program}>{program}</option>)}</select></div>
 
-                  <div className={modalField}><label className={labelClass}>Year Level</label><select name="yearLevel" value={formData.yearLevel} onChange={handleFormChange} required className={inputClass}><option value="">Select Year Level</option><option value="1st Year">1st Year</option><option value="2nd Year">2nd Year</option><option value="3rd Year">3rd Year</option><option value="4th Year">4th Year</option></select></div>
+                  <div className={modalField}><label className={labelClass}>Year Level</label><select name="yearLevel" value={formData.yearLevel} onChange={handleFormChange} required className={inputClass}><option value="">Select Year Level</option>{yearLevels.map((year) => <option key={year} value={year}>{year}</option>)}</select></div>
 
                   <div className={modalField}><label className={labelClass}>Faculty Assigned</label><select name="facultyId" value={formData.facultyId ?? ""} onChange={handleFormChange} className={inputClass}><option value="">Unassigned</option>{availableFaculty.map((member) => <option key={member.id} value={member.id}>{member.faculty_number} - {member.name}</option>)}</select></div>
 
                   <div className={modalField}><label className={labelClass}>No. of Students</label><div className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2.5 text-sm text-white/70">{modalType === "edit" ? formData.students : 0}</div><p className="mt-1.5 text-[10px] text-white/35">The count updates automatically when students are assigned.</p></div>
 
-                  <div className={modalField}><label className={labelClass}>School Year</label><input type="text" name="schoolYear" value={formData.schoolYear} onChange={handleFormChange} placeholder="2026-2027" required className={inputClass} /></div>
+                  <div className={modalField}><label className={labelClass}>School Year</label><input type="text" name="schoolYear" value={formData.schoolYear} onChange={handleFormChange} placeholder={academicSettings.academicYear} required className={inputClass} /></div>
 
                   <div className={modalField}><label className={labelClass}>Status</label><select name="status" value={formData.status} onChange={handleFormChange} className={inputClass}><option value="Active">Active</option><option value="Inactive">Inactive</option></select></div>
 
