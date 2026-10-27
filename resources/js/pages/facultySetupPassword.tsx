@@ -1,6 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import type { FormEvent } from 'react';
 import { ArrowRight, LockKeyhole } from 'lucide-react';
+import SystemLogo from '../components/common/systemLogo';
 
 type FacultySetupPasswordProps = {
     token: string;
@@ -31,7 +32,7 @@ export default function FacultySetupPassword({
             <header className="flex items-center border-b border-[#E1E7EE] bg-[#142A43] px-5 py-4 sm:px-10 lg:px-16">
                 <a href="/" className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#142A43] shadow-md">
-                        <span className="text-lg font-extrabold">A</span>
+                        <SystemLogo />
                     </div>
                     <div>
                         <div className="text-xl font-bold tracking-tight text-white">

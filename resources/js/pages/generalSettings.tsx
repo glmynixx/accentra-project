@@ -27,7 +27,7 @@ import SettingsLayout, {
     settingsButtonClass,
 } from "../components/layout/settingsLayout";
 
-const SAMPLE_LOGO = "/images/accentra-logo.png";
+const SAMPLE_LOGO = "/favicon.svg";
 
 const initialSettings = {
     systemName: "ACCENTRA",
@@ -357,8 +357,12 @@ export default function GeneralSettings() {
             { ...settings, logoFile },
             {
                 forceFormData: true,
-                onSuccess: () => {
-                    setSavedLogo(logo);
+                onSuccess: (page) => {
+                    const persistedLogo =
+                        (page.props as { branding?: { logoUrl?: string | null } })
+                            .branding?.logoUrl || logo;
+                    setSavedLogo(persistedLogo);
+                    setLogo(persistedLogo);
                     setLogoFile(null);
                     setLogoMessage("System logo saved successfully.");
                 },
@@ -376,9 +380,13 @@ export default function GeneralSettings() {
             { ...draft, logoFile },
             {
                 forceFormData: true,
-                onSuccess: () => {
+                onSuccess: (page) => {
+                    const persistedLogo =
+                        (page.props as { branding?: { logoUrl?: string | null } })
+                            .branding?.logoUrl || logo;
                     setSettings({ ...draft });
-                    setSavedLogo(logo);
+                    setSavedLogo(persistedLogo);
+                    setLogo(persistedLogo);
                     setLogoFile(null);
                     setEditing(false);
                     setMessage("General settings saved successfully.");

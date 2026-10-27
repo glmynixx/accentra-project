@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { router } from "@inertiajs/react";
 import Icon from "../common/icon";
+import SystemLogo from "../common/systemLogo";
 
 const menuItems = [
     { label: "Dashboard", icon: "layout-dashboard", path: "/dashboard" },
@@ -123,7 +124,9 @@ export default function Sidebar({ activeMenu, onMenuChange, open = false }) {
 
                 <div className="relative shrink-0 border-b border-white/[0.08] px-6 pb-6 pt-7">
                     <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#A9E5D2]/20 bg-[#A9E5D2]/10 text-lg font-extrabold text-[#A9E5D2]">A</div>
+                        <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl border border-[#A9E5D2]/20 bg-[#A9E5D2]/10 p-1">
+                            <SystemLogo />
+                        </div>
                         <div>
                             <div className="text-[21px] font-bold tracking-tight text-white">ACCENTRA</div>
                             <div className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-white/40">Accounting System</div>

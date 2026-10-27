@@ -1,5 +1,6 @@
 import { Head, useForm, usePage } from '@inertiajs/react';
 import { Mail, ArrowRight, CheckCircle2, CircleAlert, LockKeyhole } from 'lucide-react';
+import SystemLogo from '../components/common/systemLogo';
 
 export default function StudentForgotPassword() {
     const { flash = {} } = usePage().props;
@@ -25,7 +26,7 @@ export default function StudentForgotPassword() {
 
                 <header className="relative z-10 flex items-center justify-between px-6 py-6 sm:px-10 lg:px-16">
                     <a href="/student/login" aria-label="ACCENTRA student login" className="flex w-fit items-center gap-3">
-                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/25 bg-white/10 shadow-lg backdrop-blur-xl"><span className="text-2xl font-bold text-[#A9E5D2]">A</span></div>
+                        <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl border border-white/25 bg-white/10 p-1 shadow-lg backdrop-blur-xl"><SystemLogo /></div>
                         <div><span className="text-xl font-semibold tracking-[0.2em] sm:text-2xl">ACCENTRA</span><p className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-white/50">Accounting Information System</p></div>
                     </a>
                     <div className="hidden items-center gap-2 text-xs font-medium text-white/60 sm:flex"><LockKeyhole size={15} className="text-[#A9E5D2]" /> Secure Account Recovery</div>

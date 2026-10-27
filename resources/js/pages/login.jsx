@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Head, useForm } from "@inertiajs/react";
+import SystemLogo from "../components/common/systemLogo";
 
 function FieldIcon({ type }) {
     if (type === "usn") {
@@ -101,9 +102,7 @@ export default function Login({ status }) {
                             className="mb-10 flex w-fit items-center gap-3 sm:mb-12"
                         >
                             <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/25 bg-white/10 shadow-lg backdrop-blur-xl">
-                                <span className="text-2xl font-bold text-[#A9E5D2]">
-                                    A
-                                </span>
+                                <SystemLogo className="h-9 w-9 object-contain" />
                             </div>
 
                             <span className="text-2xl font-semibold tracking-[0.2em] sm:text-3xl">

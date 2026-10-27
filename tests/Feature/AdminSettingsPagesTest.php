@@ -55,7 +55,14 @@ it('persists general settings and uploads the system logo', function () {
     $this->get('/settings/general')
         ->assertInertia(fn ($page) => $page
             ->where('generalSettings.systemName', 'ACCENTRA SIS')
-            ->where('generalSettings.logoUrl', Storage::disk('public')->url($settings->value['logoPath'])));
+            ->where('generalSettings.logoUrl', Storage::disk('public')->url($settings->value['logoPath']))
+            ->where('branding.logoUrl', Storage::disk('public')->url($settings->value['logoPath']).'?v='.$settings->updated_at->timestamp));
+
+    $manifest = $this->get('/system/manifest.webmanifest')
+        ->assertOk()
+        ->assertJsonPath('name', 'ACCENTRA SIS')
+        ->assertJsonPath('icons.0.src', Storage::disk('public')->url($settings->value['logoPath']).'?v='.$settings->updated_at->timestamp);
+    $this->assertStringContainsString('no-cache', $manifest->headers->get('Cache-Control'));
 });
 
 it('persists academic settings and rejects invalid academic years', function () {

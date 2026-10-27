@@ -3,6 +3,7 @@ import { useRef, useState } from 'react';
 import { usePage } from '@inertiajs/react';
 
 import Icon from '../common/icon';
+import SystemLogo from '../common/systemLogo';
 
 const menuItems = [
 
@@ -288,7 +289,7 @@ export default function StudentSidebar({
 
                         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#142A43] shadow-md">
 
-                            <span className="text-lg font-extrabold">A</span>
+                            <SystemLogo />
 
                         </div>
 

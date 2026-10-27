@@ -17,6 +17,8 @@ use Illuminate\Support\Facades\Route;
 
 // Public landing page
 Route::inertia('/landingpage', 'landingPage')->name('landingpage');
+Route::get('/system/manifest.webmanifest', [SettingsController::class, 'manifest'])
+    ->name('system.manifest');
 
 
 Route::get('/faculty/setup-password/{token}', [FacultyPasswordController::class, 'edit'])

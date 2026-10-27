@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Head } from "@inertiajs/react";
+import SystemLogo from "../components/common/systemLogo";
 import {
     ArrowDownRight,
     ArrowLeft,
@@ -205,7 +206,7 @@ export default function LandingPage() {
                     <header className="ac-glass relative z-30 flex shrink-0 items-center justify-between rounded-2xl px-4 py-3 sm:px-6">
                         <button onClick={() => choosePanel("Home")} className="flex items-center gap-3 text-left">
                             <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/20 bg-white/10 transition duration-300 hover:rotate-6 hover:scale-110">
-                                <span className="text-xl font-bold text-[#A9E5D2]">A</span>
+                                <SystemLogo className="h-8 w-8 object-contain" />
                             </div>
                             <div>
                                 <p className="text-lg font-semibold tracking-[.16em] sm:text-xl">ACCENTRA</p>

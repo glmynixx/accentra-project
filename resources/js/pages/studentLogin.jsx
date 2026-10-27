@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { Head, useForm } from "@inertiajs/react";
+import SystemLogo from "../components/common/systemLogo";
 
 
 
@@ -190,11 +191,7 @@ export default function StudentLogin({ status }) {
 
                             <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/25 bg-white/10 shadow-lg backdrop-blur-xl">
 
-                                <span className="text-2xl font-bold text-[#A9E5D2]">
-
-                                    A
-
-                                </span>
+                                <SystemLogo className="h-9 w-9 object-contain" />
 
                             </div>
 

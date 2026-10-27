@@ -1,5 +1,6 @@
 
 import { createInertiaApp } from '@inertiajs/react';
+import { useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import InstallAppButton from './components/pwa/installAppButton';
 import AppStartupAnimation from './components/pwa/appStartupAnimation';
@@ -36,7 +37,42 @@ void createInertiaApp({
             throw new Error(`Default export not found for page: ${name}`);
         }
 
-        return module.default;
+        const Page = module.default;
+
+        return function BrandedPage(props: Record<string, unknown>) {
+            const branding = (props as { branding?: { logoUrl?: string | null } }).branding;
+
+            useEffect(() => {
+                const logoUrl = branding?.logoUrl || '/favicon.svg';
+
+                for (const selector of [
+                    'link[rel="icon"]',
+                    'link[rel="shortcut icon"]',
+                    'link[rel="apple-touch-icon"]',
+                ]) {
+                    let link = document.head.querySelector<HTMLLinkElement>(selector);
+
+                    if (!link) {
+                        link = document.createElement('link');
+                        link.rel = selector.includes('apple-touch-icon')
+                            ? 'apple-touch-icon'
+                            : 'icon';
+                        document.head.appendChild(link);
+                    }
+
+                    link.href = logoUrl;
+                }
+
+                const manifest = document.head.querySelector<HTMLLinkElement>(
+                    'link[rel="manifest"]',
+                );
+                if (manifest) {
+                    manifest.href = '/system/manifest.webmanifest';
+                }
+            }, [branding?.logoUrl]);
+
+            return <Page {...props} />;
+        };
     },
 
     setup({ el, App, props }) {

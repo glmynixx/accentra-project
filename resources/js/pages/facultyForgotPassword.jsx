@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { Head, router } from "@inertiajs/react";
+import SystemLogo from "../components/common/systemLogo";
 
 import {
 
@@ -145,14 +146,8 @@ export default function FacultyForgotPassword() {
 
                     >
 
-                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/25 bg-white/10 shadow-lg backdrop-blur-xl">
-
-                            <span className="text-2xl font-bold text-[#A9E5D2]">
-
-                                A
-
-                            </span>
-
+                        <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl border border-white/25 bg-white/10 p-1 shadow-lg backdrop-blur-xl">
+                            <SystemLogo />
                         </div>
 
 

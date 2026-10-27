@@ -7,7 +7,9 @@
 
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="theme-color" content="#142A43">
-    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="icon" href="/favicon.svg">
+    <link rel="apple-touch-icon" href="/favicon.svg">
+    <link rel="manifest" href="/system/manifest.webmanifest">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
     <title>{{ config('app.name', 'ACCENTRA') }}</title>

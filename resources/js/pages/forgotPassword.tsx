@@ -1,6 +1,7 @@
 import type { FormEvent } from "react";
 
 import { Head, useForm } from "@inertiajs/react";
+import SystemLogo from "../components/common/systemLogo";
 
 import {
 
@@ -114,14 +115,8 @@ const inputClass = `w-full rounded-xl border bg-[#071522]/25 py-4 pl-12 pr-4
 
                     >
 
-                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/25 bg-white/10 shadow-lg backdrop-blur-xl">
-
-                            <span className="text-2xl font-bold text-[#A9E5D2]">
-
-                                A
-
-                            </span>
-
+                        <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl border border-white/25 bg-white/10 p-1 shadow-lg backdrop-blur-xl">
+                            <SystemLogo />
                         </div>
 
                         <div>

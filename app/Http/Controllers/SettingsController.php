@@ -57,6 +57,53 @@ class SettingsController extends Controller
         ]);
     }
 
+    public function manifest()
+    {
+        $settings = $this->settings('general', self::GENERAL_DEFAULTS);
+        $generalSetting = SystemSetting::where('key', 'general')->first();
+        $logoUrl = $settings['logoPath']
+            ? Storage::disk('public')->url($settings['logoPath'])
+            : asset('/favicon.svg');
+        $logoUrl .= (str_contains($logoUrl, '?') ? '&' : '?').'v='.urlencode(
+            (string) $generalSetting?->updated_at?->timestamp,
+        );
+        $extension = strtolower(pathinfo((string) parse_url($logoUrl, PHP_URL_PATH), PATHINFO_EXTENSION));
+        $mimeType = match ($extension) {
+            'jpg', 'jpeg' => 'image/jpeg',
+            'webp' => 'image/webp',
+            default => 'image/png',
+        };
+        $icon = [
+            'src' => $logoUrl,
+            'sizes' => 'any',
+            'type' => $mimeType,
+            'purpose' => 'any',
+        ];
+
+        return response()->json([
+            'id' => '/',
+            'name' => $settings['systemName'],
+            'short_name' => $settings['systemName'],
+            'description' => 'ACCENTRA student, faculty, and administration portal.',
+            'lang' => 'en',
+            'start_url' => '/',
+            'scope' => '/',
+            'display' => 'standalone',
+            'display_override' => ['standalone', 'minimal-ui'],
+            'orientation' => 'any',
+            'background_color' => '#F4F6F8',
+            'theme_color' => '#142A43',
+            'categories' => ['education', 'productivity'],
+            'icons' => [$icon],
+            'shortcuts' => [
+                ['name' => 'Admin Portal', 'short_name' => 'Admin', 'url' => '/login', 'icons' => [$icon]],
+                ['name' => 'Student Portal', 'short_name' => 'Student', 'url' => '/student/login', 'icons' => [$icon]],
+                ['name' => 'Faculty Portal', 'short_name' => 'Faculty', 'url' => '/faculty/login', 'icons' => [$icon]],
+            ],
+        ])->header('Content-Type', 'application/manifest+json')
+            ->header('Cache-Control', 'no-cache, no-store, must-revalidate');
+    }
+
     public function updateGeneral(Request $request): RedirectResponse
     {
         $validated = $request->validate([

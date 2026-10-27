@@ -2,7 +2,9 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\SystemSetting;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -35,10 +37,23 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $generalSetting = SystemSetting::where('key', 'general')->first();
+        $generalSettings = $generalSetting?->value ?? [];
+        $logoPath = $generalSettings['logoPath'] ?? null;
+        $logoUrl = $logoPath ? Storage::disk('public')->url($logoPath) : null;
+
+        if ($logoUrl) {
+            $logoUrl .= '?v='.urlencode((string) $generalSetting?->updated_at?->timestamp);
+        }
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
             'csrfToken' => csrf_token(),
+            'branding' => [
+                'systemName' => $generalSettings['systemName'] ?? config('app.name', 'ACCENTRA'),
+                'logoUrl' => $logoUrl,
+            ],
             'auth' => [
                 'user' => $request->user() ?? $request->user('student'),
             ],

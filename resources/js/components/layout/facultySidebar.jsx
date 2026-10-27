@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Icon from "../common/icon";
+import SystemLogo from "../common/systemLogo";
 
 const menuItems = [
   {
@@ -116,7 +117,7 @@ export default function FacultySidebar({
         <div className="relative shrink-0 px-6 pb-7 pt-7">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#142A43] shadow-md">
-              <span className="text-lg font-extrabold">A</span>
+              <SystemLogo />
             </div>
 
             <div>
