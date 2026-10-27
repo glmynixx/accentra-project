@@ -263,20 +263,32 @@ public function update(Request $request, Student $student)
     
     // 6. Delete Student
     public function destroy(Student $student)
-    {
-        $student->delete();
-        ActivityLog::create([
-        'actor' => 'Admin',
-        'action' => 'deleted a student',
-        'module' => 'Student Management',
-        'description' => $student->name,
-        'icon' => 'user-minus',
-    ]);
+{
+    DB::transaction(function () use ($student) {
+        $name = $student->name;
+        $userId = $student->user_id;
 
-        return redirect()
-            ->route('students')
-            ->with('success', 'Student deleted successfully!');
-    }
+        $student->delete();
+
+        if ($userId) {
+            User::whereKey($userId)
+                ->where('role', 'Student')
+                ->delete();
+        }
+
+        ActivityLog::create([
+            'actor' => 'Admin',
+            'action' => 'deleted a student',
+            'module' => 'Student Management',
+            'description' => $name,
+            'icon' => 'user-minus',
+        ]);
+    });
+
+    return redirect()
+        ->route('students')
+        ->with('success', 'Student and linked account deleted successfully!');
+}
 
     
 }

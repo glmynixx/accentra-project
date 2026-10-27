@@ -12,26 +12,29 @@ class SectionController extends Controller
 {
     // 1. View all sections
     
-
-    
     public function index()
-    {
-        return Inertia::render('sectionManagement', [
-            'sections' => Section::with('faculty')
-                ->withCount('students')
-                ->orderBy('section_name')
-                ->get(),
+{
+    return Inertia::render('sectionManagement', [
+        'sections' => Section::with([
+            'faculty',
+            'students' => function ($query) {
+                $query->where('status', 'Active')
+                    ->orderBy('name');
+            },
+        ])
+            ->withCount([
+                'students as students_count' => function ($query) {
+                    $query->where('status', 'Active');
+                },
+            ])
+            ->orderBy('section_name')
+            ->get(),
 
-            'availableFaculty' => \App\Models\Faculty::where(
-                'status',
-                'Active'
-            )
-                ->orderBy('name')
-                ->get(['id', 'faculty_number', 'name']),
-
-                
-        ]);
-    }
+        'availableFaculty' => \App\Models\Faculty::where('status', 'Active')
+            ->orderBy('name')
+            ->get(['id', 'faculty_number', 'name']),
+    ]);
+}
 
 
 

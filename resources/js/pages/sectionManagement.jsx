@@ -53,43 +53,35 @@ export default function SectionManagement() {
 
 
   const mapSection = (section) => ({
-
     databaseId: section.id,
-
     id: `SEC-${String(section.id).padStart(4, "0")}`,
-
     name: section.section_name,
-
     program: section.course,
-
     yearLevel: section.year_level,
-
     schoolYear: section.school_year,
-
     facultyId: section.faculty_id ?? "",
-
     facultyAssigned: section.faculty?.name || "Unassigned",
-
     students: Number(section.students_count ?? 0),
 
+    studentMembers: (section.students ?? []).map((student) => ({
+        id: student.student_number || String(student.id),
+        name: student.name,
+        email: student.email,
+        yearLevel: student.year_level,
+        status: student.status,
+    })),
+
     status: section.status,
-
     dateCreated: section.created_at,
-
     lastUpdated: section.updated_at,
-
 });
 
 
 
     const {
-
-      sections: databaseSections = [],
-
-      availableFaculty = [],
-        students: databaseStudents = [],
-
-      } = usePage().props;
+        sections: databaseSections = [],
+        availableFaculty = [],
+    } = usePage().props;
 
 
 
@@ -183,20 +175,16 @@ const [formData, setFormData] = useState({
 
 
   const getAssignedStudents = (sectionId) => {
-    const section = sections.find((item) => item.id === sectionId);
+    const section = sections.find(
+        (item) => item.id === sectionId
+    );
+
     if (!section) return [];
-    const records = Array.isArray(databaseStudents)
-      ? databaseStudents
-      : databaseStudents?.data ?? [];
-    return records.filter((student) => Number(student.section_id) === Number(section.databaseId))
-      .map((student) => ({
-        id: student.student_number || student.id,
-        name: student.name,
-        email: student.email,
-        yearLevel: student.year_level,
-        status: student.status,
-      }));
-  };
+
+    return (section.studentMembers ?? []).filter(
+        (student) => student.status === "Active"
+    );
+};
 
   const getFilteredAssignedStudents = () => {
     if (!selectedSection) return [];
