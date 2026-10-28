@@ -1,5 +1,5 @@
+import { createPortal } from "react-dom";
 import { useMemo, useState } from "react";
-
 import {
     Search,
     Eye,
@@ -16,15 +16,11 @@ import {
     ClipboardList,
     RotateCcw,
     Layers,
+    UserCheck,
+    ChartNoAxesColumn,
 } from "lucide-react";
 
 import FacultyLayout from "../components/layout/facultyLayout";
-
-/*
-|--------------------------------------------------------------------------
-| SAMPLE SECTION DATA
-|--------------------------------------------------------------------------
-*/
 
 const initialSections = [
     {
@@ -115,41 +111,17 @@ const PROGRAMS = [
     "BS Entrepreneurship",
 ];
 
-const YEAR_LEVELS = [
-    "1st Year",
-    "2nd Year",
-    "3rd Year",
-    "4th Year",
-];
-
-const ACADEMIC_YEARS = [
-    "2025-2026",
-    "2026-2027",
-    "2027-2028",
-];
-
-const SEMESTERS = [
-    "1st Semester",
-    "2nd Semester",
-];
-
+const YEAR_LEVELS = ["1st Year", "2nd Year", "3rd Year", "4th Year"];
+const ACADEMIC_YEARS = ["2025-2026", "2026-2027", "2027-2028"];
+const SEMESTERS = ["1st Semester", "2nd Semester"];
 const SECTION_STATUSES = ["Active", "Inactive"];
 const ITEMS_PER_PAGE = 5;
 
-/*
-|--------------------------------------------------------------------------
-| REUSABLE STYLES
-|--------------------------------------------------------------------------
-*/
-
 const inputClass =
-    "w-full rounded-xl border border-[#C9D6E4] bg-white px-3.5 py-2.5 text-sm text-[#243A52] outline-none transition-all placeholder:text-[#9AA8B7] focus:border-[#294B70] focus:ring-2 focus:ring-[#294B70]/10";
+    "w-full rounded-xl border border-white/[0.10] bg-[#071522]/80 px-3.5 py-2.5 text-sm text-white outline-none transition-all placeholder:text-white/30 focus:border-[#A9E5D2]/45 focus:ring-2 focus:ring-[#A9E5D2]/[0.08]";
 
-/*
-|--------------------------------------------------------------------------
-| HELPERS
-|--------------------------------------------------------------------------
-*/
+const panelClass =
+    "min-w-0 overflow-hidden rounded-2xl border border-white/[0.13] bg-gradient-to-br from-white/[0.075] to-white/[0.02] shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_18px_55px_rgba(0,0,0,0.18)] backdrop-blur-[22px]";
 
 function getInitials(name = "") {
     return name
@@ -162,26 +134,20 @@ function getInitials(name = "") {
         .toUpperCase();
 }
 
-/*
-|--------------------------------------------------------------------------
-| STATUS BADGES
-|--------------------------------------------------------------------------
-*/
-
 function SectionStatus({ status }) {
     const isActive = status === "Active";
 
     return (
         <span
-            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold ${
+            className={`inline-flex items-center gap-2 whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
                 isActive
-                    ? "border-[#B9D9C8] bg-[#F0F8F3] text-[#267653]"
-                    : "border-[#C8D0D9] bg-[#F0F3F6] text-[#647181]"
+                    ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300"
+                    : "border-white/10 bg-white/[0.05] text-white/50"
             }`}
         >
             <span
                 className={`h-1.5 w-1.5 rounded-full ${
-                    isActive ? "bg-[#31805E]" : "bg-[#7C8794]"
+                    isActive ? "bg-emerald-300" : "bg-white/35"
                 }`}
             />
             {status}
@@ -194,15 +160,15 @@ function StudentStatus({ status }) {
 
     return (
         <span
-            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold ${
+            className={`inline-flex items-center gap-2 whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
                 isActive
-                    ? "border-[#B9DCC9] bg-[#E3F3E9] text-[#28734D]"
-                    : "border-[#E5C5C9] bg-[#F9E8EA] text-[#A6404B]"
+                    ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300"
+                    : "border-rose-400/20 bg-rose-400/10 text-rose-300"
             }`}
         >
             <span
                 className={`h-1.5 w-1.5 rounded-full ${
-                    isActive ? "bg-[#31805E]" : "bg-[#C65360]"
+                    isActive ? "bg-emerald-300" : "bg-rose-300"
                 }`}
             />
             {status}
@@ -210,95 +176,65 @@ function StudentStatus({ status }) {
     );
 }
 
-/*
-|--------------------------------------------------------------------------
-| VIEW-ONLY ACTION BUTTON
-|--------------------------------------------------------------------------
-*/
-
-function ActionButton({ label, onClick, children }) {
-    return (
-        <button
-            type="button"
-            onClick={onClick}
-            aria-label={label}
-            title={label}
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#BFCFDF] bg-[#E6EDF4] text-[#1B3553] transition-all duration-200 hover:border-[#91A9C0] hover:bg-[#D5E1EC] hover:shadow-sm active:scale-95"
-        >
-            {children}
-        </button>
-    );
-}
-
-/*
-|--------------------------------------------------------------------------
-| SUMMARY CARD
-|--------------------------------------------------------------------------
-*/
-
+/* Summary Card */
 function SummaryCard({
     title,
     value,
     description,
     icon: Icon,
-    gradient,
-    borderColor,
-    accentColor,
-    iconBackground,
-    bars,
+    accent = "mint",
 }) {
-    return (
-        <div
-            className={`group relative min-w-0 overflow-hidden rounded-2xl border ${borderColor} bg-gradient-to-br ${gradient} p-5 shadow-[0_5px_22px_rgba(27,53,83,0.10)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_30px_rgba(27,53,83,0.16)]`}
-        >
-            <div className="absolute right-5 top-5 flex h-9 items-end gap-1 opacity-70">
-                {bars.map((bar, index) => (
-                    <span
-                        key={index}
-                        className={`w-1.5 rounded-full ${bar}`}
-                    />
-                ))}
-            </div>
+    const tones = {
+        navy: "bg-[#294B70]/25 text-[#C4D9F0] border-[#7292B4]/20",
+        mint: "bg-[#477F73]/25 text-[#A9E5D2] border-[#A9E5D2]/20",
+        slate: "bg-slate-400/10 text-slate-300 border-slate-300/15",
+        blue: "bg-sky-400/10 text-sky-200 border-sky-200/15",
+    };
 
+    return (
+        <div className="group relative min-w-0 overflow-hidden rounded-2xl border border-white/[0.13] bg-gradient-to-br from-white/[0.105] to-white/[0.025] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_18px_55px_rgba(0,0,0,0.18)] backdrop-blur-[22px] transition duration-300 hover:-translate-y-1 hover:border-white/20">
             <div
-                className={`absolute bottom-0 left-0 h-1 w-full ${accentColor}`}
+                aria-hidden="true"
+                className="pointer-events-none absolute -right-5 -top-6 h-24 w-24 rounded-full bg-white/[0.025] blur-2xl transition group-hover:bg-white/[0.06]"
             />
 
-            <div className="relative flex items-center gap-4">
-                <div
-                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${iconBackground} text-white shadow-[0_4px_10px_rgba(27,53,83,0.16)] transition-transform duration-200 group-hover:scale-105`}
-                >
-                    <Icon size={21} />
-                </div>
-
+            <div className="relative flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                    <span className="block text-xs font-bold text-[#526579]">
+                    <span className="block text-xs font-semibold text-white/55">
                         {title}
                     </span>
 
-                    <span className="mt-1 block text-2xl font-bold tracking-tight text-[#142A43]">
+                    <strong className="mt-2 block text-3xl font-bold tracking-tight text-white">
                         {value}
-                    </span>
+                    </strong>
 
-                    <span className="mt-1 block text-[11px] text-[#738396]">
+                    <span className="mt-1.5 block text-[11px] text-white/35">
                         {description}
                     </span>
                 </div>
+
+                <div
+                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${tones[accent]}`}
+                >
+                    <Icon size={21} strokeWidth={1.8} />
+                </div>
             </div>
+
+            <div
+                className={`absolute bottom-0 left-0 h-px w-full ${
+                    accent === "mint"
+                        ? "bg-[#A9E5D2]/40"
+                        : "bg-white/10"
+                }`}
+            />
         </div>
     );
 }
 
-/*
-|--------------------------------------------------------------------------
-| FILTER SELECT
-|--------------------------------------------------------------------------
-*/
-
 function FilterSelect({ label, value, options, onChange }) {
     return (
         <div className="min-w-0">
-            <label className="mb-1.5 block text-xs font-semibold text-[#526579]">
+            <label className="mb-1.5 block text-xs font-semibold text-white/55">
                 {label}
             </label>
 
@@ -311,7 +247,11 @@ function FilterSelect({ label, value, options, onChange }) {
                     <option value="">All {label}</option>
 
                     {options.map((option) => (
-                        <option key={option} value={option}>
+                        <option
+                            key={option}
+                            value={option}
+                            className="bg-[#0C1B2A]"
+                        >
                             {option}
                         </option>
                     ))}
@@ -319,18 +259,12 @@ function FilterSelect({ label, value, options, onChange }) {
 
                 <ChevronDown
                     size={15}
-                    className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#8292A3]"
+                    className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-white/40"
                 />
             </div>
         </div>
     );
 }
-
-/*
-|--------------------------------------------------------------------------
-| SECTION DETAILS MODAL
-|--------------------------------------------------------------------------
-*/
 
 function SectionDetailsModal({ section, onClose }) {
     const [studentSearch, setStudentSearch] = useState("");
@@ -354,69 +288,47 @@ function SectionDetailsModal({ section, onClose }) {
     }, [section.students, studentSearch, studentStatusFilter]);
 
     const informationCards = [
-      
-        {
-            label: "Program",
-            value: section.program,
-            style: "border-[#B9D9C8] bg-[#E1F0E8]",
-        },
-        {
-            label: "Section Name",
-            value: section.name,
-            style: "border-[#D8CCF4] bg-[#F0EAFE]",
-        },
-        {
-            label: "Year Level",
-            value: section.yearLevel,
-            style: "border-[#F1D9B8] bg-[#FFF4E5]",
-        },
-        {   
-            label: "Academic Year",
-            value: section.academicYear,
-            style: "border-[#B9D9C8] bg-[#E1F0E8]",
-        },
-        {
-            label: "Semester",
-            value: section.semester,
-            style: "border-[#F0CACA] bg-[#FCEAEA]",
-        },
+        { label: "Program", value: section.program },
+        { label: "Section Name", value: section.name },
+        { label: "Year Level", value: section.yearLevel },
+        { label: "Academic Year", value: section.academicYear },
+        { label: "Semester", value: section.semester },
     ];
 
-    return (
+    return createPortal(
         <div
-            className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-[#0C1C2D]/60 p-3 backdrop-blur-sm sm:p-5"
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#020912]/80 p-3 backdrop-blur-md sm:p-5"
             onMouseDown={(event) => {
-                if (event.target === event.currentTarget) {
-                    onClose();
-                }
+                if (event.target === event.currentTarget) onClose();
             }}
         >
             <div
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="section-modal-title"
-                className="my-auto flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-[#B8C9DA] bg-white shadow-[0_25px_70px_rgba(10,30,50,0.30)]"
+                className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-white/[0.13] bg-[#0C1B2A] shadow-[0_25px_100px_rgba(0,0,0,0.55)]"
             >
-                <div className="bg-gradient-to-br from-[#142A43] via-[#1B3553] to-[#294B70] px-5 py-5 sm:px-6 sm:py-6">
+                {/* Fixed modal header */}
+                <div className="shrink-0 border-b border-white/[0.08] bg-gradient-to-r from-[#14283A] to-[#0D1D2C] px-5 py-5 sm:px-6">
                     <div className="flex items-start justify-between gap-4">
                         <div className="flex min-w-0 items-center gap-4">
-                            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/25 bg-white/15 text-white sm:h-16 sm:w-16">
-                                <Building2 size={25} />
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#A9E5D2]/20 bg-[#477F73]/15 text-[#A9E5D2] sm:h-12 sm:w-12">
+                                <Layers size={22} />
                             </div>
 
                             <div className="min-w-0">
-                                <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#C8D8E8]">
+                                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#A9E5D2]">
                                     Section Information
-                                </span>
+                                </p>
 
                                 <h2
                                     id="section-modal-title"
-                                    className="mt-1 break-words text-xl font-bold text-white sm:text-2xl"
+                                    className="mt-1.5 break-words text-lg font-bold text-white sm:text-xl"
                                 >
                                     {section.name}
                                 </h2>
 
-                                <span className="mt-1.5 inline-block rounded-md bg-white/10 px-2 py-1 text-xs font-semibold text-[#D8E4EF]">
+                                <span className="mt-2 inline-flex rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1 text-xs font-medium text-white/50">
                                     {section.id}
                                 </span>
                             </div>
@@ -427,21 +339,21 @@ function SectionDetailsModal({ section, onClose }) {
                             onClick={onClose}
                             aria-label="Close section details"
                             title="Close"
-                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/20 bg-white/10 text-white transition hover:bg-white/20"
+                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 text-white/60 transition hover:border-white/20 hover:bg-white/[0.07] hover:text-white"
                         >
                             <X size={18} />
                         </button>
                     </div>
                 </div>
 
-                <div className="min-h-0 flex-1 overflow-y-auto bg-[#EEF2F6] px-4 py-5 sm:px-6 sm:py-6">
+                {/* Scrollable modal content */}
+                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6">
                     <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <h3 className="text-sm font-bold text-[#1B3553]">
+                            <h3 className="text-sm font-bold text-white/90">
                                 Section & Academic Details
                             </h3>
-
-                            <p className="mt-0.5 text-xs text-[#738396]">
+                            <p className="mt-1 text-xs text-white/45">
                                 Complete information about your assigned section
                             </p>
                         </div>
@@ -453,48 +365,46 @@ function SectionDetailsModal({ section, onClose }) {
                         {informationCards.map((item) => (
                             <div
                                 key={item.label}
-                                className={`rounded-xl border px-4 py-3.5 ${item.style}`}
+                                className="rounded-xl border border-white/[0.09] bg-gradient-to-br from-white/[0.06] to-white/[0.02] px-4 py-3.5"
                             >
-                                <span className="block text-[10px] font-bold uppercase tracking-[0.08em] text-[#53677D]">
+                                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/40">
                                     {item.label}
-                                </span>
+                                </p>
 
-                                <strong className="mt-1 block break-words text-sm font-semibold text-[#243A52]">
+                                <p className="mt-2 break-words text-sm font-semibold text-white/85">
                                     {item.value || "—"}
-                                </strong>
+                                </p>
                             </div>
                         ))}
 
-                        <div className="rounded-xl border border-[#BFD2E5] bg-[#EEF4F9] px-4 py-3.5">
-                            <span className="block text-[10px] font-bold uppercase tracking-[0.08em] text-[#53677D]">
+                        <div className="rounded-xl border border-[#A9E5D2]/15 bg-[#477F73]/10 px-4 py-3.5">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/40">
                                 Number of Students
-                            </span>
+                            </p>
 
                             <div className="mt-2 flex items-center gap-2">
-                               
-
-                                <strong className="text-sm font-semibold text-[#243A52]">
+                                <Users size={16} className="text-[#A9E5D2]" />
+                                <strong className="text-sm font-semibold text-white/85">
                                     {section.students.length} students
                                 </strong>
                             </div>
                         </div>
 
-                        <div className="rounded-xl border border-[#C9D6E3] bg-white px-4 py-3.5 sm:col-span-2 lg:col-span-3">
-                            <span className="block text-[10px] font-bold uppercase tracking-[0.08em] text-[#53677D]">
+                        <div className="rounded-xl border border-white/[0.09] bg-white/[0.025] px-4 py-3.5 sm:col-span-2 lg:col-span-3">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/40">
                                 Faculty Assigned
-                            </span>
+                            </p>
 
-                            <div className="mt-2 flex items-center gap-3">
-                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#E6EDF4] text-[#294B70]">
+                            <div className="mt-3 flex items-center gap-3">
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#A9E5D2]/15 bg-[#477F73]/10 text-[#A9E5D2]">
                                     <UserRound size={19} />
                                 </div>
 
                                 <div className="min-w-0">
-                                    <p className="break-words text-sm font-semibold text-[#243A52]">
+                                    <p className="break-words text-sm font-semibold text-white/85">
                                         {section.facultyAssigned}
                                     </p>
-
-                                    <p className="mt-0.5 text-xs text-[#8292A3]">
+                                    <p className="mt-1 text-xs text-white/40">
                                         Assigned Faculty
                                     </p>
                                 </div>
@@ -502,26 +412,29 @@ function SectionDetailsModal({ section, onClose }) {
                         </div>
                     </div>
 
-                    <section className="mt-6 overflow-hidden rounded-2xl border border-[#C9D6E3] bg-white shadow-[0_5px_20px_rgba(27,53,83,0.06)]">
-                        <div className="flex flex-col gap-3 border-b border-[#C9D6E3] bg-gradient-to-r from-[#F8FAFC] to-[#EEF3F8] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+                    {/* Student list */}
+                    <section className="mt-6 flex min-h-0 flex-col overflow-hidden rounded-2xl border border-white/[0.10] bg-gradient-to-br from-white/[0.055] to-white/[0.02] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+                        <div className="flex shrink-0 flex-col gap-3 border-b border-white/[0.08] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
                             <div className="flex items-center gap-3">
-                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#C9D6E3] bg-white text-[#294B70]">
-                                    <Users size={19} />
+                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#A9E5D2]/15 bg-[#477F73]/10 text-[#A9E5D2]">
+                                    <Users size={18} />
                                 </div>
 
                                 <div>
-                                    <h3 className="text-sm font-bold text-[#1B3553]">
+                                    <h3 className="text-sm font-bold text-white/90">
                                         Student List
                                     </h3>
-
-                                    <p className="mt-0.5 text-xs text-[#738396]">
+                                    <p className="mt-1 text-xs text-white/40">
                                         Enrolled students in this section
                                     </p>
                                 </div>
                             </div>
 
-                            <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-[#C9D6E3] bg-white px-3 py-1.5 text-xs font-semibold text-[#526579]">
-                                <GraduationCap size={14} />
+                            <span className="inline-flex w-fit shrink-0 items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-white/60">
+                                <GraduationCap
+                                    size={14}
+                                    className="text-[#A9E5D2]"
+                                />
                                 {filteredStudents.length}{" "}
                                 {filteredStudents.length === 1
                                     ? "student"
@@ -529,12 +442,13 @@ function SectionDetailsModal({ section, onClose }) {
                             </span>
                         </div>
 
-                        <div className="border-b border-[#DCE4EC] bg-[#F7F9FB] px-4 py-4 sm:px-5">
+                        {/* Search and status filter */}
+                        <div className="relative z-10 shrink-0 border-b border-white/[0.08] bg-[#102131] px-4 py-4 sm:px-5">
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_200px]">
                                 <div className="relative min-w-0">
                                     <Search
                                         size={17}
-                                        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8292A3]"
+                                        className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-white/35"
                                     />
 
                                     <input
@@ -557,54 +471,57 @@ function SectionDetailsModal({ section, onClose }) {
                                     aria-label="Filter students by status"
                                     className={inputClass}
                                 >
-                                    <option value="">Status</option>
+                                    <option value="">All Statuses</option>
                                     <option value="Active">Active</option>
                                     <option value="Inactive">Inactive</option>
                                 </select>
                             </div>
                         </div>
 
-                        <div className="w-full overflow-x-auto">
+                        {/* Scrollable student table */}
+                        <div className="max-h-[300px] min-h-[120px] flex-1 overflow-auto overscroll-contain">
                             <table className="w-full min-w-[540px] border-collapse text-left">
-                                <thead>
-                                    <tr className="border-b border-[#C9D6E3] bg-[#E7EDF3]">
+                                <thead className="sticky top-0 z-[1] bg-[#14283A]">
+                                    <tr className="border-b border-white/[0.08]">
                                         {["Student ID", "Name", "Status"].map(
                                             (heading) => (
                                                 <th
                                                     key={heading}
-                                                    className="whitespace-nowrap px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.09em] text-[#53677D] sm:px-5"
+                                                    className="whitespace-nowrap px-4 py-3 text-[10px] font-bold uppercase tracking-[0.14em] text-white/40 sm:px-5"
                                                 >
                                                     {heading}
                                                 </th>
-                                            ),
+                                            )
                                         )}
                                     </tr>
                                 </thead>
 
-                                <tbody className="divide-y divide-[#E5EBF1]">
+                                <tbody className="divide-y divide-white/[0.07]">
                                     {filteredStudents.map((student) => (
                                         <tr
                                             key={student.id}
-                                            className="transition-colors hover:bg-[#F7F9FC]"
+                                            className="transition-colors hover:bg-[#A9E5D2]/[0.035]"
                                         >
-                                            <td className="whitespace-nowrap px-4 py-3.5 text-sm font-medium text-[#526579] sm:px-5">
+                                            <td className="whitespace-nowrap px-4 py-3.5 text-sm font-medium text-white/55 sm:px-5">
                                                 {student.id}
                                             </td>
 
                                             <td className="px-4 py-3.5 sm:px-5">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#C9D6E3] bg-[#EEF4F9] text-xs font-bold text-[#294B70]">
+                                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#A9E5D2]/15 bg-[#477F73]/10 text-xs font-bold text-[#A9E5D2]">
                                                         {getInitials(student.name)}
                                                     </div>
 
-                                                    <span className="text-sm font-semibold text-[#243A52]">
+                                                    <span className="text-sm font-semibold text-white/85">
                                                         {student.name}
                                                     </span>
                                                 </div>
                                             </td>
 
                                             <td className="px-4 py-3.5 sm:px-5">
-                                                <StudentStatus status={student.status} />
+                                                <StudentStatus
+                                                    status={student.status}
+                                                />
                                             </td>
                                         </tr>
                                     ))}
@@ -615,26 +532,27 @@ function SectionDetailsModal({ section, onClose }) {
                                                 colSpan={3}
                                                 className="px-5 py-12 text-center"
                                             >
-                                                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-[#C9D6E3] bg-[#EEF4F9] text-[#8292A3]">
-                                                    <Users size={22} />
+                                                <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl border border-[#A9E5D2]/15 bg-[#477F73]/10 text-[#A9E5D2]">
+                                                    <Users size={20} />
                                                 </div>
 
-                                                <h4 className="mt-3 text-sm font-bold text-[#243A52]">
+                                                <h4 className="mt-3 text-sm font-bold text-white/85">
                                                     No students found
                                                 </h4>
 
-                                                <p className="mt-1 text-xs text-[#8292A3]">
+                                                <p className="mt-1 text-xs text-white/40">
                                                     Try changing your search or status filter.
                                                 </p>
 
-                                                {(studentSearch || studentStatusFilter) && (
+                                                {(studentSearch ||
+                                                    studentStatusFilter) && (
                                                     <button
                                                         type="button"
                                                         onClick={() => {
                                                             setStudentSearch("");
                                                             setStudentStatusFilter("");
                                                         }}
-                                                        className="mt-3 text-xs font-semibold text-[#294B70] hover:text-[#1B3553]"
+                                                        className="mt-3 text-xs font-semibold text-[#A9E5D2] transition hover:text-white"
                                                     >
                                                         Clear student filters
                                                     </button>
@@ -646,14 +564,15 @@ function SectionDetailsModal({ section, onClose }) {
                             </table>
                         </div>
 
-                        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#DCE4EC] bg-white px-4 py-3 sm:px-5">
-                            <p className="text-xs text-[#738396]">
+                        {/* Student count footer */}
+                        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-white/[0.08] px-4 py-3 sm:px-5">
+                            <p className="text-xs text-white/40">
                                 Showing{" "}
-                                <strong className="font-semibold text-[#243A52]">
+                                <strong className="font-semibold text-white/75">
                                     {filteredStudents.length}
                                 </strong>{" "}
                                 of{" "}
-                                <strong className="font-semibold text-[#243A52]">
+                                <strong className="font-semibold text-white/75">
                                     {section.students.length}
                                 </strong>{" "}
                                 students
@@ -666,7 +585,7 @@ function SectionDetailsModal({ section, onClose }) {
                                         setStudentSearch("");
                                         setStudentStatusFilter("");
                                     }}
-                                    className="text-xs font-semibold text-[#294B70] hover:text-[#1B3553]"
+                                    className="text-xs font-semibold text-[#A9E5D2] transition hover:text-white"
                                 >
                                     Clear filters
                                 </button>
@@ -675,25 +594,21 @@ function SectionDetailsModal({ section, onClose }) {
                     </section>
                 </div>
 
-                <div className="flex justify-end gap-2 border-t border-[#DCE4EC] bg-white px-5 py-4">
+                {/* modal footer */}
+                <div className="flex shrink-0 justify-end border-t border-white/[0.08] bg-[#0A1724] px-5 py-4">
                     <button
                         type="button"
                         onClick={onClose}
-                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1B3553] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-[#142A43] hover:shadow-md active:scale-[0.98]"
+                        className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-white/65 transition hover:bg-white/[0.08] hover:text-white"
                     >
                         Close
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }
-
-/*
-|--------------------------------------------------------------------------
-| MAIN FACULTY SECTIONS PAGE
-|--------------------------------------------------------------------------
-*/
 
 export default function FacultySections() {
     const [sections] = useState(initialSections);
@@ -707,12 +622,6 @@ export default function FacultySections() {
 
     const [selectedSection, setSelectedSection] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
-
-    /*
-    |--------------------------------------------------------------------------
-    | SECTION FILTERING
-    |--------------------------------------------------------------------------
-    */
 
     const filteredSections = useMemo(() => {
         const normalizedSearch = search.trim().toLowerCase();
@@ -758,60 +667,42 @@ export default function FacultySections() {
         statusFilter,
     ]);
 
-    /*
-    |--------------------------------------------------------------------------
-    | SUMMARY COUNTS
-    |--------------------------------------------------------------------------
-    */
-
     const counts = useMemo(
         () => ({
             total: sections.length,
 
             active: sections.filter(
-                (section) => section.status === "Active",
+                (section) => section.status === "Active"
             ).length,
 
             students: sections.reduce(
                 (total, section) => total + section.students.length,
-                0,
+                0
             ),
 
             activeStudents: sections.reduce(
                 (total, section) =>
                     total +
                     section.students.filter(
-                        (student) => student.status === "Active",
+                        (student) => student.status === "Active"
                     ).length,
-                0,
+                0
             ),
         }),
-        [sections],
+        [sections]
     );
-
-    /*
-    |--------------------------------------------------------------------------
-    | PAGINATION
-    |--------------------------------------------------------------------------
-    */
 
     const totalPages = Math.max(
         1,
-        Math.ceil(filteredSections.length / ITEMS_PER_PAGE),
+        Math.ceil(filteredSections.length / ITEMS_PER_PAGE)
     );
 
     const safePage = Math.min(currentPage, totalPages);
 
     const paginatedSections = filteredSections.slice(
         (safePage - 1) * ITEMS_PER_PAGE,
-        safePage * ITEMS_PER_PAGE,
+        safePage * ITEMS_PER_PAGE
     );
-
-    /*
-    |--------------------------------------------------------------------------
-    | FILTER HANDLERS
-    |--------------------------------------------------------------------------
-    */
 
     const resetFilters = () => {
         setSearch("");
@@ -825,11 +716,11 @@ export default function FacultySections() {
 
     const hasFilters = Boolean(
         search ||
-        programFilter ||
-        yearFilter ||
-        academicYearFilter ||
-        semesterFilter ||
-        statusFilter,
+            programFilter ||
+            yearFilter ||
+            academicYearFilter ||
+            semesterFilter ||
+            statusFilter
     );
 
     const updateFilter = (setter, value) => {
@@ -843,68 +734,48 @@ export default function FacultySections() {
             showPageInfo={false}
             showSearch={false}
         >
-            <div className="mx-auto w-full max-w-[1600px] pb-8">
+            <div className="relative min-w-0 space-y-6 pb-8 text-white">
                 {/* Page heading */}
-
-                <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+                <section className="flex min-w-0 flex-wrap items-end justify-between gap-4">
                     <div className="min-w-0">
-                        <span className="inline-flex items-center gap-1.5 rounded-full border border-[#BFD2E5] bg-[#E2EAF2] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#294B70]">
-                            Academic Management
-                        </span>
+                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#A9E5D2]">
+                            Faculty
+                        </p>
 
-                        <h1 className="mt-3 text-2xl font-bold tracking-tight text-[#1B3553] sm:text-3xl">
+                        <h1 className="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">
                             My Sections
                         </h1>
 
-                        <p className="mt-1 text-sm text-[#738396]">
+                        <p className="mt-2 max-w-2xl text-sm leading-6 text-white/55">
                             View your assigned sections and monitor enrolled students.
                         </p>
                     </div>
 
-                    <div className="flex w-fit shrink-0 items-center gap-2 rounded-xl border border-[#C9D6E3] bg-white px-3.5 py-2.5 text-sm text-[#526579] shadow-sm">
-                        <CalendarDays size={17} className="text-[#294B70]" />
-                        <span>Academic Year</span>
-                        <span className="font-semibold text-[#1B3553]">
-                            2026-2027
+                    <div className="inline-flex items-center gap-2 rounded-xl border border-[#A9E5D2]/20 bg-[#477F73]/10 px-4 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+                        <span className="h-2 w-2 rounded-full bg-[#A9E5D2] shadow-[0_0_10px_rgba(169,229,210,0.45)]" />
+
+                        <span className="text-xs font-medium text-[#A9E5D2]">
+                            Academic Year 2026-2027
                         </span>
                     </div>
-                </div>
+                </section>
 
-                {/* Summary cards */}
-
-                <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                {/* Summary Cards */}
+                <section className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                     <SummaryCard
                         title="Total Sections"
                         value={counts.total}
                         description="All assigned sections"
-                        icon={ClipboardList}
-                        gradient="from-[#E2EAF2] via-[#EDF2F7] to-white"
-                        borderColor="border-[#AFC1D4]"
-                        accentColor="bg-[#1B3553]/20"
-                        iconBackground="bg-[#1B3553]"
-                        bars={[
-                            "h-3 bg-[#AFC1D4]",
-                            "h-5 bg-[#8FA9C1]",
-                            "h-8 bg-[#6F8CA8]",
-                            "h-6 bg-[#AFC1D4]",
-                        ]}
+                        icon={Layers}
+                        accent="navy"
                     />
 
                     <SummaryCard
                         title="Active Sections"
                         value={counts.active}
                         description="Currently active sections"
-                        icon={BookOpen}
-                        gradient="from-[#E3F0EA] via-[#EFF6F2] to-white"
-                        borderColor="border-[#B9D5C8]"
-                        accentColor="bg-[#31805E]/30"
-                        iconBackground="bg-[#31795B]"
-                        bars={[
-                            "h-3 bg-[#B9D9C8]",
-                            "h-5 bg-[#8FC1A7]",
-                            "h-7 bg-[#5E9C7A]",
-                            "h-9 bg-[#31795B]",
-                        ]}
+                        icon={ChartNoAxesColumn}
+                        accent="mint"
                     />
 
                     <SummaryCard
@@ -912,67 +783,50 @@ export default function FacultySections() {
                         value={counts.students}
                         description="Across assigned sections"
                         icon={Users}
-                        gradient="from-[#E6EAF0] via-[#F0F3F6] to-white"
-                        borderColor="border-[#C8D0D9]"
-                        accentColor="bg-[#64748B]/25"
-                        iconBackground="bg-[#5E6C7C]"
-                        bars={[
-                            "h-8 bg-[#CBD3DC]",
-                            "h-5 bg-[#AAB4BF]",
-                            "h-6 bg-[#7C8794]",
-                            "h-3 bg-[#5E6C7C]",
-                        ]}
+                        accent="slate"
                     />
 
                     <SummaryCard
                         title="Active Students"
                         value={counts.activeStudents}
                         description="Students with active status"
-                        icon={GraduationCap}
-                        gradient="from-[#DFE8F2] via-[#EAF0F6] to-white"
-                        borderColor="border-[#AFC2D8]"
-                        accentColor="bg-[#294B70]/30"
-                        iconBackground="bg-[#294B70]"
-                        bars={[
-                            "h-4 bg-[#AFC2D8]",
-                            "h-7 bg-[#7898B8]",
-                            "h-5 bg-[#52789D]",
-                            "h-9 bg-[#294B70]",
-                        ]}
+                        icon={UserCheck}
+                        accent="blue"
                     />
-                </div>
+                </section>
 
                 {/* Section list panel */}
-
-                <section className="overflow-hidden rounded-2xl border border-[#C9D6E3] bg-white shadow-[0_5px_20px_rgba(27,53,83,0.06)]">
-                    {/* Panel header */}
-
-                    <div className="flex flex-col gap-3 border-b border-[#C9D6E3] bg-gradient-to-r from-[#F8FAFC] to-[#EEF3F8] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <section className={panelClass}>
+                    <div className="flex flex-col gap-3 border-b border-white/[0.08] px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                         <div>
-                            <h2 className="text-base font-bold text-[#1B3553]">
+                            <h2 className="text-base font-bold text-white/90">
                                 Section List
                             </h2>
 
-                            <p className="mt-0.5 text-xs text-[#738396]">
+                            <p className="mt-1 text-xs text-white/40">
                                 View and review your assigned academic sections
                             </p>
                         </div>
 
-                        <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-[#C9D6E3] bg-white px-3 py-1.5 text-xs font-semibold text-[#526579]">
-                            <ClipboardList size={14} />
+                        <span className="inline-flex w-fit items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-white/60">
+                            <ClipboardList
+                                size={14}
+                                className="text-[#A9E5D2]"
+                            />
                             {filteredSections.length}{" "}
-                            {filteredSections.length === 1 ? "section" : "sections"}
+                            {filteredSections.length === 1
+                                ? "section"
+                                : "sections"}
                         </span>
                     </div>
 
                     {/* Search and filters */}
-
-                    <div className="border-b border-[#DCE4EC] bg-[#F7F9FB] px-4 py-4 sm:px-5">
+                    <div className="sticky top-0 z-20 border-b border-white/[0.08] bg-[#0C1B2A] px-4 py-4 shadow-[0_8px_16px_rgba(0,0,0,0.12)] sm:px-5">
                         <div className="mb-3">
                             <div className="relative min-w-0">
                                 <Search
                                     size={17}
-                                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8292A3]"
+                                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/35"
                                 />
 
                                 <input
@@ -989,10 +843,12 @@ export default function FacultySections() {
                                 {search && (
                                     <button
                                         type="button"
-                                        onClick={() => updateFilter(setSearch, "")}
+                                        onClick={() =>
+                                            updateFilter(setSearch, "")
+                                        }
                                         aria-label="Clear search"
                                         title="Clear search"
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-[#8292A3] transition hover:bg-[#E7EDF3] hover:text-[#243A52]"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-white/40 transition hover:bg-white/[0.08] hover:text-white"
                                     >
                                         <X size={15} />
                                     </button>
@@ -1052,7 +908,7 @@ export default function FacultySections() {
                                 <button
                                     type="button"
                                     onClick={resetFilters}
-                                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#294B70] transition hover:text-[#1B3553]"
+                                    className="inline-flex items-center gap-2 text-xs font-semibold text-[#A9E5D2] transition hover:text-white"
                                 >
                                     <RotateCcw size={13} />
                                     Clear filters
@@ -1061,12 +917,11 @@ export default function FacultySections() {
                         )}
                     </div>
 
-                    {/* Table */}
-
+                    {/* Section table */}
                     <div className="w-full overflow-x-auto">
                         <table className="w-full min-w-[1000px] border-collapse text-left">
                             <thead>
-                                <tr className="border-b border-[#C9D6E3] bg-[#E7EDF3]">
+                                <tr className="border-b border-white/[0.08] bg-white/[0.025]">
                                     {[
                                         "Section",
                                         "Program",
@@ -1077,7 +932,7 @@ export default function FacultySections() {
                                     ].map((heading) => (
                                         <th
                                             key={heading}
-                                            className="whitespace-nowrap px-5 py-3.5 text-[10px] font-bold uppercase tracking-[0.09em] text-[#53677D]"
+                                            className="whitespace-nowrap px-5 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-white/40"
                                         >
                                             {heading}
                                         </th>
@@ -1085,72 +940,68 @@ export default function FacultySections() {
                                 </tr>
                             </thead>
 
-                            <tbody className="divide-y divide-[#E5EBF1]">
+                            <tbody className="divide-y divide-white/[0.07]">
                                 {paginatedSections.map((section) => (
                                     <tr
                                         key={section.id}
-                                        className="group transition-colors hover:bg-[#F7F9FC]"
+                                        className="transition-colors hover:bg-[#A9E5D2]/[0.035]"
                                     >
                                         <td className="px-5 py-4">
                                             <div className="flex min-w-0 items-center gap-3">
-                                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#C9D6E3] bg-[#EEF4F9] text-[#294B70]">
-                                                    <Layers size={18} />
+                                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#A9E5D2]/15 bg-[#477F73]/10 text-[#A9E5D2]">
+                                                    <Layers size={17} />
                                                 </div>
 
                                                 <div className="min-w-0">
-                                                    <p className="text-sm font-semibold text-[#243A52]">
+                                                    <p className="text-sm font-semibold text-white/90">
                                                         {section.name}
                                                     </p>
 
-                                                    <p className="mt-1 text-[11px] text-[#8292A3]">
+                                                    <p className="mt-1 text-[11px] text-white/40">
                                                         {section.id}
                                                     </p>
                                                 </div>
                                             </div>
                                         </td>
 
-                                        <td className="max-w-[260px] px-5 py-4 text-sm text-[#526579]">
+                                        <td className="max-w-[260px] px-5 py-4 text-sm text-white/55">
                                             {section.program}
                                         </td>
 
                                         <td className="px-5 py-4">
-                                            <span className="inline-flex whitespace-nowrap rounded-lg border border-[#D5DFE9] bg-[#F5F8FB] px-2.5 py-1.5 text-xs font-semibold text-[#526579]">
+                                            <span className="inline-flex whitespace-nowrap rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-xs font-semibold text-white/60">
                                                 {section.yearLevel}
                                             </span>
                                         </td>
 
                                         <td className="px-5 py-4">
-                                            <div className="flex items-center gap-2 whitespace-nowrap text-sm font-semibold text-[#526579]">
+                                            <div className="flex items-center gap-2 whitespace-nowrap text-sm font-semibold text-white/65">
                                                 <Users
                                                     size={15}
-                                                    className="text-[#8292A3]"
+                                                    className="text-[#A9E5D2]"
                                                 />
                                                 {section.students.length}
                                             </div>
                                         </td>
 
                                         <td className="px-5 py-4">
-                                            <SectionStatus status={section.status} />
+                                            <SectionStatus
+                                                status={section.status}
+                                            />
                                         </td>
 
                                         <td className="px-5 py-4">
-                                            <div className="flex items-center gap-2 whitespace-nowrap">
-                                        <button
-                                            type="button"
-                                            title="View Details"
-                                            aria-label={`View details for ${section.name}`}
-                                            onClick={() => setSelectedSection(section)}
-                                            className="
-                                            flex h-9 w-9 shrink-0 items-center justify-center
-                                            rounded-lg border border-[#142A43] bg-[#1B3553]
-                                            text-white shadow-sm transition-all duration-200
-                                            hover:border-[#0F2035] hover:bg-[#142A43]
-                                            active:scale-95
-                                            "
-                                        >
-                                            <Eye size={16} />
-                                        </button>
-                                        </div>
+                                            <button
+                                                type="button"
+                                                title="View Details"
+                                                aria-label={`View details for ${section.name}`}
+                                                onClick={() =>
+                                                    setSelectedSection(section)
+                                                }
+                                                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#A9E5D2]/20 bg-[#477F73]/15 text-[#A9E5D2] transition-all duration-200 hover:bg-[#477F73]/30 hover:text-white active:scale-95"
+                                            >
+                                                <Eye size={15} />
+                                            </button>
                                         </td>
                                     </tr>
                                 ))}
@@ -1159,19 +1010,19 @@ export default function FacultySections() {
                                     <tr>
                                         <td
                                             colSpan={6}
-                                            className="px-5 py-16 text-center"
+                                            className="px-5 py-14 text-center"
                                         >
-                                            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-[#C9D6E3] bg-[#EEF4F9] text-[#8292A3]">
-                                                <Search size={23} />
+                                            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-[#A9E5D2]/15 bg-[#477F73]/10 text-[#A9E5D2]">
+                                                <Search size={21} />
                                             </div>
 
-                                            <h3 className="mt-4 text-sm font-bold text-[#243A52]">
+                                            <h3 className="mt-4 text-sm font-bold text-white/85">
                                                 {hasFilters
                                                     ? "No matching sections found"
                                                     : "No sections available"}
                                             </h3>
 
-                                            <p className="mx-auto mt-1 max-w-sm text-xs leading-5 text-[#8292A3]">
+                                            <p className="mx-auto mt-1 max-w-sm text-xs leading-5 text-white/40">
                                                 {hasFilters
                                                     ? "Try changing your search or filters to find a section."
                                                     : "There are currently no sections assigned to you."}
@@ -1181,7 +1032,7 @@ export default function FacultySections() {
                                                 <button
                                                     type="button"
                                                     onClick={resetFilters}
-                                                    className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-[#294B70] hover:text-[#1B3553]"
+                                                    className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-[#A9E5D2] transition hover:text-white"
                                                 >
                                                     <RotateCcw size={14} />
                                                     Clear filters
@@ -1195,24 +1046,23 @@ export default function FacultySections() {
                     </div>
 
                     {/* Pagination */}
-
-                    <div className="flex flex-col gap-3 border-t border-[#DCE4EC] bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-                        <p className="text-xs text-[#738396]">
+                    <div className="flex flex-col gap-3 border-t border-white/[0.08] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+                        <p className="text-xs text-white/40">
                             Showing{" "}
-                            <strong className="font-semibold text-[#243A52]">
+                            <strong className="font-semibold text-white/75">
                                 {filteredSections.length === 0
                                     ? 0
                                     : (safePage - 1) * ITEMS_PER_PAGE + 1}
                             </strong>{" "}
                             to{" "}
-                            <strong className="font-semibold text-[#243A52]">
+                            <strong className="font-semibold text-white/75">
                                 {Math.min(
                                     safePage * ITEMS_PER_PAGE,
-                                    filteredSections.length,
+                                    filteredSections.length
                                 )}
                             </strong>{" "}
                             of{" "}
-                            <strong className="font-semibold text-[#243A52]">
+                            <strong className="font-semibold text-white/75">
                                 {filteredSections.length}
                             </strong>{" "}
                             sections
@@ -1226,17 +1076,17 @@ export default function FacultySections() {
                                 disabled={safePage <= 1}
                                 onClick={() =>
                                     setCurrentPage((page) =>
-                                        Math.max(1, page - 1),
+                                        Math.max(1, page - 1)
                                     )
                                 }
-                                className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#C9D6E3] bg-white text-[#526579] transition hover:bg-[#EEF4F9] disabled:cursor-not-allowed disabled:opacity-40"
+                                className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/[0.03] text-white/60 transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-30"
                             >
                                 <ChevronLeft size={17} />
                             </button>
 
                             {Array.from(
                                 { length: totalPages },
-                                (_, index) => index + 1,
+                                (_, index) => index + 1
                             ).map((page) => (
                                 <button
                                     key={page}
@@ -1248,8 +1098,8 @@ export default function FacultySections() {
                                     }
                                     className={`flex h-9 min-w-9 items-center justify-center rounded-lg border px-2.5 text-xs font-semibold transition ${
                                         page === safePage
-                                            ? "border-[#1B3553] bg-[#1B3553] text-white shadow-sm"
-                                            : "border-[#C9D6E3] bg-white text-[#526579] hover:bg-[#EEF4F9]"
+                                            ? "border-[#A9E5D2]/25 bg-[#477F73]/25 text-[#A9E5D2]"
+                                            : "border-white/10 bg-white/[0.03] text-white/55 hover:bg-white/[0.08] hover:text-white"
                                     }`}
                                 >
                                     {page}
@@ -1263,10 +1113,10 @@ export default function FacultySections() {
                                 disabled={safePage >= totalPages}
                                 onClick={() =>
                                     setCurrentPage((page) =>
-                                        Math.min(totalPages, page + 1),
+                                        Math.min(totalPages, page + 1)
                                     )
                                 }
-                                className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#C9D6E3] bg-white text-[#526579] transition hover:bg-[#EEF4F9] disabled:cursor-not-allowed disabled:opacity-40"
+                                className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/[0.03] text-white/60 transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-30"
                             >
                                 <ChevronRight size={17} />
                             </button>
@@ -1274,8 +1124,6 @@ export default function FacultySections() {
                     </div>
                 </section>
             </div>
-
-            {/* Section details modal */}
 
             {selectedSection && (
                 <SectionDetailsModal

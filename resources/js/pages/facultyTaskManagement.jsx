@@ -1,5 +1,6 @@
-import { useMemo, useRef, useState } from "react";
-import { router, usePage } from "@inertiajs/react";
+import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
+import { Head, usePage } from "@inertiajs/react";
 import {
     Search,
     Plus,
@@ -11,1735 +12,2153 @@ import {
     ChevronRight,
     ClipboardList,
     CheckCircle2,
-    FileText,
-    Ban,
-    Upload,
     CalendarDays,
     BookOpen,
     Send,
-    RotateCcw,
-    RefreshCw,
     Paperclip,
-    Download,
-    Trash,
+    AlertCircle,
+    Ban,
+    Users,
+    User,
+
 } from "lucide-react";
 
 import FacultyLayout from "../components/layout/facultyLayout";
 
-// --- Initial form data --
+const ITEMS_PER_PAGE = 6;
+const STUDENTS_PER_PAGE = 8;
+
+const panelClass =
+    "rounded-2xl border border-white/[0.13] bg-gradient-to-br from-white/[0.105] to-white/[0.025] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_18px_55px_rgba(0,0,0,0.18)] backdrop-blur-[22px]";
+
+const buttonPrimary =
+    "inline-flex items-center justify-center gap-2 rounded-xl bg-[#A9E5D2] px-4 py-2.5 text-sm font-bold text-[#10251F] transition hover:bg-[#C0F0E1] disabled:cursor-not-allowed disabled:opacity-50";
+
+const buttonSecondary =
+    "inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-slate-200 transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-50";
+
+const inputClass =
+    "w-full rounded-xl border border-white/10 bg-[#091725] px-3.5 py-2.5 text-sm text-slate-100 outline-none placeholder:text-slate-500 focus:border-[#A9E5D2]/70";
+
+const labelClass = "mb-1.5 block text-xs font-semibold text-slate-300";
+
+const actionButtonBase =
+    "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#0C1B2A] disabled:cursor-not-allowed disabled:opacity-30";
+
+const actionButtonStyles = {
+    view: `${actionButtonBase} border-sky-400/20 bg-sky-400/[0.07] text-sky-300 hover:border-sky-400/40 hover:bg-sky-400/15 focus:ring-sky-400/40`,
+    edit: `${actionButtonBase} border-[#A9E5D2]/20 bg-[#A9E5D2]/[0.06] text-[#A9E5D2] hover:border-[#A9E5D2]/40 hover:bg-[#A9E5D2]/15 focus:ring-[#A9E5D2]/40`,
+    publish: `${actionButtonBase} border-emerald-400/20 bg-emerald-400/[0.07] text-emerald-300 hover:border-emerald-400/40 hover:bg-emerald-400/15 focus:ring-emerald-400/40`,
+    cancel: `${actionButtonBase} border-amber-400/20 bg-amber-400/[0.07] text-amber-300 hover:border-amber-400/40 hover:bg-amber-400/15 focus:ring-amber-400/40`,
+    delete: `${actionButtonBase} border-rose-400/20 bg-rose-400/[0.07] text-rose-300 hover:border-rose-400/40 hover:bg-rose-400/15 focus:ring-rose-400/40`,
+};
+
+const SAMPLE_STUDENTS = [
+    {
+        id: "sample-1",
+        first_name: "Andrea",
+        last_name: "Santos",
+        student_number: "STD-001",
+        email: "andrea.santos@accentra.com",
+        section_name: "BSAIS 11CA",
+        subject_ids: ["demo-acc101"],
+    },
+    {
+        id: "sample-2",
+        first_name: "Joshua",
+        last_name: "Reyes",
+        student_number: "STD-002",
+        email: "joshua.reyes@accentra.com",
+        section_name: "BSEN 11CE",
+        subject_ids: ["demo-acc101"],
+    },
+    {
+        id: "sample-3",
+        first_name: "Sofia",
+        last_name: "Garcia",
+        student_number: "STD-003",
+        email: "sofia.garcia@accentra.com",
+        section_name: "BSAIS 21CA",
+        subject_ids: ["demo-acc102"],
+    },
+    {
+        id: "sample-4",
+        first_name: "Miguel",
+        last_name: "Cruz",
+        student_number: "STD-004",
+        email: "miguel.cruz@accentra.com",
+        section_name: "BSEN 21CE",
+        subject_ids: ["demo-acc103"],
+    },
+    {
+        id: "sample-5",
+        first_name: "Isabella",
+        last_name: "Flores",
+        student_number: "STD 005",
+        email: "isabella.flores@accentra.com",
+        section_name: "BSAIS 21CA",
+        subject_ids: ["demo-acc104"],
+    },
+];  
+
+
 const emptyForm = {
     title: "",
     topic: "",
+    subject_id: "",
     section_id: "",
     due: "",
     points: "100",
     status: "Draft",
     description: "",
     instructions: "",
-    dateCreated: new Date().toISOString().slice(0, 10),
     attachment: null,
     remove_attachment: false,
 };
 
+const getSubjectName = (subject) =>
+    subject?.subject_name ??
+    subject?.name ??
+    subject?.title ??
+    "Untitled Subject";
+
+const getSubjectCode = (subject) =>
+    subject?.subject_code ?? subject?.code ?? "";
+
+const getTaskSubjectName = (task) =>
+    task?.subject?.subject_name ??
+    task?.subject?.name ??
+    task?.subject_name ??
+    "Unassigned subject";
+
+const getTaskSectionName = (task) =>
+    typeof task?.section === "string"
+        ? task.section
+        : task?.section?.section_name ??
+          task?.section_name ??
+          "Unassigned section";
+
+const getDisplayId = (task) => task?.displayId ?? task?.display_id ?? "";
+
+const getStudentName = (student) =>
+    student?.full_name ??
+    student?.name ??
+    [
+        student?.first_name,
+        student?.middle_name,
+        student?.last_name,
+    ]
+        .filter(Boolean)
+        .join(" ") ??
+    "Unnamed Student";
+
+const getStudentNumber = (student) =>
+    student?.student_number ??
+    student?.student_no ??
+    student?.usn ??
+    student?.student_id ??
+    student?.id ??
+    "—";
+
+const getStudentSectionId = (student) =>
+    student?.section_id ??
+    student?.section?.id ??
+    student?.sectionId ??
+    "";
+
+const getStudentSectionName = (student, sections) => {
+    const directName =
+        typeof student?.section === "string"
+            ? student.section
+            : student?.section?.section_name ??
+              student?.section?.name ??
+              student?.section_name;
+
+    if (directName) return directName;
+
+    const section = sections.find(
+        (item) =>
+            String(item.id) === String(getStudentSectionId(student)),
+    );
+
+    return (
+        section?.section_name ??
+        section?.name ??
+        "Unassigned section"
+    );
+};
 
 
-const inputClass =
-    "w-full rounded-xl border border-[#C9D6E4] bg-white px-3.5 py-2.5 text-sm text-[#243A52] outline-none transition-all placeholder:text-[#9AA8B7] focus:border-[#294B70] focus:ring-2 focus:ring-[#294B70]/10 disabled:cursor-not-allowed disabled:bg-[#E7EDF3]";
+const studentHasSubject = (student, subjectId) => {
+    if (!student || subjectId == null) return false;
 
-const labelClass =
-    "mb-1.5 block text-xs font-semibold text-[#526579]";
+    const assignmentValues = [
+        student.subject_ids,
+        student.subjectIds,
+        student.assigned_subject_ids,
+        student.subjects,
+        student.assignedSubjects,
+    ].filter(Array.isArray);
 
-const buttonSecondary =
-    "inline-flex items-center justify-center gap-2 rounded-xl border border-[#C9D6E3] bg-white px-4 py-2.5 text-sm font-semibold text-[#526579] shadow-sm transition-all hover:bg-[#E7EDF3] hover:text-[#243A52]";
+    const hasArrayAssignment = assignmentValues.some((items) =>
+        items.some((item) => {
+            const id =
+                typeof item === "object" && item !== null
+                    ? item.id ?? item.subject_id
+                    : item;
 
-const buttonPrimary =
-    "inline-flex items-center justify-center gap-2 rounded-xl bg-[#1B3553] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-[#142A43] hover:shadow-md active:scale-[0.98]";
+            return String(id) === String(subjectId);
+        }),
+    );
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
+    const singleSubjectId =
+        student.subject_id ?? student.assigned_subject_id;
 
-const ALLOWED_EXTENSIONS = [
-    "pdf",
-    "doc",
-    "docx",
-    "ppt",
-    "pptx",
-    "xls",
-    "xlsx",
-    "png",
-    "jpg",
-    "jpeg",
-];
+    return (
+        hasArrayAssignment ||
+        (singleSubjectId != null &&
+            String(singleSubjectId) === String(subjectId))
+    );
+};
 
-// --- Utility helpers ---
-function formatDate(date) {
-    if (!date) return "—";
+const formatDate = (value) => {
+    if (!value) return "No due date";
 
-    const parsedDate = new Date(`${date}T00:00:00`);
+    const date = new Date(`${String(value).slice(0, 10)}T00:00:00`);
 
-    if (Number.isNaN(parsedDate.getTime())) return date;
+    if (Number.isNaN(date.getTime())) return String(value);
 
-    return parsedDate.toLocaleDateString("en-US", {
+    return date.toLocaleDateString("en-PH", {
         month: "short",
         day: "numeric",
         year: "numeric",
     });
-}
+};
 
-function formatFileSize(bytes) {
-    if (!Number.isFinite(bytes)) return "";
-
-    if (bytes < 1024) return `${bytes} B`;
-
-    if (bytes < 1024 * 1024) {
-        return `${(bytes / 1024).toFixed(1)} KB`;
-    }
-
-    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
-}
-
-function getAttachmentName(attachment) {
+const getAttachmentName = (attachment) => {
     if (!attachment) return "";
 
-    if (typeof File !== "undefined" && attachment instanceof File) {
-        return attachment.name;
-    }
-
     if (typeof attachment === "string") {
-        return attachment.split("/").pop() || "Attachment";
+        return attachment.split("/").pop();
     }
 
-    return attachment.name || "Attachment";
-}
+    return attachment.name ?? attachment.filename ?? "Attachment";
+};
 
-function downloadAttachment(attachment) {
-    if (!attachment) return;
+const isBrowserFile = (value) =>
+    typeof File !== "undefined" && value instanceof File;
 
-    let url = "";
-    let shouldRevoke = false;
-
-    if (
-        (typeof File !== "undefined" && attachment instanceof File) ||
-        (typeof Blob !== "undefined" && attachment instanceof Blob)
-    ) {
-        url = URL.createObjectURL(attachment);
-        shouldRevoke = true;
-    } else if (typeof attachment === "string") {
-        url = attachment;
-    } else if (attachment.url) {
-        url = attachment.url;
-    }
-
-    if (!url) {
-        window.alert(
-            "This attachment is not available for download. Please upload the file again.",
-        );
-        return;
-    }
-
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = getAttachmentName(attachment);
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-
-    if (shouldRevoke) {
-        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-    }
-}
-
-// --- Status Badge ---
 function StatusBadge({ status }) {
     const styles = {
-        Active: "border-[#B9D9C8] bg-[#F0F8F3] text-[#267653]",
-        Draft: "border-[#D7C7A8] bg-[#FAF5E9] text-[#8A6A25]",
-        Completed: "border-[#BFD2E5] bg-[#EEF4F9] text-[#294B70]",
-        Cancelled: "border-[#E2BFC3] bg-[#FBEEF0] text-[#A94A55]",
-    };
-
-    const dots = {
-        Active: "bg-[#31805E]",
-        Draft: "bg-[#B18A37]",
-        Completed: "bg-[#426B94]",
-        Cancelled: "bg-[#A94A55]",
+        Published:
+            "border-emerald-400/20 bg-emerald-400/10 text-emerald-300",
+        Draft: "border-slate-400/20 bg-slate-400/10 text-slate-300",
+        Cancelled: "border-rose-400/20 bg-rose-400/10 text-rose-300",
+        Overdue:
+            "border-amber-400/20 bg-amber-400/10 text-amber-300",
+        Submitted: "border-sky-400/20 bg-sky-400/10 text-sky-300",
     };
 
     return (
         <span
-            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold ${
-                styles[status] ||
-                "border-[#CBD3DC] bg-white text-[#647181]"
+            className={`inline-flex whitespace-nowrap rounded-full border px-2.5 py-1 text-[10px] font-bold ${
+                styles[status] ?? styles.Draft
             }`}
         >
-            <span
-                className={`h-1.5 w-1.5 rounded-full ${
-                    dots[status] || "bg-[#7C8794]"
-                }`}
-            />
-            {status}
+            {status || "Draft"}
         </span>
     );
 }
 
-function SummaryCard({
-    title,
-    value,
-    description,
-    icon: Icon,
-    gradient,
-    borderColor,
-    accentColor,
-    iconBackground,
-    bars,
-}) {
-    return (
-        <div
-            className={`group relative min-w-0 overflow-hidden rounded-2xl border ${borderColor} bg-gradient-to-br ${gradient} p-5 shadow-[0_5px_22px_rgba(27,53,83,0.10)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_30px_rgba(27,53,83,0.16)]`}
-        >
-            <div className="absolute right-5 top-5 flex h-9 items-end gap-1 opacity-70">
-                {bars.map((bar, index) => (
-                    <span
-                        key={index}
-                        className={`w-1.5 rounded-full ${bar}`}
-                    />
-                ))}
-            </div>
-
-            <div
-                className={`absolute bottom-0 left-0 h-1 w-full ${accentColor}`}
-            />
-
-            <div className="relative flex items-center gap-4">
-                <div
-                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${iconBackground} text-white shadow-[0_4px_10px_rgba(27,53,83,0.16)] transition-transform duration-200 group-hover:scale-105`}
-                >
-                    <Icon size={21} />
-                </div>
-
-                <div className="min-w-0">
-                    <span className="block text-xs font-bold text-[#526579]">
-                        {title}
-                    </span>
-                    <span className="mt-1 block text-2xl font-bold tracking-tight text-[#142A43]">
-                        {value}
-                    </span>
-                    <span className="mt-1 block text-[11px] text-[#738396]">
-                        {description}
-                    </span>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-// --- Task modal dialogs ---
 function TaskModal({
     mode,
     task,
     formData,
     setFormData,
+    subjects,
     sections,
     onClose,
     onSubmit,
-    onEdit,
+    processing,
 }) {
-    const fileInputRef = useRef(null);
-
+    const [mounted, setMounted] = useState(false);
     const isView = mode === "view";
-    const isAdd = mode === "add";
 
-    const updateField = (event) => {
-        const { name, value } = event.target;
+    useEffect(() => {
+        setMounted(true);
+        return () => setMounted(false);
+    }, []);
 
-        setFormData((previous) => ({
-            ...previous,
-            [name]: value,
+    useEffect(() => {
+        if (!mounted) return;
+
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = "hidden";
+
+        const handleEscape = (event) => {
+            if (event.key === "Escape") onClose();
+        };
+
+        window.addEventListener("keydown", handleEscape);
+
+        return () => {
+            document.body.style.overflow = previousOverflow;
+            window.removeEventListener("keydown", handleEscape);
+        };
+    }, [mounted, onClose]);
+
+    const updateField = (field, value) => {
+        setFormData((prev) => ({
+            ...prev,
+            [field]: value,
         }));
     };
 
-    const handleFileChange = (event) => {
-        const file = event.target.files?.[0];
+    const attachment =
+        formData.attachment ??
+        (task?.attachment_path
+            ? {
+                  name:
+                      task.attachment_name ??
+                      task.attachment_path.split("/").pop(),
+                  url: `/faculty/tasks/${task.id}/attachment`,
+              }
+            : null);
 
-        if (!file) return;
+    const handleSubmit = (event) => {
+        event.preventDefault();
 
-        const extension = file.name.split(".").pop()?.toLowerCase();
-
-        if (!ALLOWED_EXTENSIONS.includes(extension)) {
-            window.alert(
-                "Unsupported file type. Upload a PDF, Word, PowerPoint, Excel, PNG, or JPG file.",
-            );
-
-            event.target.value = "";
-            return;
+        if (!formData.title.trim()) {
+            return window.alert("Please enter a task title.");
         }
 
-        if (file.size > MAX_FILE_SIZE) {
-            window.alert("The file exceeds the 10 MB limit.");
-
-            event.target.value = "";
-            return;
+        if (!formData.subject_id) {
+            return window.alert("Please select an assigned subject.");
         }
 
-        setFormData((previous) => ({
-    ...previous,
-    attachment: file,
-    remove_attachment: false,
-}));
-
-        // Allows the same file to be selected again
-        event.target.value = "";
+        onSubmit(event);
     };
 
-    const removeAttachment = () => {
-    setFormData((previous) => ({
-        ...previous,
-        attachment: null,
-        remove_attachment: true,
-    }));
+    if (!mounted) return null;
 
-    if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-    }
-};
-
-    if (!mode) return null;
-
-    if (isView && task) {
-        const details = [
-            ["Task Title", task.title],
-            ["Topic", task.topic],
-            ["Assigned Section", task.section],
-            ["Due Date", formatDate(task.due)],
-            ["Total Points", `${task.points ?? 100} points`],
-            ["Date Created", formatDate(task.dateCreated)],
-        ];
-
-        const attachment = task.attachment;
-
-        return (
-            <div
-                className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-[#0C1C2D]/60 p-4 backdrop-blur-sm"
-                onMouseDown={onClose}
-            >
-                <div
-                    className="my-auto w-full max-w-3xl overflow-hidden rounded-2xl border border-[#B8C9DA] bg-white shadow-[0_25px_70px_rgba(10,30,50,0.30)]"
-                    onMouseDown={(event) => event.stopPropagation()}
-                >
-                    <div className="bg-gradient-to-br from-[#142A43] via-[#1B3553] to-[#294B70] px-6 py-6">
-                        <div className="flex items-start justify-between gap-4">
-                            <div className="flex min-w-0 items-center gap-4">
-                                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-white/25 bg-white/15 text-white">
-                                    <ClipboardList size={27} />
-                                </div>
-
-                                <div className="min-w-0">
-                                    <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#C8D8E8]">
-                                        Task Information
-                                    </span>
-
-                                    <h2 className="mt-1 break-words text-xl font-bold text-white">
-                                        {task.title}
-                                    </h2>
-
-                                    <span className="mt-1.5 inline-block rounded-md bg-white/10 px-2 py-1 text-xs font-semibold text-[#D8E4EF]">
-                                        TSK-{String(task.id).padStart(3, "0")}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <button
-                                type="button"
-                                aria-label="Close"
-                                onClick={onClose}
-                                className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/20 bg-white/10 text-white hover:bg-white/20"
-                            >
-                                <X size={18} />
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="max-h-[65vh] overflow-y-auto bg-[#EEF2F6] px-6 py-6">
-                        <h3 className="text-sm font-bold text-[#1B3553]">
-                            Task & Academic Details
-                        </h3>
-
-                        <p className="mb-4 mt-0.5 text-xs text-[#738396]">
-                            Information about this task and its requirements
-                        </p>
-
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                            {details.map(([label, value]) => (
-                                <div
-                                    key={label}
-                                    className="rounded-xl border border-[#C9D6E3] bg-white px-4 py-3.5"
-                                >
-                                    <span className="block text-[10px] font-bold uppercase tracking-[0.08em] text-[#53677D]">
-                                        {label}
-                                    </span>
-
-                                    <strong className="mt-1 block break-words text-sm font-semibold text-[#243A52]">
-                                        {value || "—"}
-                                    </strong>
-                                </div>
-                            ))}
-
-                            <div className="rounded-xl border border-[#C9D6E3] bg-white px-4 py-3.5">
-                                <span className="block text-[10px] font-bold uppercase tracking-[0.08em] text-[#53677D]">
-                                    Task Status
-                                </span>
-
-                                <div className="mt-2">
-                                    <StatusBadge status={task.status} />
-                                </div>
-                            </div>
-
-                            <div className="rounded-xl border border-[#C9D6E3] bg-white px-4 py-3.5">
-                                <span className="block text-[10px] font-bold uppercase tracking-[0.08em] text-[#53677D]">
-                                    Description
-                                </span>
-
-                                <p className="mt-1 break-words text-sm leading-6 text-[#243A52]">
-                                    {task.description ||
-                                        "No description provided."}
-                                </p>
-                            </div>
-
-                            <div className="rounded-xl border border-[#C9D6E3] bg-white px-4 py-3.5 sm:col-span-2">
-                                <span className="block text-[10px] font-bold uppercase tracking-[0.08em] text-[#53677D]">
-                                    Instructions
-                                </span>
-
-                                <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-[#243A52]">
-                                    {task.instructions ||
-                                        "No additional instructions."}
-                                </p>
-                            </div>
-
-                            <div className="rounded-xl border border-[#C9D6E3] bg-white px-4 py-4 sm:col-span-2">
-                                <span className="block text-[10px] font-bold uppercase tracking-[0.08em] text-[#53677D]">
-                                    File Attachment
-                                </span>
-
-                                {attachment ? (
-                                    <div className="mt-3 flex flex-col gap-3 rounded-xl border border-[#C9D6E3] bg-[#F7F9FB] p-3 sm:flex-row sm:items-center sm:justify-between">
-                                        <div className="flex min-w-0 items-center gap-3">
-                                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#C9D6E3] bg-white text-[#294B70]">
-                                                <Paperclip size={20} />
-                                            </div>
-
-                                            <div className="min-w-0">
-                                                <p className="break-all text-sm font-semibold text-[#243A52]">
-                                                    {getAttachmentName(
-                                                        attachment,
-                                                    )}
-                                                </p>
-
-                                                <p className="mt-1 text-xs text-[#8292A3]">
-                                                    {typeof File !==
-                                                        "undefined" &&
-                                                    attachment instanceof File
-                                                        ? formatFileSize(
-                                                              attachment.size,
-                                                          )
-                                                        : "Attached file"}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                downloadAttachment(attachment)
-                                            }
-                                            className={buttonSecondary}
-                                        >
-                                            <Download size={15} />
-                                            Download
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <div className="mt-3 rounded-xl border border-dashed border-[#C9D6E3] bg-[#F7F9FB] px-4 py-6 text-center">
-                                        <FileText
-                                            size={24}
-                                            className="mx-auto text-[#9AA8B7]"
-                                        />
-                                        <p className="mt-2 text-sm text-[#8292A3]">
-                                            No attachment available.
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="flex justify-end gap-2 border-t border-[#DCE4EC] bg-white px-5 py-4 max-[480px]:flex-col">
-                        <button
-                            type="button"
-                            onClick={() => onEdit(task)}
-                            className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#BFD2E5] bg-[#EEF4F9] px-4 py-2.5 text-sm font-semibold text-[#294B70] hover:bg-[#DCE8F2]"
-                        >
-                            <Pencil size={16} />
-                            Edit Task
-                        </button>
-
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="inline-flex items-center justify-center rounded-xl bg-[#1B3553] px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#142A43] active:scale-[0.98]"
-                        >
-                            Close
-                        </button>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    return (
+    return createPortal(
         <div
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-[#142A43]/40 px-4 py-6 backdrop-blur-sm"
-            onMouseDown={onClose}
+            className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-[#030B13]/85 p-3 backdrop-blur-md sm:p-5"
+            onMouseDown={(event) => {
+                if (event.target === event.currentTarget) onClose();
+            }}
         >
             <div
-                className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-[#C9D5E2] bg-white shadow-[0_20px_60px_rgba(27,53,83,0.20)]"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="task-modal-title"
+                className="relative my-auto flex max-h-[94dvh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#0C1B2A] shadow-[0_25px_100px_rgba(0,0,0,0.6)]"
                 onMouseDown={(event) => event.stopPropagation()}
             >
-                <div className="flex items-center justify-between bg-gradient-to-r from-[#1B3553] via-[#294B70] to-[#365C7E] px-5 py-5">
+                <div className="flex shrink-0 items-center justify-between border-b border-white/10 bg-[#0C1B2A] px-5 py-4">
                     <div>
-                        <span className="inline-flex rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white/80">
-                            Task Management
-                        </span>
-
-                        <h2 className="mt-2 text-lg font-bold text-white">
-                            {isAdd ? "Create Task" : "Edit Task"}
+                        <h2
+                            id="task-modal-title"
+                            className="font-bold text-white"
+                        >
+                            {isView
+                                ? "Task Details"
+                                : mode === "edit"
+                                  ? "Edit Task"
+                                  : "Create Task"}
                         </h2>
 
-                        <p className="mt-0.5 text-xs text-white/65">
-                            {isAdd
-                                ? "Create a new academic task for a section."
-                                : "Update the task details and requirements."}
+                        <p className="mt-1 text-xs text-slate-400">
+                            {isView
+                                ? "Review the details of this task."
+                                : "Provide the details for your accounting task."}
                         </p>
                     </div>
 
                     <button
                         type="button"
                         onClick={onClose}
-                        aria-label="Close"
-                        className="flex h-8 w-8 items-center justify-center rounded-lg text-white/70 hover:bg-white/10 hover:text-white"
+                        className="rounded-lg p-2 text-slate-300 transition hover:bg-white/10 hover:text-white"
+                        aria-label="Close modal"
                     >
                         <X size={18} />
                     </button>
                 </div>
 
-                <form onSubmit={onSubmit}>
-                    <div className="grid grid-cols-1 gap-4 px-5 py-5 sm:grid-cols-2">
-                        <div className="sm:col-span-2">
-                            <label
-                                htmlFor="task-title"
-                                className={labelClass}
-                            >
-                                Task Title
-                            </label>
+                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6">
+                    {isView ? (
+                        <div className="space-y-5">
+                            <div className="rounded-xl border border-[#A9E5D2]/15 bg-[#A9E5D2]/[0.05] p-4">
+                                <div className="flex flex-wrap items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                        <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-[#A9E5D2]">
+                                            {getSubjectCode(
+                                                subjects.find(
+                                                    (subject) =>
+                                                        String(subject.id) ===
+                                                        String(
+                                                            task?.subject_id ??
+                                                                task?.subject?.id,
+                                                        ),
+                                                ),
+                                            ) || "Accounting Subject"}
+                                        </p>
 
-                            <input
-                                id="task-title"
-                                name="title"
-                                value={formData.title}
-                                onChange={updateField}
-                                placeholder="Enter task title"
-                                required
-                                className={inputClass}
-                            />
-                        </div>
+                                        <h3 className="break-words text-xl font-bold text-white">
+                                            {task?.title || "Untitled Task"}
+                                        </h3>
 
-                        <div>
-                            <label
-                                htmlFor="task-topic"
-                                className={labelClass}
-                            >
-                                Topic
-                            </label>
+                                        <p className="mt-1 text-sm text-slate-400">
+                                            {task?.topic || "No topic specified"}
+                                        </p>
 
-                            <input
-                                id="task-topic"
-                                name="topic"
-                                value={formData.topic}
-                                onChange={updateField}
-                                placeholder="e.g. Journal Entries"
-                                required
-                                className={inputClass}
-                            />
-                        </div>
-
-                        <div>
-                            <label
-                                htmlFor="task-section"
-                                className={labelClass}
-                            >
-                                Assigned Section
-                            </label>
-
-                            
-                        <select
-                            id="task-section"
-                            name="section_id"
-                            value={formData.section_id}
-                            onChange={updateField}
-                            required
-                            className={inputClass}
-                        >
-                            <option value="">Select section</option>
-
-                            {sections.map((section) => (
-                                <option key={section.id} value={section.id}>
-                                    {section.section_name}
-                                </option>
-                            ))}
-                        </select>
-
-                        </div>
-
-                        <div>
-                            <label
-                                htmlFor="task-due"
-                                className={labelClass}
-                            >
-                                Due Date
-                            </label>
-
-                            <input
-                                id="task-due"
-                                type="date"
-                                name="due"
-                                value={formData.due}
-                                onChange={updateField}
-                                required
-                                className={inputClass}
-                            />
-                        </div>
-
-                        <div>
-                            <label
-                                htmlFor="task-points"
-                                className={labelClass}
-                            >
-                                Total Points
-                            </label>
-
-                            <input
-                                id="task-points"
-                                type="number"
-                                name="points"
-                                value={formData.points}
-                                onChange={updateField}
-                                min="1"
-                                required
-                                className={inputClass}
-                            />
-                        </div>
-
-                        <div className="sm:col-span-2">
-                            <label
-                                htmlFor="task-description"
-                                className={labelClass}
-                            >
-                                Description
-                            </label>
-
-                            <textarea
-                                id="task-description"
-                                name="description"
-                                value={formData.description}
-                                onChange={updateField}
-                                placeholder="Describe the task..."
-                                rows={3}
-                                required
-                                className={`${inputClass} resize-y`}
-                            />
-                        </div>
-
-                        <div className="sm:col-span-2">
-                            <label
-                                htmlFor="task-instructions"
-                                className={labelClass}
-                            >
-                                Instructions (Optional)
-                            </label>
-
-                            <textarea
-                                id="task-instructions"
-                                name="instructions"
-                                value={formData.instructions}
-                                onChange={updateField}
-                                placeholder="Add instructions for students..."
-                                rows={3}
-                                className={`${inputClass} resize-y`}
-                            />
-                        </div>
-
-                        {/* Updated File Attachment */}
-                        <div className="sm:col-span-2">
-                            <label
-                                htmlFor="task-attachment"
-                                className={labelClass}
-                            >
-                                File Attachment (Optional)
-                            </label>
-
-                            <input
-                                ref={fileInputRef}
-                                id="task-attachment"
-                                type="file"
-                                accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.png,.jpg,.jpeg"
-                                onChange={handleFileChange}
-                                className="hidden"
-                            />
-
-                            {!formData.attachment ? (
-                                <button
-                                    type="button"
-                                    onClick={() =>
-                                        fileInputRef.current?.click()
-                                    }
-                                    className="flex w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-[#B8C9DA] bg-[#F7F9FB] px-5 py-8 text-center transition-all hover:border-[#294B70] hover:bg-[#EEF4F9]"
-                                >
-                                    <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-[#C9D6E3] bg-white text-[#294B70] shadow-sm">
-                                        <Upload size={22} />
+                                        <p className="mt-2 text-xs text-slate-500">
+                                            ID: {getDisplayId(task) || task?.id}
+                                        </p>
                                     </div>
 
-                                    <p className="mt-3 text-sm font-semibold text-[#243A52]">
-                                        Click to select a file
-                                    </p>
+                                    <StatusBadge status={task?.status} />
+                                </div>
+                            </div>
 
-                                   
-                                    <span className="mt-2 text-[11px] leading-5 text-[#8292A3]">
-                                       PDF, Office documents, or images | Maximum file
-                                        size: 10 MB.
-                                    </span>
-                                </button>
-                            ) : (
-                                <div className="flex flex-col gap-3 rounded-xl border border-[#C9D6E3] bg-[#F7F9FB] p-4 sm:flex-row sm:items-center sm:justify-between">
-                                    <div className="flex min-w-0 items-center gap-3">
-                                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#C9D6E3] bg-white text-[#294B70]">
-                                            <Paperclip size={20} />
-                                        </div>
-
-                                        <div className="min-w-0">
-                                            <p className="break-all text-sm font-semibold text-[#243A52]">
-                                                {getAttachmentName(
-                                                    formData.attachment,
-                                                )}
-                                            </p>
-
-                                            <p className="mt-1 text-xs text-[#8292A3]">
-                                                {typeof File !== "undefined" &&
-                                                formData.attachment instanceof
-                                                    File
-                                                    ? formatFileSize(
-                                                          formData.attachment
-                                                              .size,
-                                                      )
-                                                    : "Existing attachment"}
-                                            </p>
-                                        </div>
+                            <div className="grid gap-3 sm:grid-cols-2">
+                                {[
+                                    ["Subject", getTaskSubjectName(task)],
+                                    ["Section", getTaskSectionName(task)],
+                                    [
+                                        "Due Date",
+                                        formatDate(task?.due ?? task?.due_date),
+                                    ],
+                                    ["Points", task?.points ?? 100],
+                                    [
+                                        "Assigned Students",
+                                        task?.recipient_count ??
+                                            task?.recipient_student_ids?.length ??
+                                            "Not specified",
+                                    ],
+                                ].map(([label, value]) => (
+                                    <div
+                                        key={label}
+                                        className="rounded-xl border border-white/10 bg-white/[0.03] p-3"
+                                    >
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                                            {label}
+                                        </p>
+                                        <p className="mt-1 break-words text-sm text-slate-200">
+                                            {value}
+                                        </p>
                                     </div>
+                                ))}
+                            </div>
 
-                                    <div className="flex shrink-0 items-center gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                fileInputRef.current?.click()
-                                            }
-                                            className="inline-flex items-center justify-center gap-2 rounded-lg border border-[#C9D6E3] bg-white px-3 py-2 text-xs font-semibold text-[#294B70] transition hover:bg-[#EEF4F9]"
-                                        >
-                                            <RefreshCw size={14} />
-                                            Replace
-                                        </button>
+                            <div>
+                                <p className={labelClass}>Description</p>
+                                <div className="min-h-20 whitespace-pre-wrap break-words rounded-xl border border-white/10 bg-[#091725] p-4 text-sm leading-6 text-slate-300">
+                                    {task?.description ||
+                                        "No description provided."}
+                                </div>
+                            </div>
 
-                                        <button
-                                            type="button"
-                                            onClick={removeAttachment}
-                                            aria-label="Remove attachment"
-                                            className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-100"
-                                        >
-                                            <Trash size={14} />
-                                            Remove
-                                        </button>
-                                    </div>
+                            <div>
+                                <p className={labelClass}>Instructions</p>
+                                <div className="min-h-20 whitespace-pre-wrap break-words rounded-xl border border-white/10 bg-[#091725] p-4 text-sm leading-6 text-slate-300">
+                                    {task?.instructions ||
+                                        "No additional instructions."}
+                                </div>
+                            </div>
+
+                            {attachment && (
+                                <div className="flex items-center gap-2 break-all rounded-xl border border-[#A9E5D2]/15 bg-[#A9E5D2]/[0.04] p-3 text-sm text-[#A9E5D2]">
+                                    <Paperclip size={16} className="shrink-0" />
+                                    {getAttachmentName(attachment)}
                                 </div>
                             )}
 
-                            
+                            <div className="flex flex-col-reverse gap-2 border-t border-white/10 pt-4 sm:flex-row sm:justify-end">
+                                <button
+                                    type="button"
+                                    onClick={onClose}
+                                    className={buttonSecondary}
+                                >
+                                    Close
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => onSubmit(null, "edit", task)}
+                                    className={buttonPrimary}
+                                >
+                                    <Pencil size={15} />
+                                    Edit Task
+                                </button>
+                            </div>
                         </div>
+                    ) : (
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div>
+                                <label className={labelClass}>Task Title *</label>
+                                <input
+                                    required
+                                    maxLength={255}
+                                    className={inputClass}
+                                    value={formData.title}
+                                    onChange={(e) =>
+                                        updateField("title", e.target.value)
+                                    }
+                                    placeholder="e.g. Journal Entries Activity"
+                                />
+                            </div>
 
-                        <div className="sm:col-span-2">
-                            <label
-                                htmlFor="task-status"
-                                className={labelClass}
-                            >
-                                Task Status
-                            </label>
+                            <div>
+                                <label className={labelClass}>Topic</label>
+                                <input
+                                    className={inputClass}
+                                    value={formData.topic}
+                                    onChange={(e) =>
+                                        updateField("topic", e.target.value)
+                                    }
+                                    placeholder="e.g. Adjusting Entries"
+                                />
+                            </div>
 
-                            <select
-                                id="task-status"
-                                name="status"
-                                value={formData.status}
-                                onChange={updateField}
-                                className={inputClass}
-                            >
-                                <option value="Draft">Draft</option>
-                                <option value="Active">Active</option>
-                            </select>
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <div>
+                                    <label className={labelClass}>
+                                        Assigned Subject *
+                                    </label>
+                                    <select
+                                        required
+                                        className={inputClass}
+                                        value={formData.subject_id}
+                                        onChange={(e) =>
+                                            updateField(
+                                                "subject_id",
+                                                e.target.value,
+                                            )
+                                        }
+                                    >
+                                        <option value="">Select subject</option>
+                                        {subjects.map((subject) => (
+                                            <option
+                                                key={subject.id}
+                                                value={subject.id}
+                                            >
+                                                {getSubjectCode(subject)
+                                                    ? `${getSubjectCode(subject)} — `
+                                                    : ""}
+                                                {getSubjectName(subject)}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
 
-                            <p className="mt-1.5 text-[11px] text-[#7A8999]">
-                                Draft tasks are not yet published to students.
-                            </p>
-                        </div>
-                    </div>
+                                <div>
+                                    <label className={labelClass}>
+                                        Assigned Section
+                                    </label>
+                                    <select
+                                        className={inputClass}
+                                        value={formData.section_id}
+                                        onChange={(e) =>
+                                            updateField(
+                                                "section_id",
+                                                e.target.value,
+                                            )
+                                        }
+                                    >
+                                        <option value="">
+                                            All assigned sections
+                                        </option>
+                                        {sections.map((section) => (
+                                            <option
+                                                key={section.id}
+                                                value={section.id}
+                                            >
+                                                {section.section_name ??
+                                                    section.name ??
+                                                    `Section ${section.id}`}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
 
-                    <div className="flex items-center justify-end gap-2 border-t border-[#DCE4EC] bg-[#F5F7FA] px-5 py-4 max-[480px]:flex-col">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className={buttonSecondary}
-                        >
-                            Cancel
-                        </button>
+                                <div>
+                                    <label className={labelClass}>Due Date</label>
+                                    <input
+                                        type="date"
+                                        className={inputClass}
+                                        value={formData.due}
+                                        onChange={(e) =>
+                                            updateField("due", e.target.value)
+                                        }
+                                    />
+                                </div>
 
-                        <button
-                            type="submit"
-                            className={buttonPrimary}
-                        >
-                            {isAdd ? (
-                                <Plus size={16} />
-                            ) : (
-                                <CheckCircle2 size={16} />
-                            )}
+                                <div>
+                                    <label className={labelClass}>Total Points</label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        className={inputClass}
+                                        value={formData.points}
+                                        onChange={(e) =>
+                                            updateField("points", e.target.value)
+                                        }
+                                    />
+                                </div>
+                            </div>
 
-                            {isAdd ? "Create Task" : "Save Changes"}
-                        </button>
-                    </div>
-                </form>
+                            <div>
+                                <label className={labelClass}>Description</label>
+                                <textarea
+                                    rows={3}
+                                    className={`${inputClass} resize-y`}
+                                    value={formData.description}
+                                    onChange={(e) =>
+                                        updateField("description", e.target.value)
+                                    }
+                                />
+                            </div>
+
+                            <div>
+                                <label className={labelClass}>Instructions</label>
+                                <textarea
+                                    rows={3}
+                                    className={`${inputClass} resize-y`}
+                                    value={formData.instructions}
+                                    onChange={(e) =>
+                                        updateField("instructions", e.target.value)
+                                    }
+                                />
+                            </div>
+
+                            <div>
+                                <label className={labelClass}>
+                                    Attachment (max 10 MB)
+                                </label>
+                                <input
+                                    type="file"
+                                    accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.webp"
+                                    className={`${inputClass} file:mr-3 file:rounded-lg file:border-0 file:bg-[#A9E5D2] file:px-3 file:py-2 file:text-xs file:font-bold file:text-[#10251F]`}
+                                    onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (!file) return;
+
+                                        if (file.size > 10 * 1024 * 1024) {
+                                            window.alert(
+                                                "The attachment must not exceed 10 MB.",
+                                            );
+                                            e.target.value = "";
+                                            return;
+                                        }
+
+                                        updateField("attachment", file);
+                                        updateField("remove_attachment", false);
+                                    }}
+                                />
+
+                                {attachment &&
+                                    !isBrowserFile(formData.attachment) && (
+                                        <div className="mt-2 flex items-center justify-between gap-2 text-xs text-slate-400">
+                                            <span className="break-all">
+                                                {getAttachmentName(attachment)}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    updateField("attachment", null);
+                                                    updateField(
+                                                        "remove_attachment",
+                                                        true,
+                                                    );
+                                                }}
+                                                className="shrink-0 text-rose-300 hover:text-rose-200"
+                                            >
+                                                Remove
+                                            </button>
+                                        </div>
+                                    )}
+
+                                {isBrowserFile(formData.attachment) && (
+                                    <p className="mt-2 text-xs text-[#A9E5D2]">
+                                        {formData.attachment.name}
+                                    </p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className={labelClass}>Status</label>
+                                <select
+                                    className={inputClass}
+                                    value={formData.status}
+                                    onChange={(e) =>
+                                        updateField("status", e.target.value)
+                                    }
+                                >
+                                    <option value="Draft">Draft</option>
+                                    <option value="Published">Published</option>
+                                </select>
+                            </div>
+
+                            <div className="flex flex-col-reverse gap-2 border-t border-white/10 pt-4 sm:flex-row sm:justify-end">
+                                <button
+                                    type="button"
+                                    onClick={onClose}
+                                    className={buttonSecondary}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={processing || subjects.length === 0}
+                                    className={buttonPrimary}
+                                >
+                                    <Plus size={16} />
+                                    {mode === "edit"
+                                        ? "Save Changes"
+                                        : "Create Task"}
+                                </button>
+                            </div>
+                        </form>
+                    )}
+                </div>
             </div>
-        </div>
+        </div>,
+        document.body,
     );
 }
 
-// --- Confirmation modal ---
-function ConfirmModal({ type, task, onClose, onConfirm }) {
-    if (!type || !task) return null;
+function ConfirmationModal({ confirmAction, onClose, onConfirm, processing }) {
+    const [mounted, setMounted] = useState(false);
 
-    const isDelete = type === "delete";
-    const isPublish = type === "publish";
+    useEffect(() => {
+        setMounted(true);
+        return () => setMounted(false);
+    }, []);
 
-    const title = isDelete
-        ? "Delete Task?"
-        : isPublish
-          ? "Publish Task?"
-          : "Cancel Task?";
+    useEffect(() => {
+        if (!mounted) return;
 
-   const accent = isDelete
-    ? {
-          bg: "bg-[#FCE7EA]",
-          icon: "bg-[#BE123C]",
-          border: "border-[#F0B8C0]",
-          button:
-              "border border-[#9F1239] bg-[#BE123C] hover:border-[#881337] hover:bg-[#9F1239]",
-      }
-    : isPublish
-      ? {
-            bg: "bg-[#E3F0EA]",
-            icon: "bg-[#15803D]",
-            border: "border-[#B9D5C8]",
-            button:
-                "border border-[#166534] bg-[#15803D] hover:border-[#14532D] hover:bg-[#166534]",
-        }
-      : {
-            bg: "bg-[#E7EDF3]",
-            icon: "bg-[#64748B]",
-            border: "border-[#C9D6E3]",
-            button:
-                "border border-[#475569] bg-[#64748B] hover:border-[#334155] hover:bg-[#475569]",
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = "hidden";
+
+        const handleEscape = (event) => {
+            if (event.key === "Escape" && !processing) onClose();
         };
 
-    const actionText = isDelete
-        ? "Delete Task"
-        : isPublish
-          ? "Publish Task"
-          : "Cancel Task";
+        window.addEventListener("keydown", handleEscape);
 
-    return (
+        return () => {
+            document.body.style.overflow = previousOverflow;
+            window.removeEventListener("keydown", handleEscape);
+        };
+    }, [mounted, onClose, processing]);
+
+    if (!mounted || !confirmAction) return null;
+
+    const { action, task } = confirmAction;
+
+    return createPortal(
         <div
-            className="fixed inset-0 z-[110] flex items-center justify-center bg-[#142A43]/40 px-4 py-6 backdrop-blur-sm"
-            onMouseDown={onClose}
+            className="fixed inset-0 z-[10000] flex items-center justify-center overflow-y-auto bg-[#030B13]/85 p-4 backdrop-blur-md"
+            onMouseDown={(event) => {
+                if (event.target === event.currentTarget && !processing) {
+                    onClose();
+                }
+            }}
         >
             <div
-                className={`w-full max-w-sm overflow-hidden rounded-2xl border ${accent.border} bg-white shadow-[0_20px_60px_rgba(27,53,83,0.20)]`}
+                role="alertdialog"
+                aria-modal="true"
+                className="my-auto w-full max-w-md rounded-2xl border border-white/10 bg-[#0C1B2A] p-5 shadow-[0_25px_100px_rgba(0,0,0,0.6)]"
                 onMouseDown={(event) => event.stopPropagation()}
             >
-                <div className={`${accent.bg} px-5 py-5`}>
-                    <div
-                        className={`flex h-11 w-11 items-center justify-center rounded-xl ${accent.icon} text-white shadow-sm`}
-                    >
-                        {isDelete ? (
-                            <Trash2 size={21} />
-                        ) : isPublish ? (
-                            <Send size={21} />
-                        ) : (
-                            <Ban size={21} />
-                        )}
-                    </div>
-
-                    <h2 className="mt-4 text-base font-bold text-[#243A52]">
-                        {title}
-                    </h2>
-
-                    <p className="mt-2 text-sm leading-6 text-[#526579]">
-                        {isDelete
-                            ? "Are you sure you want to delete"
-                            : isPublish
-                              ? "Publish"
-                              : "Are you sure you want to cancel"}{" "}
-                        <strong className="font-semibold text-[#243A52]">
-                            {task.title}
-                        </strong>
-                        {isDelete
-                            ? "? This action cannot be undone."
-                            : isPublish
-                              ? "? Students in the assigned section will be able to see it."
-                              : "? Students will no longer be able to access this task."}
-                    </p>
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-amber-400/20 bg-amber-400/10 text-amber-300">
+                    <AlertCircle size={21} />
                 </div>
 
-                <div
-                    className={`flex justify-end gap-2 border-t ${accent.border} bg-white px-5 py-4`}
-                >
-                    {!isDelete && !isPublish ? (
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="
-                            inline-flex items-center justify-center gap-2
-                            rounded-xl border border-[#142A43] bg-[#1B3553]
-                            px-4 py-2.5 text-sm font-semibold text-white
-                            shadow-sm transition-all duration-200
-                            hover:border-[#0F2035] hover:bg-[#142A43]
-                            hover:shadow-md active:scale-[0.98]
-                        "
-                    >
-                        Keep Task
-                    </button>
-                ) : (
+                <h3 className="mt-4 text-lg font-bold text-white">
+                    {action === "delete"
+                        ? "Delete this task?"
+                        : action === "publish"
+                          ? "Publish this task?"
+                          : "Cancel this task?"}
+                </h3>
+
+                <p className="mt-2 text-sm leading-6 text-slate-400">
+                    {action === "delete"
+                        ? "This action will remove the task from this page."
+                        : action === "publish"
+                          ? "This task will be marked as published in this preview."
+                          : "This task will be marked as cancelled in this preview."}
+                </p>
+
+                <p className="mt-3 break-words rounded-lg bg-white/[0.04] p-3 text-sm font-semibold text-slate-200">
+                    {task?.title}
+                </p>
+
+                <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                     <button
                         type="button"
                         onClick={onClose}
                         className={buttonSecondary}
+                        disabled={processing}
                     >
                         Keep Task
                     </button>
-                )}    
 
                     <button
                         type="button"
                         onClick={onConfirm}
-                        className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md ${accent.button}`}
+                        className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-white transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                            action === "delete"
+                                ? "bg-rose-600 hover:bg-rose-500"
+                                : "bg-[#477F73] hover:bg-[#568F82]"
+                        }`}
+                        disabled={processing}
                     >
-                        {actionText}
+                        {processing ? (
+                            "Processing..."
+                        ) : (
+                            <>
+                                {action === "delete" ? (
+                                    <Trash2 size={15} />
+                                ) : action === "publish" ? (
+                                    <Send size={15} />
+                                ) : (
+                                    <Ban size={15} />
+                                )}
+                                {action === "delete"
+                                    ? "Delete Task"
+                                    : action === "publish"
+                                      ? "Publish Task"
+                                      : "Cancel Task"}
+                            </>
+                        )}
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body,
     );
 }
 
-// --- Main task management page ---
 export default function TaskManagement() {
-    
-const {
-    tasks: databaseTasks = [],
-    sections: assignedSections = [],
-} = usePage().props;
+    const {
+        tasks: databaseTasks = [],
+        sections: assignedSections = [],
+        assignedSubjects: databaseSubjects = [],
+        students: databaseStudents = [],
+        flash = {},
+    } = usePage().props;
 
-const sections = assignedSections.map(
-    (section) => section.section_name
-);
-
-const tasks = databaseTasks.map((task) => ({
-    ...task,
-
-    section:
-        typeof task.section === "string"
-            ? task.section
-            : task.section?.section_name ?? "—",
-
-    due: task.due ?? task.due_date ?? "",
-
-    dateCreated:
-        task.dateCreated ??
-        task.created_at?.slice(0, 10) ??
-        "",
-
-    attachment:
-        task.attachment ??
-        (task.attachment_path
-            ? {
-                  name: task.attachment_name,
-                  url: `/faculty/tasks/${task.id}/attachment`,
-              }
-            : null),
-}));
-
-    const [searchValue, setSearchValue] = useState("");
+    const [selectedSubjectId, setSelectedSubjectId] = useState("");
+    const [search, setSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState("All Status");
     const [sectionFilter, setSectionFilter] = useState("All Sections");
     const [currentPage, setCurrentPage] = useState(1);
-    const [modalType, setModalType] = useState(null);
+
+    const [studentSearch, setStudentSearch] = useState("");
+    const [studentSectionFilter, setStudentSectionFilter] =
+        useState("All Sections");
+    const [studentPage, setStudentPage] = useState(1);
+
+    const [modalMode, setModalMode] = useState(null);
     const [selectedTask, setSelectedTask] = useState(null);
-    const [confirmType, setConfirmType] = useState(null);
-    const [confirmTask, setConfirmTask] = useState(null);
     const [formData, setFormData] = useState(emptyForm);
+    const [processing, setProcessing] = useState(false);
+    const [confirmAction, setConfirmAction] = useState(null);
+    const [localTasks, setLocalTasks] = useState(null);
 
-    const itemsPerPage = 5;
+    const subjects = useMemo(() => {
+        const real = (
+            Array.isArray(databaseSubjects) ? databaseSubjects : []
+        ).filter((subject) => subject && subject.id != null);
 
-    const counts = useMemo(
-        () => ({
-            total: tasks.length,
-            active: tasks.filter((task) => task.status === "Active").length,
-            drafts: tasks.filter((task) => task.status === "Draft").length,
-            completed: tasks.filter(
-                (task) => task.status === "Completed",
-            ).length,
-        }),
-        [tasks],
+        if (real.length) return real;
+
+        return [
+            {
+                id: "demo-acc101",
+                subject_code: "ACC101",
+                subject_name: "Financial Accounting and Reporting",
+                isSample: true,
+            },
+            {
+                id: "demo-acc102",
+                subject_code: "ACC102",
+                subject_name: "Intermediate Accounting 1",
+                isSample: true,
+            },
+            {
+                id: "demo-acc103",
+                subject_code: "ACC103",
+                subject_name: "Cost Accounting and Control",
+                isSample: true,
+            },
+            {
+                id: "demo-acc104",
+                subject_code: "ACC104",
+                subject_name: "Accounting Information Systems",
+                isSample: true,
+            },
+        ];
+    }, [databaseSubjects]);
+
+    const sections = useMemo(
+        () =>
+            (Array.isArray(assignedSections) ? assignedSections : []).filter(
+                (section) => section && section.id != null,
+            ),
+        [assignedSections],
     );
 
-    const filteredTasks = useMemo(() => {
-        const search = searchValue.trim().toLowerCase();
+    const students = useMemo(() => {
+    const realStudents = Array.isArray(databaseStudents)
+        ? databaseStudents.filter(
+              (student) => student && student.id != null,
+          )
+        : [];
 
-        return tasks.filter((task) => {
+    return realStudents.length > 0
+        ? realStudents
+        : SAMPLE_STUDENTS;
+}, [databaseStudents]);
+
+    const initialTasks = useMemo(() => {
+        const realTasks = (
+            Array.isArray(databaseTasks) ? databaseTasks : []
+        ).map((task, index) => ({
+            ...task,
+            displayId:
+                getDisplayId(task) ||
+                `TSK-${String(index + 1).padStart(3, "0")}`,
+            subject_id: task.subject_id ?? task.subject?.id ?? "",
+            due: task.due ?? task.due_date ?? "",
+            attachment:
+                task.attachment ??
+                (task.attachment_path
+                    ? {
+                          name:
+                              task.attachment_name ??
+                              task.attachment_path.split("/").pop(),
+                          url: `/faculty/tasks/${task.id}/attachment`,
+                      }
+                    : null),
+            recipient_student_ids:
+                task.recipient_student_ids ??
+                task.recipientStudentIds ??
+                [],
+            recipient_count:
+                task.recipient_count ??
+                task.recipient_student_ids?.length ??
+                task.recipientStudentIds?.length ??
+                null,
+        }));
+
+        if (realTasks.length) return realTasks;
+
+        const today = new Date();
+
+        const datePlus = (days) => {
+            const date = new Date(today);
+            date.setDate(date.getDate() + days);
+
+            return `${date.getFullYear()}-${String(
+                date.getMonth() + 1,
+            ).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+        };
+
+        return [
+            {
+                id: "sample-task-1",
+                displayId: "TSK-001",
+                subject_id: "demo-acc101",
+                title: "Journal Entries Activity",
+                topic: "Recording Business Transactions",
+                section: "BSAIS 1A",
+                section_name: "BSAIS 1A",
+                due: datePlus(5),
+                points: 100,
+                status: "Published",
+                description: "Record the transactions in the general journal.",
+                instructions:
+                    "Prepare journal entries and ensure total debits equal total credits.",
+                isSample: true,
+            },
+            {
+                id: "sample-task-2",
+                displayId: "TSK-002",
+                subject_id: "demo-acc101",
+                title: "Adjusting Entries Worksheet",
+                topic: "Adjustments at Period-End",
+                section: "BSAIS 1A",
+                section_name: "BSAIS 1A",
+                due: datePlus(10),
+                points: 50,
+                status: "Draft",
+                description: "Practice common adjusting entries.",
+                instructions: "Show your computations and supporting explanations.",
+                isSample: true,
+            },
+            {
+                id: "sample-task-3",
+                displayId: "TSK-003",
+                subject_id: "demo-acc102",
+                title: "Inventory Valuation Exercise",
+                topic: "FIFO and Weighted Average",
+                section: "BSAIS 2A",
+                section_name: "BSAIS 2A",
+                due: datePlus(7),
+                points: 100,
+                status: "Published",
+                description: "Compute ending inventory and cost of goods sold.",
+                instructions: "Use both methods and compare your answers.",
+                isSample: true,
+            },
+            {
+                id: "sample-task-4",
+                displayId: "TSK-004",
+                subject_id: "demo-acc102",
+                title: "Receivables Case Analysis",
+                topic: "Allowance for Doubtful Accounts",
+                section: "BSAIS 2A",
+                section_name: "BSAIS 2A",
+                due: datePlus(12),
+                points: 75,
+                status: "Draft",
+                description: "Analyze a receivables aging schedule.",
+                instructions: "Explain the basis of your estimated allowance.",
+                isSample: true,
+            },
+            {
+                id: "sample-task-5",
+                displayId: "TSK-005",
+                subject_id: "demo-acc103",
+                title: "Job Order Costing Problem",
+                topic: "Cost Accumulation",
+                section: "BSAIS 3A",
+                section_name: "BSAIS 3A",
+                due: datePlus(6),
+                points: 100,
+                status: "Published",
+                description: "Calculate total and per-unit job costs.",
+                instructions:
+                    "Include direct materials, direct labor, and applied overhead.",
+                isSample: true,
+            },
+            {
+                id: "sample-task-6",
+                displayId: "TSK-006",
+                subject_id: "demo-acc103",
+                title: "Break-Even Analysis",
+                topic: "Cost-Volume-Profit",
+                section: "BSAIS 3A",
+                section_name: "BSAIS 3A",
+                due: datePlus(14),
+                points: 50,
+                status: "Cancelled",
+                description: "Solve the CVP scenarios.",
+                instructions: "Show formulas and label each answer.",
+                isSample: true,
+            },
+            {
+                id: "sample-task-7",
+                displayId: "TSK-007",
+                subject_id: "demo-acc104",
+                title: "AIS Process Flowchart",
+                topic: "Transaction Processing Cycle",
+                section: "BSAIS 4A",
+                section_name: "BSAIS 4A",
+                due: datePlus(8),
+                points: 100,
+                status: "Published",
+                description:
+                    "Create a flowchart for a sample accounting process.",
+                instructions:
+                    "Use standard symbols and include a short explanation.",
+                isSample: true,
+            },
+            {
+                id: "sample-task-8",
+                displayId: "TSK-008",
+                subject_id: "demo-acc104",
+                title: "Internal Controls Review",
+                topic: "Controls and Risk Assessment",
+                section: "BSAIS 4A",
+                section_name: "BSAIS 4A",
+                due: datePlus(15),
+                points: 60,
+                status: "Draft",
+                description:
+                    "Identify risks and propose appropriate controls.",
+                instructions:
+                    "Provide at least three risks and matching controls.",
+                isSample: true,
+            },
+        ];
+    }, [databaseTasks]);
+
+    const tasks = localTasks ?? initialTasks;
+
+   const selectedSubject = selectedSubjectId
+    ? subjects.find(
+          (subject) => String(subject.id) === String(selectedSubjectId),
+      ) ?? null
+    : null;
+
+    const subjectTasks = useMemo(
+        () =>
+            selectedSubject
+                ? tasks.filter(
+                      (task) =>
+                          String(task.subject_id) === String(selectedSubject.id),
+                  )
+                : [],
+        [tasks, selectedSubject],
+    );
+
+    const subjectStudents = useMemo(() => {
+        if (!selectedSubject) return [];
+
+        return students.filter((student) => {
+            const matchesSubject = studentHasSubject(
+                student,
+                selectedSubject.id,
+            );
+
+            const studentSectionId = getStudentSectionId(student);
+
+            const matchesSection =
+                studentSectionFilter === "All Sections" ||
+                String(studentSectionId) === String(studentSectionFilter);
+
+            const query = studentSearch.trim().toLowerCase();
+
             const matchesSearch =
-                !search ||
+                !query ||
+                [
+                    getStudentName(student),
+                    getStudentNumber(student),
+                    student?.email,
+                    getStudentSectionName(student, sections),
+                ].some((value) =>
+                    String(value ?? "").toLowerCase().includes(query),
+                );
+
+            return matchesSubject && matchesSection && matchesSearch;
+        });
+    }, [
+        students,
+        selectedSubject,
+        studentSearch,
+        studentSectionFilter,
+        sections,
+    ]);
+
+    const studentTotalPages = Math.max(
+        1,
+        Math.ceil(subjectStudents.length / STUDENTS_PER_PAGE),
+    );
+
+    const safeStudentPage = Math.min(studentPage, studentTotalPages);
+
+    const paginatedStudents = useMemo(() => {
+        const start = (safeStudentPage - 1) * STUDENTS_PER_PAGE;
+        return subjectStudents.slice(start, start + STUDENTS_PER_PAGE);
+    }, [subjectStudents, safeStudentPage]);
+
+    const filteredTasks = useMemo(() => {
+        const query = search.trim().toLowerCase();
+
+        return subjectTasks.filter((task) => {
+            const matchesSearch =
+                !query ||
                 [
                     task.title,
                     task.topic,
-                    task.section,
                     task.description,
-                    `TSK-${String(task.id).padStart(3, "0")}`,
-                    getAttachmentName(task.attachment),
+                    getTaskSectionName(task),
+                    getTaskSubjectName(task),
+                    getDisplayId(task),
                 ].some((value) =>
-                    String(value || "").toLowerCase().includes(search),
+                    String(value ?? "").toLowerCase().includes(query),
                 );
 
             const matchesStatus =
-                statusFilter === "All Status" ||
-                task.status === statusFilter;
+                statusFilter === "All Statuses" ||
+                String(task.status ?? "Draft") === statusFilter;
+
+            const selectedSection = sections.find(
+                (section) => String(section.id) === sectionFilter,
+            );
 
             const matchesSection =
                 sectionFilter === "All Sections" ||
-                task.section === sectionFilter;
+                String(task.section_id ?? task.section?.id ?? "") ===
+                    sectionFilter ||
+                getTaskSectionName(task) ===
+                    (selectedSection?.section_name ?? selectedSection?.name);
 
             return matchesSearch && matchesStatus && matchesSection;
         });
-    }, [tasks, searchValue, statusFilter, sectionFilter]);
+    }, [subjectTasks, search, statusFilter, sectionFilter, sections]);
 
     const totalPages = Math.max(
         1,
-        Math.ceil(filteredTasks.length / itemsPerPage),
+        Math.ceil(filteredTasks.length / ITEMS_PER_PAGE),
     );
 
     const safePage = Math.min(currentPage, totalPages);
 
-    const paginatedTasks = filteredTasks.slice(
-        (safePage - 1) * itemsPerPage,
-        safePage * itemsPerPage,
-    );
+    const paginatedTasks = useMemo(() => {
+        const start = (safePage - 1) * ITEMS_PER_PAGE;
+        return filteredTasks.slice(start, start + ITEMS_PER_PAGE);
+    }, [filteredTasks, safePage]);
 
-    const closeModal = () => {
-        setModalType(null);
-        setSelectedTask(null);
+    const resetFilters = () => {
+        setSearch("");
+        setStatusFilter("All Statuses");
+        setSectionFilter("All Sections");
+        setCurrentPage(1);
+        setStudentSearch("");
+        setStudentSectionFilter("All Sections");
+        setStudentPage(1);
     };
 
-    const openAddModal = () => {
+    const openAddModal = (subject = selectedSubject) => {
         setSelectedTask(null);
-
         setFormData({
             ...emptyForm,
-            due: "",
-            dateCreated: new Date().toISOString().slice(0, 10),
+            subject_id: subject?.id != null ? String(subject.id) : "",
         });
-
-        setModalType("add");
+        setModalMode("create");
     };
 
     const openEditModal = (task) => {
-    setSelectedTask(task);
+        setSelectedTask(task);
 
-    setFormData({
-        ...emptyForm,
-        ...task,
-        section_id: String(task.section_id ?? ""),
-        due: task.due ?? "",
-        points: String(task.points ?? 100),
-        attachment: task.attachment ?? null,
-        remove_attachment: false,
-    });
+        setFormData({
+            ...emptyForm,
+            title: task.title ?? "",
+            topic: task.topic ?? "",
+            subject_id: String(task.subject_id ?? task.subject?.id ?? ""),
+            section_id: String(task.section_id ?? task.section?.id ?? ""),
+            due: String(task.due ?? task.due_date ?? "").slice(0, 10),
+            points: String(task.points ?? 100),
+            status: task.status ?? "Draft",
+            description: task.description ?? "",
+            instructions: task.instructions ?? "",
+            attachment: task.attachment ?? null,
+            remove_attachment: false,
+        });
 
-    setModalType("edit");
-};
-
-    
-const handleSubmit = (event) => {
-    event.preventDefault();
-
-    const payload = new FormData();
-
-    payload.append("title", formData.title.trim());
-    payload.append("topic", formData.topic);
-    payload.append("section_id", formData.section_id);
-    payload.append("due_date", formData.due);
-    payload.append("points", formData.points);
-    payload.append("description", formData.description);
-    payload.append("instructions", formData.instructions || "");
-    payload.append("status", formData.status);
-    payload.append(
-        "remove_attachment",
-        formData.remove_attachment ? "1" : "0"
-    );
-
-    if (formData.attachment instanceof File) {
-        payload.append("attachment", formData.attachment);
-    }
-
-    const options = {
-        preserveScroll: true,
-        forceFormData: true,
-        onSuccess: () => {
-            closeModal();
-            setCurrentPage(1);
-        },
-        onError: (errors) => {
-            console.error("Task errors:", errors);
-            alert(Object.values(errors).join("\n"));
-        },
+        setModalMode("edit");
     };
 
-    if (modalType === "add") {
-        router.post("/faculty/tasks", payload, options);
-    } else if (modalType === "edit" && selectedTask) {
-        router.post(
-            `/faculty/tasks/${selectedTask.id}`,
-            payload,
-            options
+    const openViewModal = (task) => {
+        setSelectedTask(task);
+        setModalMode("view");
+    };
+
+    const closeModal = () => {
+        setModalMode(null);
+        setSelectedTask(null);
+        setFormData(emptyForm);
+        setProcessing(false);
+    };
+
+    const handleSubmit = (event, overrideMode = null, overrideTask = null) => {
+        if (overrideMode === "edit" && overrideTask) {
+            openEditModal(overrideTask);
+            return;
+        }
+
+        event?.preventDefault();
+
+        if (!formData.title.trim()) {
+            return window.alert("Please enter a task title.");
+        }
+
+        if (!formData.subject_id) {
+            return window.alert("Please select an assigned subject.");
+        }
+
+        const subject = subjects.find(
+            (item) => String(item.id) === String(formData.subject_id),
         );
-    }
-};
 
+        const section = sections.find(
+            (item) => String(item.id) === String(formData.section_id),
+        );
 
-    const openConfirm = (type, task) => {
-        setConfirmType(type);
-        setConfirmTask(task);
-    };
+        const isEdit = modalMode === "edit" && selectedTask?.id != null;
+        const currentTasks = localTasks ?? initialTasks;
 
-    const closeConfirm = () => {
-        setConfirmType(null);
-        setConfirmTask(null);
-    };
+        const highestTaskNumber = currentTasks.reduce((highest, task) => {
+            const match = String(getDisplayId(task)).match(/^TSK-(\d+)$/);
 
-    
-const handleConfirmAction = () => {
-    if (!confirmTask || !confirmType) return;
+            return match ? Math.max(highest, Number(match[1])) : highest;
+        }, 0);
 
-    const id = confirmTask.id;
+        const nextDisplayId = `TSK-${String(
+            highestTaskNumber + (isEdit ? 0 : 1),
+        ).padStart(3, "0")}`;
 
-    const options = {
-        preserveScroll: true,
-        onSuccess: () => {
-            closeConfirm();
-        },
-        onError: (errors) => {
-            console.error("Task action errors:", errors);
-            alert(Object.values(errors).join("\n"));
-        },
-    };
+        const recipientStudents = students.filter((student) => {
+            const matchesSubject = studentHasSubject(
+                student,
+                formData.subject_id,
+            );
 
-    if (confirmType === "delete") {
-        router.delete(`/faculty/tasks/${id}`, options);
-    }
+            const matchesSection =
+                !formData.section_id ||
+                String(getStudentSectionId(student)) ===
+                    String(formData.section_id);
 
-    if (confirmType === "publish") {
-        router.patch(`/faculty/tasks/${id}/publish`, {}, options);
-    }
+            return matchesSubject && matchesSection;
+        });
 
-    if (confirmType === "cancel") {
-        router.patch(`/faculty/tasks/${id}/cancel`, {}, options);
-    }
-};
+        const recipientStudentIds = recipientStudents.map(
+            (student) => student.id,
+        );
 
+        const updatedTask = {
+            ...(isEdit ? selectedTask : {}),
+            id: isEdit ? selectedTask.id : `local-task-${Date.now()}`,
+            displayId: isEdit
+                ? getDisplayId(selectedTask) || nextDisplayId
+                : nextDisplayId,
+            title: formData.title.trim(),
+            topic: formData.topic.trim(),
+            subject_id: formData.subject_id,
+            subject,
+            subject_name: getSubjectName(subject),
+            section_id: formData.section_id || "",
+            section: section
+                ? section
+                : formData.section_id
+                  ? getTaskSectionName(selectedTask)
+                  : "",
+            section_name: section
+                ? section.section_name ?? section.name
+                : formData.section_id
+                  ? getTaskSectionName(selectedTask)
+                  : "Unassigned section",
+            due: formData.due || "",
+            due_date: formData.due || "",
+            points: Number(formData.points) || 0,
+            status: formData.status || "Draft",
+            description: formData.description.trim(),
+            instructions: formData.instructions.trim(),
+            attachment: isBrowserFile(formData.attachment)
+                ? {
+                      name: formData.attachment.name,
+                      file: formData.attachment,
+                  }
+                : formData.remove_attachment
+                  ? null
+                  : formData.attachment ?? selectedTask?.attachment ?? null,
+            recipient_student_ids: recipientStudentIds,
+            recipient_count: recipientStudentIds.length,
+            isSample: false,
+        };
 
-    const clearFilters = () => {
-        setSearchValue("");
-        setStatusFilter("All Status");
-        setSectionFilter("All Sections");
+        setLocalTasks((previous) => {
+            const current = previous ?? initialTasks;
+
+            if (isEdit) {
+                return current.map((task) =>
+                    String(task.id) === String(selectedTask.id)
+                        ? updatedTask
+                        : task,
+                );
+            }
+
+            return [updatedTask, ...current];
+        });
+
+        closeModal();
         setCurrentPage(1);
     };
 
-    const hasFilters =
-        searchValue !== "" ||
-        statusFilter !== "All Status" ||
-        sectionFilter !== "All Sections";
+    const runTaskAction = (action, task) => {
+        setConfirmAction({ action, task });
+    };
 
-    const handleSearch = (value) => {
-        setSearchValue(value);
+    const confirmTaskAction = () => {
+        if (!confirmAction?.task?.id) return;
+
+        const { action, task } = confirmAction;
+
+        setProcessing(true);
+
+        setLocalTasks((previous) => {
+            const current = previous ?? initialTasks;
+
+            if (action === "delete") {
+                return current.filter(
+                    (item) => String(item.id) !== String(task.id),
+                );
+            }
+
+            if (action === "publish") {
+                return current.map((item) =>
+                    String(item.id) === String(task.id)
+                        ? { ...item, status: "Published" }
+                        : item,
+                );
+            }
+
+            if (action === "cancel") {
+                return current.map((item) =>
+                    String(item.id) === String(task.id)
+                        ? { ...item, status: "Cancelled" }
+                        : item,
+                );
+            }
+
+            return current;
+        });
+
+        setConfirmAction(null);
+        setProcessing(false);
         setCurrentPage(1);
     };
 
     return (
-        <FacultyLayout
-            activeMenu="Task Management"
-            showPageInfo={false}
-            showSearch={false}
-        >
-            <div className="mx-auto w-full max-w-[1600px]">
-                <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-                    <div className="min-w-0">
-                        <span className="inline-flex items-center gap-1.5 rounded-full border border-[#BFD2E5] bg-[#E2EAF2] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#294B70]">
-                            Academic Management
-                        </span>
+              <FacultyLayout
+                        activeMenu="Task Management"
+                        showPageInfo={false}
+                        showSearch={false}
+                    >
+            <Head title="Task Management" />
 
-                        <h1 className="mt-3 text-2xl font-bold tracking-tight text-[#1B3553] sm:text-3xl">
+            <div className="space-y-6 pb-8">
+                <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+                    <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#A9E5D2]">
+                            Faculty Workspace
+                        </p>
+                        <h1 className="mt-2 text-2xl font-bold text-white sm:text-3xl">
                             Task Management
                         </h1>
-
-                        <p className="mt-1 text-sm text-[#738396]">
-                            Create academic tasks, manage deadlines, and
-                            monitor task status.
+                        <p className="mt-2 max-w-2xl text-sm text-slate-400">
+                            Create accounting activities, manage deadlines,
+                            and organize tasks by assigned subject.
                         </p>
                     </div>
-
-                    <button
-                        type="button"
-                        onClick={openAddModal}
-                        className={`${buttonPrimary} shrink-0`}
-                    >
-                        <Plus size={17} />
-                        Create Task
-                    </button>
                 </div>
 
-                {/* --- Summary statistics --- */}
-                <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                    <SummaryCard
-                        title="Total Tasks"
-                        value={counts.total}
-                        description="All created tasks"
-                        icon={ClipboardList}
-                        gradient="from-[#E2EAF2] via-[#EDF2F7] to-white"
-                        borderColor="border-[#AFC1D4]"
-                        accentColor="bg-[#1B3553]/20"
-                        iconBackground="bg-[#1B3553]"
-                        bars={[
-                            "h-3 bg-[#AFC1D4]",
-                            "h-5 bg-[#8FA9C1]",
-                            "h-8 bg-[#6F8CA8]",
-                            "h-6 bg-[#AFC1D4]",
-                        ]}
-                    />
+                {flash?.success && (
+                    <div className="flex items-center gap-2 rounded-xl border border-emerald-400/20 bg-emerald-400/10 p-3 text-sm text-emerald-300">
+                        <CheckCircle2 size={17} />
+                        {flash.success}
+                    </div>
+                )}
 
-                    <SummaryCard
-                        title="Active Tasks"
-                        value={counts.active}
-                        description="Currently published"
-                        icon={RefreshCw}
-                        gradient="from-[#E3F0EA] via-[#EFF6F2] to-white"
-                        borderColor="border-[#B9D5C8]"
-                        accentColor="bg-[#31805E]/30"
-                        iconBackground="bg-[#31795B]"
-                        bars={[
-                            "h-3 bg-[#B9D9C8]",
-                            "h-5 bg-[#8FC1A7]",
-                            "h-7 bg-[#5E9C7A]",
-                            "h-9 bg-[#31795B]",
-                        ]}
-                    />
+                {flash?.error && (
+                    <div className="flex items-center gap-2 rounded-xl border border-rose-400/20 bg-rose-400/10 p-3 text-sm text-rose-300">
+                        <AlertCircle size={17} />
+                        {flash.error}
+                    </div>
+                )}
 
-                    <SummaryCard
-                        title="Draft Tasks"
-                        value={counts.drafts}
-                        description="Not yet published"
-                        icon={FileText}
-                        gradient="from-[#E6EAF0] via-[#F0F3F6] to-white"
-                        borderColor="border-[#C8D0D9]"
-                        accentColor="bg-[#64748B]/25"
-                        iconBackground="bg-[#5E6C7C]"
-                        bars={[
-                            "h-8 bg-[#CBD3DC]",
-                            "h-5 bg-[#AAB4BF]",
-                            "h-6 bg-[#7C8794]",
-                            "h-3 bg-[#5E6C7C]",
-                        ]}
-                    />
-
-                    <SummaryCard
-                        title="Completed Tasks"
-                        value={counts.completed}
-                        description="Marked as completed"
-                        icon={CheckCircle2}
-                        gradient="from-[#DFE8F2] via-[#EAF0F6] to-white"
-                        borderColor="border-[#AFC2D8]"
-                        accentColor="bg-[#294B70]/30"
-                        iconBackground="bg-[#294B70]"
-                        bars={[
-                            "h-4 bg-[#AFC2D8]",
-                            "h-7 bg-[#7898B8]",
-                            "h-5 bg-[#52789D]",
-                            "h-9 bg-[#294B70]",
-                        ]}
-                    />
-                </div>
-
-                {/* --- Task list controls and table --- */}
-                <section className="overflow-hidden rounded-2xl border border-[#C9D6E3] bg-white shadow-[0_5px_20px_rgba(27,53,83,0.06)]">
-                    <div className="flex flex-col gap-3 border-b border-[#C9D6E3] bg-gradient-to-r from-[#F8FAFC] to-[#EEF3F8] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <section>
+                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                         <div>
-                            <h2 className="text-base font-bold text-[#1B3553]">
-                                Task List
-                            </h2>
-
-                            <p className="mt-0.5 text-xs text-[#738396]">
-                                View and manage all academic tasks
+                            <h2 className="font-bold text-white">My Subjects</h2>
+                            <p className="mt-1 text-xs text-slate-400">
+                                Select a subject to view its tasks and students.
                             </p>
                         </div>
 
-                        <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-[#C9D6E3] bg-white px-3 py-1.5 text-xs font-semibold text-[#526579]">
-                            <ClipboardList size={14} />
-                            {filteredTasks.length}{" "}
-                            {filteredTasks.length === 1 ? "task" : "tasks"}
+                        <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-slate-400">
+                            {subjects.length} subject
+                            {subjects.length !== 1 ? "s" : ""}
                         </span>
                     </div>
 
-                    {/* --- Filters --- */}
-                    <div className="border-b border-[#DCE4EC] bg-[#F7F9FB] px-5 py-4">
-                        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(220px,1fr)_190px_190px_auto]">
-                            <div className="relative min-w-0">
-                                <Search
-                                    size={17}
-                                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8292A3]"
-                                />
+                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                        {subjects.map((subject, index) => {
+                            const active =
+                                String(selectedSubject?.id) === String(subject.id);
 
-                                <input
-                                    type="text"
-                                    value={searchValue}
-                                    onChange={(event) =>
-                                        handleSearch(event.target.value)
-                                    }
-                                    placeholder="Search tasks or attachments..."
-                                    className="w-full rounded-xl border border-[#C9D6E4] bg-white py-2.5 pl-10 pr-4 text-sm text-[#243A52] outline-none placeholder:text-[#9AA8B7] focus:border-[#294B70] focus:ring-2 focus:ring-[#294B70]/10"
-                                />
-                            </div>
+                            const subjectTaskCount = tasks.filter(
+                                (task) =>
+                                    String(task.subject_id) === String(subject.id),
+                            ).length;
 
-                            <select
-                                value={sectionFilter}
-                                onChange={(event) => {
-                                    setSectionFilter(event.target.value);
-                                    setCurrentPage(1);
-                                }}
-                                className={inputClass}
-                                aria-label="Filter by section"
-                            >
-                                {["All Sections", ...sections].map(
-                                    (section) => (
-                                        <option key={section} value={section}>
-                                            {section}
-                                        </option>
-                                    ),
-                                )}
-                            </select>
+                            const subjectStudentCount = students.filter(
+                                (student) =>
+                                    studentHasSubject(student, subject.id),
+                            ).length;
 
-                            <select
-                                value={statusFilter}
-                                onChange={(event) => {
-                                    setStatusFilter(event.target.value);
-                                    setCurrentPage(1);
-                                }}
-                                className={inputClass}
-                                aria-label="Filter by status"
-                            >
-                                {[
-                                    "All Status",
-                                    "Active",
-                                    "Draft",
-                                    "Completed",
-                                    "Cancelled",
-                                ].map((status) => (
-                                    <option key={status} value={status}>
-                                        {status}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                    </div>
+                            const subjectColors = [
+                                {
+                                    icon: "bg-[#294B70]/30 text-[#C4D9F0]",
+                                    line: "from-[#294B70]/50",
+                                },
+                                {
+                                    icon: "bg-[#477F73]/25 text-[#A9E5D2]",
+                                    line: "from-[#477F73]/50",
+                                },
+                                {
+                                    icon: "bg-sky-400/10 text-sky-300",
+                                    line: "from-sky-400/40",
+                                },
+                                {
+                                    icon: "bg-slate-400/10 text-slate-300",
+                                    line: "from-slate-400/30",
+                                },
+                            ];
 
-                    {/* --- Task table --- */}
-                    <div className="w-full overflow-x-auto">
-                        <table className="w-full min-w-[1100px] border-collapse text-left">
-                            <thead>
-                                <tr className="border-b border-[#C9D6E3] bg-[#E7EDF3]">
-                                    {[
-                                        "Task",
-                                        "Topic",
-                                        "Section",
-                                        "Due Date",
-                                        "Points",
-                                        "Attachment",
-                                        "Status",
-                                        "Actions",
-                                    ].map((heading) => (
-                                        <th
-                                            key={heading}
-                                            className="whitespace-nowrap px-5 py-3.5 text-[10px] font-bold uppercase tracking-[0.09em] text-[#53677D]"
-                                        >
-                                            {heading}
-                                        </th>
-                                    ))}
-                                </tr>
-                            </thead>
+                            const color =
+                                subjectColors[index % subjectColors.length];
 
-                            <tbody className="divide-y divide-[#E5EBF1]">
-                                {paginatedTasks.map((task) => (
-                                    <tr
-                                        key={task.id}
-                                        className="group transition-colors hover:bg-[#F7F9FC]"
-                                    >
-                                        <td className="px-5 py-4">
-                                            <div className="flex min-w-0 items-center gap-3">
-                                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#C9D6E3] bg-[#EEF4F9] text-[#294B70]">
-                                                    <BookOpen size={18} />
-                                                </div>
-
-                                                <div className="min-w-0">
-                                                    <p className="max-w-[260px] truncate text-sm font-semibold text-[#243A52]">
-                                                        {task.title}
-                                                    </p>
-
-                                                    <p className="mt-1 text-[11px] text-[#8292A3]">
-                                                        TSK-
-                                                        {String(task.id).padStart(
-                                                            3,
-                                                            "0",
-                                                        )}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </td>
-
-                                        <td className="px-5 py-4 text-sm text-[#526579]">
-                                            {task.topic || "—"}
-                                        </td>
-
-                                        <td className="px-5 py-4">
-                                            <span className="inline-flex whitespace-nowrap rounded-lg border border-[#D5DFE9] bg-[#F5F8FB] px-2.5 py-1.5 text-xs font-semibold text-[#526579]">
-                                                {task.section}
-                                            </span>
-                                        </td>
-
-                                        <td className="px-5 py-4">
-                                            <div className="flex items-center gap-2 whitespace-nowrap text-sm text-[#526579]">
-                                                <CalendarDays
-                                                    size={15}
-                                                    className="text-[#8292A3]"
-                                                />
-                                                {formatDate(task.due)}
-                                            </div>
-                                        </td>
-
-                                        <td className="px-5 py-4 text-sm font-semibold text-[#526579]">
-                                            {task.points ?? 100}
-                                        </td>
-
-                                        <td className="px-5 py-4">
-                                            {task.attachment ? (
-                                                <button
-                                                    type="button"
-                                                    title={`Download ${getAttachmentName(task.attachment)}`}
-                                                    onClick={() =>
-                                                        downloadAttachment(
-                                                            task.attachment,
-                                                        )
-                                                    }
-                                                    className="flex max-w-[190px] items-center gap-2 rounded-lg border border-[#C9D6E3] bg-white px-3 py-2 text-xs font-semibold text-[#294B70] transition hover:bg-[#EEF4F9]"
-                                                >
-                                                    <Paperclip
-                                                        size={14}
-                                                        className="shrink-0"
-                                                    />
-
-                                                    <span className="truncate">
-                                                        {getAttachmentName(
-                                                            task.attachment,
-                                                        )}
-                                                    </span>
-
-                                                    <Download
-                                                        size={13}
-                                                        className="shrink-0"
-                                                    />
-                                                </button>
-                                            ) : (
-                                                <span className="text-sm text-[#9AA8B7]">
-                                                    —
-                                                </span>
-                                            )}
-                                        </td>
-
-                                        <td className="px-5 py-4">
-                                            <StatusBadge
-                                                status={task.status}
-                                            />
-                                        </td>
-
-                                        <td className="px-5 py-4">
-                                            <div className="flex items-center gap-1.5">
-                                                <button
-                                                    type="button"
-                                                    title="View task"
-                                                    aria-label={`View ${task.title}`}
-                                                    onClick={() => {
-                                                        setSelectedTask(task);
-                                                        setModalType("view");
-                                                    }}
-                                                    className="
-                                                    flex h-9 w-9 shrink-0 items-center justify-center
-                                                    rounded-lg border border-[#142A43] bg-[#1B3553]
-                                                    text-white shadow-sm transition-all duration-200
-                                                    hover:border-[#0F2035] hover:bg-[#142A43]
-                                                    active:scale-95
-                                                    "
-                                                        >
-                                                    <Eye size={15} />
-                                                </button>
-
-                                                <button
-                                                    type="button"
-                                                    title="Edit task"
-                                                    aria-label={`Edit ${task.title}`}
-                                                    onClick={() =>
-                                                        openEditModal(task)
-                                                    }
-                                                   className="
-                                                flex h-8 w-8 shrink-0 items-center justify-center
-                                                rounded-lg border border-[#7C2D12] bg-[#9A3412]
-                                                text-white shadow-sm transition-all duration-200
-                                                hover:border-[#65240F] hover:bg-[#7C2D12]
-                                                active:scale-95"
-                                                >
-                                                    <Pencil size={15} />
-                                                </button>
-
-                                               {task.status === "Draft" && (
-                                            <button
-                                                type="button"
-                                                title="Publish task"
-                                                aria-label={`Publish ${task.title}`}
-                                                onClick={() => openConfirm("publish", task)}
-                                                className="
-                                                flex h-8 w-8 shrink-0 items-center justify-center
-                                                rounded-lg border border-[#166534] bg-[#15803D]
-                                                text-white shadow-sm transition-all duration-200
-                                                hover:border-[#14532D] hover:bg-[#166534]
-                                                active:scale-95
-                                                "
-                                            >
-                                                <Upload size={15} />
-                                            </button>
-                                            )}
-
-                                            {task.status === "Active" && (
-                                            <button
-                                                type="button"
-                                                title="Cancel task"
-                                                aria-label={`Cancel ${task.title}`}
-                                                onClick={() => openConfirm("cancel", task)}
-                                                className="
-                                                flex h-8 w-8 shrink-0 items-center justify-center
-                                                rounded-lg border border-[#475569] bg-[#64748B]
-                                                text-white shadow-sm transition-all duration-200
-                                                hover:border-[#334155] hover:bg-[#475569]
-                                                active:scale-95
-                                                "
-                                            >
-                                                <Ban size={15} />
-                                            </button>
-                                            )}
-
-                                                <button
-                                                    type="button"
-                                                    title="Delete task"
-                                                    aria-label={`Delete ${task.title}`}
-                                                    onClick={() =>
-                                                        openConfirm(
-                                                            "delete",
-                                                            task,
-                                                        )
-                                                    }
-                                                   className="
-                                                flex h-8 w-8 shrink-0 items-center justify-center
-                                                rounded-lg border border-[#9F1239] bg-[#BE123C]
-                                                text-white shadow-sm transition-all duration-200
-                                                hover:border-[#881337] hover:bg-[#9F1239]
-                                                active:scale-95"
-                                                >
-                                                    <Trash2 size={15} />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-
-                                {paginatedTasks.length === 0 && (
-                                    <tr>
-                                        <td
-                                            colSpan={8}
-                                            className="px-5 py-16 text-center"
-                                        >
-                                            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-[#C9D6E3] bg-[#EEF4F9] text-[#8292A3]">
-                                                {hasFilters ? (
-                                                    <Search size={23} />
-                                                ) : (
-                                                    <ClipboardList size={23} />
-                                                )}
-                                            </div>
-
-                                            <h3 className="mt-4 text-sm font-bold text-[#243A52]">
-                                                {hasFilters
-                                                    ? "No matching tasks found"
-                                                    : "No tasks available"}
-                                            </h3>
-
-                                            <p className="mx-auto mt-1 max-w-sm text-xs leading-5 text-[#8292A3]">
-                                                {hasFilters
-                                                    ? "Try changing your search or filters to find a task."
-                                                    : "Create a task to start managing academic activities."}
-                                            </p>
-
-                                            {hasFilters ? (
-                                                <button
-                                                    type="button"
-                                                    onClick={clearFilters}
-                                                    className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-[#294B70] hover:text-[#1B3553]"
-                                                >
-                                                    <RotateCcw size={14} />
-                                                    Clear filters
-                                                </button>
-                                            ) : (
-                                                <button
-                                                    type="button"
-                                                    onClick={openAddModal}
-                                                    className={`${buttonPrimary} mt-4`}
-                                                >
-                                                    <Plus size={15} />
-                                                    Create Task
-                                                </button>
-                                            )}
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div className="flex flex-col gap-3 border-t border-[#DCE4EC] bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                        <p className="text-xs text-[#738396]">
-                            Showing{" "}
-                            <strong className="font-semibold text-[#243A52]">
-                                {filteredTasks.length === 0
-                                    ? 0
-                                    : (safePage - 1) * itemsPerPage + 1}
-                            </strong>{" "}
-                            to{" "}
-                            <strong className="font-semibold text-[#243A52]">
-                                {Math.min(
-                                    safePage * itemsPerPage,
-                                    filteredTasks.length,
-                                )}
-                            </strong>{" "}
-                            of{" "}
-                            <strong className="font-semibold text-[#243A52]">
-                                {filteredTasks.length}
-                            </strong>{" "}
-                            tasks
-                        </p>
-
-                        <div className="flex items-center gap-1.5">
-                            <button
-                                type="button"
-                                aria-label="Previous page"
-                                disabled={safePage <= 1}
-                                onClick={() =>
-                                    setCurrentPage((page) =>
-                                        Math.max(1, page - 1),
-                                    )
-                                }
-                                className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#C9D6E3] bg-white text-[#526579] hover:bg-[#EEF4F9] disabled:cursor-not-allowed disabled:opacity-40"
-                            >
-                                <ChevronLeft size={17} />
-                            </button>
-
-                            {Array.from(
-                                { length: totalPages },
-                                (_, index) => index + 1,
-                            ).map((page) => (
+                            return (
                                 <button
-                                    key={page}
+                                    key={subject.id}
                                     type="button"
-                                    onClick={() => setCurrentPage(page)}
-                                    className={`flex h-9 min-w-9 items-center justify-center rounded-lg border px-2.5 text-xs font-semibold ${
-                                        page === safePage
-                                            ? "border-[#1B3553] bg-[#1B3553] text-white shadow-sm"
-                                            : "border-[#C9D6E3] bg-white text-[#526579] hover:bg-[#EEF4F9]"
+                                    onClick={() => {
+                                        setSelectedSubjectId(String(subject.id));
+                                        resetFilters();
+                                    }}
+                                    className={`group relative overflow-hidden rounded-2xl border p-4 text-left transition ${
+                                        active
+                                            ? "border-[#A9E5D2]/50 bg-[#A9E5D2]/[0.08] shadow-[0_0_25px_rgba(169,229,210,0.06)]"
+                                            : "border-white/[0.10] bg-white/[0.035] hover:border-white/20 hover:bg-white/[0.06]"
                                     }`}
                                 >
-                                    {page}
+                                    <div
+                                        className={`absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r ${color.line} to-transparent`}
+                                    />
+
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div
+                                            className={`flex h-10 w-10 items-center justify-center rounded-xl ${color.icon}`}
+                                        >
+                                            <BookOpen size={19} />
+                                        </div>
+
+                                        {active && (
+                                            <CheckCircle2
+                                                size={18}
+                                                className="text-[#A9E5D2]"
+                                            />
+                                        )}
+                                    </div>
+
+                                    <p className="mt-4 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                        {getSubjectCode(subject) || "Accounting Subject"}
+                                    </p>
+
+                                    <h3 className="mt-1 min-h-[42px] text-sm font-bold leading-5 text-white">
+                                        {getSubjectName(subject)}
+                                    </h3>
+
+                                    <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.08] pt-3">
+                                        <span className="text-xs text-slate-400">
+                                            {subjectTaskCount} task
+                                            {subjectTaskCount !== 1 ? "s" : ""}
+                                        </span>
+                                        <span className="text-xs text-slate-400">
+                                            {subjectStudentCount} student
+                                            {subjectStudentCount !== 1 ? "s" : ""}
+                                        </span>
+                                        <span
+                                            className={`text-xs font-semibold ${
+                                                active
+                                                    ? "text-[#A9E5D2]"
+                                                    : "text-slate-500 group-hover:text-slate-300"
+                                            }`}
+                                        >
+                                            {active ? "Selected" : "View"}
+                                        </span>
+                                    </div>
                                 </button>
-                            ))}
+                            );
+                        })}
+                    </div>
+                </section>
+
+                {selectedSubject && (
+                    <>
+                        <section
+                            className={`${panelClass} flex flex-col justify-between gap-3 p-4 sm:flex-row sm:items-center sm:p-5`}
+                        >
+                            <div>
+                                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#A9E5D2]">
+                                    Selected Subject
+                                </p>
+                                <h2 className="mt-1 text-lg font-bold text-white">
+                                    {getSubjectName(selectedSubject)}
+                                </h2>
+                                <p className="mt-1 text-xs text-slate-400">
+                                    {getSubjectCode(selectedSubject) || "Accounting Subject"}
+                                </p>
+                            </div>
 
                             <button
                                 type="button"
-                                aria-label="Next page"
-                                disabled={safePage >= totalPages}
-                                onClick={() =>
-                                    setCurrentPage((page) =>
-                                        Math.min(totalPages, page + 1),
-                                    )
-                                }
-                                className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#C9D6E3] bg-white text-[#526579] hover:bg-[#EEF4F9] disabled:cursor-not-allowed disabled:opacity-40"
+                                onClick={() => openAddModal(selectedSubject)}
+                                className={buttonPrimary}
                             >
-                                <ChevronRight size={17} />
+                                <Plus size={16} />
+                                Add Task
                             </button>
-                        </div>
-                    </div>
-                </section>
+                        </section>
+
+                    {/* TASK MANAGEMENT */}
+                        <section className={`${panelClass} overflow-hidden`}>
+                            <div className="border-b border-white/[0.08] p-4 sm:p-5">
+                                <h2 className="font-bold text-white">
+                                    Tasks and Activities
+                                </h2>
+                                <p className="mt-1 text-xs text-slate-400">
+                                    View, edit, publish, or manage tasks.
+                                </p>
+                            </div>
+
+                            <div className="grid gap-3 border-b border-white/[0.08] p-4 sm:grid-cols-3">
+                                <div>
+                                   
+                                    <div className="relative">
+                                        <Search
+                                            size={16}
+                                            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
+                                        />
+                                        <input
+                                            value={search}
+                                            onChange={(e) => {
+                                                setSearch(e.target.value);
+                                                setCurrentPage(1);
+                                            }}
+                                            placeholder="Search tasks..."
+                                            className={`${inputClass} pl-9`}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                   
+                                    <select
+                                        value={statusFilter}
+                                        onChange={(e) => {
+                                            setStatusFilter(e.target.value);
+                                            setCurrentPage(1);
+                                        }}
+                                        className={inputClass}
+                                    >
+                                        <option>All Statuses</option>
+                                        <option>Published</option>
+                                        <option>Draft</option>
+                                        <option>Cancelled</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                   
+                                    <select
+                                        value={sectionFilter}
+                                        onChange={(e) => {
+                                            setSectionFilter(e.target.value);
+                                            setCurrentPage(1);
+                                        }}
+                                        className={inputClass}
+                                    >
+                                        <option value="All Sections">
+                                            All Sections
+                                        </option>
+                                        {sections.map((section) => (
+                                            <option
+                                                key={section.id}
+                                                value={String(section.id)}
+                                            >
+                                                {section.section_name ??
+                                                    section.name ??
+                                                    `Section ${section.id}`}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="overflow-x-auto">
+                                <table className="w-full min-w-[1050px] border-collapse text-left">
+                                    <thead>
+                                        <tr className="border-b border-white/[0.08] bg-white/[0.025]">
+                                            {[
+                                                "Task Details",
+                                                "Topic",
+                                                "Section",
+                                                "Due Date",
+                                                "Points",
+                                                "Recipients",
+                                                "Attachment",
+                                                "Status",
+                                                "Actions",
+                                            ].map((heading) => (
+                                                <th
+                                                    key={heading}
+                                                    className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500"
+                                                >
+                                                    {heading}
+                                                </th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+
+                                    <tbody className="divide-y divide-white/[0.06]">
+                                        {paginatedTasks.length > 0 ? (
+                                            paginatedTasks.map((task) => {
+                                                const attachment =
+                                                    task.attachment ??
+                                                    (task.attachment_path
+                                                        ? {
+                                                              name:
+                                                                  task.attachment_name ??
+                                                                  task.attachment_path
+                                                                      .split("/")
+                                                                      .pop(),
+                                                              url: `/faculty/tasks/${task.id}/attachment`,
+                                                          }
+                                                        : null);
+
+                                                const subject = subjects.find(
+                                                    (item) =>
+                                                        String(item.id) ===
+                                                        String(task.subject_id),
+                                                );
+
+                                                const recipientCount =
+                                                    task.recipient_count ??
+                                                    task.recipient_student_ids?.length;
+
+                                                return (
+                                                    <tr
+                                                        key={task.id}
+                                                        className="transition hover:bg-white/[0.025]"
+                                                    >
+                                                        <td className="max-w-[240px] px-4 py-4">
+                                                            <p className="text-sm font-semibold text-slate-200">
+                                                                {task.title}
+                                                            </p>
+                                                            <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-[#A9E5D2]">
+                                                                {getSubjectCode(subject) ||
+                                                                    "Accounting Subject"}
+                                                            </p>
+                                                            <p className="mt-1 text-[10px] text-slate-500">
+                                                                ID: {getDisplayId(task) || task.id}
+                                                            </p>
+                                                        </td>
+
+                                                        <td className="max-w-[180px] px-4 py-4 text-xs text-slate-400">
+                                                            {task.topic || "—"}
+                                                        </td>
+
+                                                        <td className="px-4 py-4 text-xs text-slate-300">
+                                                            {getTaskSectionName(task)}
+                                                        </td>
+
+                                                        <td className="whitespace-nowrap px-4 py-4">
+                                                            <div className="flex items-center gap-2 text-xs text-slate-300">
+                                                                <CalendarDays
+                                                                    size={14}
+                                                                    className="text-slate-500"
+                                                                />
+                                                                {formatDate(task.due ?? task.due_date)}
+                                                            </div>
+                                                        </td>
+
+                                                        <td className="px-4 py-4 text-xs text-slate-300">
+                                                            {task.points ?? 100}
+                                                        </td>
+
+                                                        <td className="px-4 py-4 text-xs text-slate-300">
+                                                            {recipientCount == null
+                                                                ? "—"
+                                                                : `${recipientCount} student${
+                                                                      recipientCount !== 1
+                                                                          ? "s"
+                                                                          : ""
+                                                                  }`}
+                                                        </td>
+
+                                                        <td className="px-4 py-4">
+                                                            {attachment ? (
+                                                                <span
+                                                                    title={getAttachmentName(attachment)}
+                                                                    className="inline-flex max-w-[150px] items-center gap-2 text-xs text-[#A9E5D2]"
+                                                                >
+                                                                    <Paperclip size={14} />
+                                                                    <span className="truncate">
+                                                                        {getAttachmentName(attachment)}
+                                                                    </span>
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-xs text-slate-600">
+                                                                    No file
+                                                                </span>
+                                                            )}
+                                                        </td>
+
+                                                        <td className="px-4 py-4">
+                                                            <StatusBadge status={task.status} />
+                                                        </td>
+
+                                                        <td className="px-4 py-4">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <button
+                                                                    type="button"
+                                                                    title="View task"
+                                                                    aria-label="View task"
+                                                                    onClick={() => openViewModal(task)}
+                                                                    className={actionButtonStyles.view}
+                                                                >
+                                                                    <Eye size={15} />
+                                                                </button>
+
+                                                                <button
+                                                                    type="button"
+                                                                    title="Edit task"
+                                                                    aria-label="Edit task"
+                                                                    onClick={() => openEditModal(task)}
+                                                                    className={actionButtonStyles.edit}
+                                                                >
+                                                                    <Pencil size={15} />
+                                                                </button>
+
+                                                                {task.status === "Published" ? (
+                                                                    <button
+                                                                        type="button"
+                                                                        title="Cancel task"
+                                                                        aria-label="Cancel task"
+                                                                        onClick={() => runTaskAction("cancel", task)}
+                                                                        className={actionButtonStyles.cancel}
+                                                                    >
+                                                                        <Ban size={15} />
+                                                                    </button>
+                                                                ) : (
+                                                                    <button
+                                                                        type="button"
+                                                                        title="Publish task"
+                                                                        aria-label="Publish task"
+                                                                        onClick={() => runTaskAction("publish", task)}
+                                                                        disabled={task.status === "Cancelled"}
+                                                                        className={actionButtonStyles.publish}
+                                                                    >
+                                                                        <Send size={15} />
+                                                                    </button>
+                                                                )}
+
+                                                                <button
+                                                                    type="button"
+                                                                    title="Delete task"
+                                                                    aria-label="Delete task"
+                                                                    onClick={() => runTaskAction("delete", task)}
+                                                                    className={actionButtonStyles.delete}
+                                                                >
+                                                                    <Trash2 size={15} />
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })
+                                        ) : (
+                                            <tr>
+                                                <td colSpan={9} className="px-4 py-14 text-center">
+                                                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-white/[0.04] text-slate-500">
+                                                        <ClipboardList size={23} />
+                                                    </div>
+                                                    <p className="mt-3 text-sm font-semibold text-slate-300">
+                                                        No tasks found
+                                                    </p>
+                                                    <p className="mt-1 text-xs text-slate-500">
+                                                        Try changing your filters or create a new task.
+                                                    </p>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => openAddModal(selectedSubject)}
+                                                        className={`${buttonPrimary} mt-4`}
+                                                    >
+                                                        <Plus size={15} />
+                                                        Create Task
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div className="flex flex-col gap-3 border-t border-white/[0.08] px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                                <p className="text-xs text-slate-500">
+                                    {filteredTasks.length === 0
+                                        ? "No results"
+                                        : `Showing ${(safePage - 1) * ITEMS_PER_PAGE + 1}–${Math.min(
+                                              safePage * ITEMS_PER_PAGE,
+                                              filteredTasks.length,
+                                          )} of ${filteredTasks.length} tasks`}
+                                </p>
+
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        disabled={safePage <= 1}
+                                        onClick={() => setCurrentPage(safePage - 1)}
+                                        className="rounded-lg border border-white/10 p-2 text-slate-300 transition hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-30"
+                                        aria-label="Previous page"
+                                    >
+                                        <ChevronLeft size={16} />
+                                    </button>
+                                    <span className="min-w-[76px] text-center text-xs text-slate-400">
+                                        Page {safePage} of {totalPages}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        disabled={safePage >= totalPages}
+                                        onClick={() => setCurrentPage(safePage + 1)}
+                                        className="rounded-lg border border-white/10 p-2 text-slate-300 transition hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-30"
+                                        aria-label="Next page"
+                                    >
+                                        <ChevronRight size={16} />
+                                    </button>
+                                </div>
+                            </div>
+                        </section>
+                
+                        {/* STUDENT LIST */}
+                        <section className={`${panelClass} overflow-hidden`}>
+                            <div className="flex flex-col gap-3 border-b border-white/[0.08] p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <Users
+                                            size={19}
+                                            className="text-[#A9E5D2]"
+                                        />
+                                        <h2 className="font-bold text-white">
+                                            Student List
+                                        </h2>
+                                    </div>
+                                    <p className="mt-1 text-xs text-slate-400">
+                                        Students assigned to{" "}
+                                        {getSubjectName(selectedSubject)}.
+                                    </p>
+                                </div>
+
+                                <span className="w-fit rounded-full border border-[#A9E5D2]/20 bg-[#A9E5D2]/[0.06] px-3 py-1 text-xs font-semibold text-[#A9E5D2]">
+                                    {subjectStudents.length} student
+                                    {subjectStudents.length !== 1 ? "s" : ""}
+                                </span>
+                            </div>
+
+                            <div className="grid gap-3 border-b border-white/[0.08] p-4 sm:grid-cols-2">
+                                <div>
+                                    <label className={labelClass}>
+                                        Search Students
+                                    </label>
+                                    <div className="relative">
+                                        <Search
+                                            size={16}
+                                            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
+                                        />
+                                        <input
+                                            value={studentSearch}
+                                            onChange={(event) => {
+                                                setStudentSearch(event.target.value);
+                                                setStudentPage(1);
+                                            }}
+                                            placeholder="Name or student ID..."
+                                            className={`${inputClass} pl-9`}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className={labelClass}>
+                                        Filter by Section
+                                    </label>
+                                    <select
+                                        value={studentSectionFilter}
+                                        onChange={(event) => {
+                                            setStudentSectionFilter(event.target.value);
+                                            setStudentPage(1);
+                                        }}
+                                        className={inputClass}
+                                    >
+                                        <option value="All Sections">
+                                            All Sections
+                                        </option>
+                                        {sections.map((section) => (
+                                            <option
+                                                key={section.id}
+                                                value={String(section.id)}
+                                            >
+                                                {section.section_name ??
+                                                    section.name ??
+                                                    `Section ${section.id}`}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="overflow-x-auto">
+                                <table className="w-full min-w-[650px] border-collapse text-left">
+                                    <thead>
+                                        <tr className="border-b border-white/[0.08] bg-white/[0.025]">
+                                            {[
+                                                "Student",
+                                                "Student ID",
+                                                "Section",
+                                                "Email",
+                                            ].map((heading) => (
+                                                <th
+                                                    key={heading}
+                                                    className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500"
+                                                >
+                                                    {heading}
+                                                </th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+
+                                    <tbody className="divide-y divide-white/[0.06]">
+                                        {paginatedStudents.length > 0 ? (
+                                            paginatedStudents.map((student) => (
+                                                <tr
+                                                    key={student.id}
+                                                    className="transition hover:bg-white/[0.025]"
+                                                >
+                                                    <td className="px-4 py-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#A9E5D2]/15 bg-[#A9E5D2]/[0.06] text-[#A9E5D2]">
+                                                                <User
+                                                                    size={17}
+                                                                />
+                                                            </div>
+                                                            <span className="text-sm font-semibold text-slate-200">
+                                                                {getStudentName(student)}
+                                                            </span>
+                                                        </div>
+                                                    </td>
+
+                                                    <td className="px-4 py-4 text-xs text-slate-300">
+                                                        {getStudentNumber(student)}
+                                                    </td>
+
+                                                    <td className="px-4 py-4 text-xs text-slate-300">
+                                                        {getStudentSectionName(
+                                                            student,
+                                                            sections,
+                                                        )}
+                                                    </td>
+
+                                                    <td className="px-4 py-4 text-xs text-slate-400">
+                                                        {student.email ?? "—"}
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        ) : (
+                                            <tr>
+                                                <td
+                                                    colSpan={4}
+                                                    className="px-4 py-12 text-center"
+                                                >
+                                                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-white/[0.04] text-slate-500">
+                                                        <Users size={23} />
+                                                    </div>
+                                                    <p className="mt-3 text-sm font-semibold text-slate-300">
+                                                        No students found
+                                                    </p>
+                                                    <p className="mx-auto mt-1 max-w-md text-xs leading-5 text-slate-500">
+                                                        There are no students matching
+                                                        this subject and filter.
+                                                        Check that student records
+                                                        include their assigned subject.
+                                                    </p>
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div className="flex flex-col gap-3 border-t border-white/[0.08] px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                                <p className="text-xs text-slate-500">
+                                    {subjectStudents.length === 0
+                                        ? "No students to display"
+                                        : `Showing ${
+                                              (safeStudentPage - 1) *
+                                                  STUDENTS_PER_PAGE +
+                                              1
+                                          }–${Math.min(
+                                              safeStudentPage * STUDENTS_PER_PAGE,
+                                              subjectStudents.length,
+                                          )} of ${subjectStudents.length} students`}
+                                </p>
+
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        disabled={safeStudentPage <= 1}
+                                        onClick={() =>
+                                            setStudentPage(safeStudentPage - 1)
+                                        }
+                                        className="rounded-lg border border-white/10 p-2 text-slate-300 transition hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-30"
+                                        aria-label="Previous student page"
+                                    >
+                                        <ChevronLeft size={16} />
+                                    </button>
+
+                                    <span className="min-w-[76px] text-center text-xs text-slate-400">
+                                        Page {safeStudentPage} of{" "}
+                                        {studentTotalPages}
+                                    </span>
+
+                                    <button
+                                        type="button"
+                                        disabled={
+                                            safeStudentPage >= studentTotalPages
+                                        }
+                                        onClick={() =>
+                                            setStudentPage(safeStudentPage + 1)
+                                        }
+                                        className="rounded-lg border border-white/10 p-2 text-slate-300 transition hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-30"
+                                        aria-label="Next student page"
+                                    >
+                                        <ChevronRight size={16} />
+                                    </button>
+                                </div>
+                            </div>
+                        </section>
+                         </>
+  )}
+                {modalMode && (
+                    <TaskModal
+                        mode={modalMode}
+                        task={selectedTask}
+                        formData={formData}
+                        setFormData={setFormData}
+                        subjects={subjects}
+                        sections={sections}
+                        onClose={closeModal}
+                        onSubmit={handleSubmit}
+                        processing={processing}
+                    />
+                )}
+
+                {confirmAction && (
+                    <ConfirmationModal
+                        confirmAction={confirmAction}
+                        onClose={() => setConfirmAction(null)}
+                        onConfirm={confirmTaskAction}
+                        processing={processing}
+                    />
+                )}
             </div>
-
-            <TaskModal
-            mode={modalType}
-            task={selectedTask}
-            formData={formData}
-            setFormData={setFormData}
-            sections={assignedSections}
-            onClose={closeModal}
-            onSubmit={handleSubmit}
-            onEdit={openEditModal}
-            />
-
-            <ConfirmModal
-                type={confirmType}
-                task={confirmTask}
-                onClose={closeConfirm}
-                onConfirm={handleConfirmAction}
-            />
         </FacultyLayout>
     );
 }

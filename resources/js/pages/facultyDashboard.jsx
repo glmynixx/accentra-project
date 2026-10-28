@@ -1,1052 +1,946 @@
 import { useMemo, useState } from "react";
-
 import {
-  Eye,
-  Pencil,
-  Trash2,
-  X,
-  FileText,
-  CalendarDays,
-  Clock,
-  AlertTriangle,
+    Eye,
+    Pencil,
+    Trash2,
+    X,
+    CalendarDays,
 } from "lucide-react";
 
 import Icon from "../components/common/icon";
 import CardHeader from "../components/common/cardHeader";
-import StatusBadge from "../components/common/statusBadge";
 import StatsGrid from "../components/dashboard/statsGrid";
 import FacultyLayout from "../components/layout/facultyLayout";
 
-import {
-  facultyDashboardSections as sections,
-  facultyDashboardTasks as tasks,
-  facultyDashboardSubmissions as submissions,
-  facultyDashboardDeadlines as deadlines,
+import {  
+    facultyDashboardSections as sections,
+    facultyDashboardTasks as tasks,
+    facultyDashboardSubmissions as submissions,
+    facultyDashboardDeadlines as deadlines,
 } from "../assets/data/facultyData";
 
-// Helper functions for normalizing and formatting date-based deadline values.
 function parseDeadline(value) {
-  if (!value) return null;
+    if (!value) return null;
 
-  // Supports YYYY-MM-DD and YYYY-MM-DDTHH:mm.
-  const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(String(value));
+    const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(String(value));
+    const date = new Date(isDateOnly ? `${value}T23:59:00` : value);
 
-  const parsed = new Date(
-    dateOnly ? `${value}T23:59:00` : value
-  );
-
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
+    return Number.isNaN(date.getTime()) ? null : date;
 }
 
 function formatDeadline(value) {
-  const date = parseDeadline(value);
+    const date = parseDeadline(value);
 
-  if (!date) return "No deadline set";
+    if (!date) return "No deadline set";
 
-  return date.toLocaleString("en-PH", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+    return date.toLocaleString("en-PH", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+    });
 }
 
 function getDeadlineStatus(deadline, currentStatus) {
-  if (currentStatus?.toLowerCase() === "completed") {
-    return "Completed";
-  }
+    const status = currentStatus?.toLowerCase();
 
-  if (
-    currentStatus?.toLowerCase() === "cancelled" ||
-    currentStatus?.toLowerCase() === "canceled"
-  ) {
-    return "Cancelled";
-  }
+    if (status === "completed") return "Completed";
+    if (["cancelled", "canceled"].includes(status)) return "Cancelled";
 
-  const date = parseDeadline(deadline);
+    const date = parseDeadline(deadline);
 
-  if (!date) return "No Deadline";
+    if (!date) return "No Deadline";
+    if (date.getTime() < Date.now()) return "Overdue";
+    if (date.getTime() - Date.now() <= 86400000) return "Due Soon";
 
-  const remaining = date.getTime() - Date.now();
-
-  if (remaining < 0) return "Overdue";
-  if (remaining <= 24 * 60 * 60 * 1000) return "Due Soon";
-
-  return "Upcoming";
+    return "Upcoming";
 }
 
-function toDateTimeInput(value) {
-  if (!value) return "";
-
-  const date = parseDeadline(value);
-  if (!date) return "";
-
-  const localDate = new Date(
-    date.getTime() - date.getTimezoneOffset() * 60000
-  );
-
-  return localDate.toISOString().slice(0, 16);
-}
-
-// Shared panel wrapper for content blocks
 function Panel({ title, description, actionText, children }) {
-  return (
-    <section className="min-w-0 overflow-hidden rounded-2xl border border-[#C9D5E2] bg-white shadow-[0_5px_25px_rgba(27,53,83,0.06)] transition-shadow duration-200 hover:shadow-[0_8px_30px_rgba(27,53,83,0.09)]">
-      <CardHeader
-        title={title}
-        description={description}
-        actionText={actionText}
-      />
-      {children}
-    </section>
-  );
+    return (
+        <section
+            className="
+                min-w-0 overflow-hidden rounded-2xl
+                border border-white/[0.13]
+                bg-gradient-to-br from-white/[0.105] to-white/[0.025]
+                p-5
+                shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_18px_55px_rgba(0,0,0,0.18)]
+                backdrop-blur-[22px]
+                transition-all duration-300
+                hover:border-[#A9E5D2]/20
+                sm:p-6
+            "
+        >
+            <CardHeader
+                title={title}
+                description={description}
+                actionText={actionText}
+            />
+
+            {children}
+        </section>
+    );
 }
 
-// Badge styles
-function FacultyStatusBadge({ status }) {
-  const normalized = status?.toLowerCase();
+function StatusBadge({ status }) {
+    const normalized = String(status || "Unknown").toLowerCase();
 
-  const styles = {
-    active: "border-[#B9D9C8] bg-[#E1F0E8] text-[#267653]",
-    draft: "border-[#CBD3DC] bg-[#E7EBEF] text-[#647181]",
-    submitted: "border-[#C9D8EA] bg-[#EAF1F9] text-[#3B6FA5]",
-    "pending review": "border-[#F0D8A8] bg-[#FFF4D9] text-[#946A16]",
-    reviewed: "border-[#B9D9C8] bg-[#E1F0E8] text-[#267653]",
-    approved: "border-[#B9D9C8] bg-[#E1F0E8] text-[#267653]",
-    "returned for revision": "border-[#F0C9C9] bg-[#FCEAEA] text-[#B54747]",
-    overdue: "border-[#F0C9C9] bg-[#FCEAEA] text-[#B54747]",
-    upcoming: "border-[#C9D8EA] bg-[#EAF1F9] text-[#3B6FA5]",
-    "due soon": "border-[#F0D8A8] bg-[#FFF4D9] text-[#946A16]",
-    "no deadline": "border-[#CBD3DC] bg-[#E7EBEF] text-[#647181]",
-    cancelled: "border-[#CBD3DC] bg-[#E7EBEF] text-[#647181]",
-    canceled: "border-[#CBD3DC] bg-[#E7EBEF] text-[#647181]",
-    completed: "border-[#B9D9C8] bg-[#E1F0E8] text-[#267653]",
-  };
+    const colors = {
+        active: "inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs font-medium border-emerald-400/20 bg-emerald-400/10 text-emerald-300",
+        approved: "border-emerald-400/20 bg-emerald-400/10 text-emerald-300",
+        reviewed: "border-emerald-400/20 bg-emerald-400/10 text-emerald-300",
+        completed: "border-emerald-400/20 bg-emerald-400/10 text-emerald-300",
+        submitted: "border-sky-400/20 bg-sky-400/10 text-sky-300",
+        upcoming: "border-sky-400/20 bg-sky-400/10 text-sky-300",
+        "no deadline": "border-white/10 bg-white/[0.05] text-white/50",
+        "pending review": "border-amber-400/20 bg-amber-400/10 text-amber-300",
+        "due soon": "border-amber-400/20 bg-amber-400/10 text-amber-300",
+        overdue: "border-rose-400/20 bg-rose-400/10 text-rose-300",
+        cancelled: "border-white/10 bg-white/[0.05] text-white/50",
+        "returned for revision":
+            "border-rose-400/20 bg-rose-400/10 text-rose-300",
+    };
 
-  const dotStyles = {
-    active: "bg-[#31805E]",
-    reviewed: "bg-[#31805E]",
-    approved: "bg-[#31805E]",
-    completed: "bg-[#31805E]",
-    submitted: "bg-[#3B6FA5]",
-    upcoming: "bg-[#3B6FA5]",
-    "pending review": "bg-[#D6A13A]",
-    "due soon": "bg-[#D6A13A]",
-    overdue: "bg-[#C94B4B]",
-    "returned for revision": "bg-[#C94B4B]",
-  };
-
-  return (
-    <span
-      className={`inline-flex max-w-full items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
-        styles[normalized] ??
-        "border-[#CBD3DC] bg-[#E7EBEF] text-[#647181]"
-      }`}
-    >
-      <span
-        className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-          dotStyles[normalized] ?? "bg-[#7C8794]"
-        }`}
-      />
-      {status || "Unknown"}
-    </span>
-  );
+    return (
+        <span
+            className={`
+                inline-flex whitespace-nowrap rounded-full border
+                px-2.5 py-1 text-[11px] font-semibold
+                ${
+                    colors[normalized] ||
+                    "border-white/10 bg-white/[0.05] text-white/60"
+                }
+            `}
+        >
+            {status || "Unknown"}
+        </span>
+    );
 }
 
-// mini avatar
-function StudentAvatar({ name }) {
-  const initials = name
-    ?.trim()
-    .split(/\s+/)
-    .map((part) => part[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-
-  return (
-    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#D6E2DE] bg-[#36534E]/10 text-xs font-bold text-[#36534E]">
-      {initials || "ST"}
-    </div>
-  );
-}
-
-// Empty state shown when a section, task, or deadline list has no items
 function EmptyState({ icon, message, description }) {
-  return (
-    <div className="flex flex-col items-center justify-center px-5 py-10 text-center">
-      <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-[#F0F4F6] text-[#8190A0]">
-        <Icon name={icon} size={21} />
-      </div>
-
-      <p className="text-sm font-semibold text-[#40566E]">{message}</p>
-
-      {description && (
-        <p className="mt-1 max-w-xs text-xs leading-5 text-[#8A98A7]">
-          {description}
-        </p>
-      )}
-    </div>
-  );
-}
-
-// Section summary row with student count and section status.
-function SectionRow({ section }) {
-  return (
-    <div className="flex min-w-0 items-center gap-3.5 px-5 py-4 transition-colors duration-200 hover:bg-[#F7F9FB] sm:gap-4">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#36534E]/10 text-[#36534E]">
-        <Icon name="layers-3" size={19} />
-      </div>
-
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-[#243A52]">
-          {section.name}
-        </p>
-
-        <p className="mt-1 truncate text-xs text-[#7A8999]">
-          {section.program} · {section.year}
-        </p>
-
-        {section.adviser && (
-          <p className="mt-1 truncate text-xs text-[#9AA7B5]">
-            Adviser: {section.adviser}
-          </p>
-        )}
-      </div>
-
-      <div className="shrink-0 text-right">
-        <p className="text-sm font-bold text-[#243A52]">
-          {Number(section.students) || 0}
-        </p>
-        <p className="mb-2 text-[11px] text-[#7A8999]">Students</p>
-        <StatusBadge status={section.status} />
-      </div>
-    </div>
-  );
-}
-
-// Task item row
-function TaskRow({ task }) {
-  const deadlineValue =
-    task.deadline ?? task.dueDate ?? task.due ?? task.due_date;
-
-  return (
-    <div className="flex min-w-0 items-center gap-3.5 px-5 py-4 transition-colors duration-200 hover:bg-[#F7F9FB] sm:gap-4">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EAF1F9] text-[#3B6FA5]">
-        <Icon name="clipboard-list" size={19} />
-      </div>
-
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-[#243A52]">
-          {task.title}
-        </p>
-
-        <p className="mt-1 truncate text-xs text-[#7A8999]">
-          {task.section}
-        </p>
-
-        <p className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-[#7A8999]">
-          <CalendarDays size={13} />
-          <span>
-            {deadlineValue
-              ? formatDeadline(deadlineValue)
-              : "No deadline set"}
-          </span>
-        </p>
-      </div>
-
-      <div className="shrink-0">
-        <FacultyStatusBadge status={task.status} />
-      </div>
-    </div>
-  );
-}
-
-
-// Deadline list item
-function DeadlineRow({ deadline }) {
-  const status = getDeadlineStatus(
-    deadline.deadline ?? deadline.dueDate,
-    deadline.status
-  );
-
-  const isOverdue = status === "Overdue";
-  const isDueSoon = status === "Due Soon";
-  const isCompleted = status === "Completed";
-
-  const iconStyle = isOverdue
-    ? "bg-[#FCEAEA] text-[#B54747]"
-    : isDueSoon
-      ? "bg-[#FFF4D9] text-[#946A16]"
-      : isCompleted
-        ? "bg-[#E1F0E8] text-[#267653]"
-        : "bg-[#EAF1F9] text-[#3B6FA5]";
-
-  const dateStyle = isOverdue
-    ? "font-semibold text-[#B54747]"
-    : isDueSoon
-      ? "font-semibold text-[#946A16]"
-      : "text-[#718096]";
-
-  return (
-    <div className="flex min-w-0 items-center gap-3.5 px-5 py-4 transition-colors duration-200 hover:bg-[#F7F9FB] sm:gap-4">
-      <div
-        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${iconStyle}`}
-      >
-        <CalendarDays size={19} />
-      </div>
-
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-[#243A52]">
-          {deadline.title}
-        </p>
-
-        <p className="mt-1 truncate text-xs text-[#7A8999]">
-          {deadline.section || "No section specified"}
-        </p>
-
-        <p className={`mt-2 flex flex-wrap items-center gap-1.5 text-xs ${dateStyle}`}>
-          <Clock size={13} />
-          <span>
-            {formatDeadline(deadline.deadline ?? deadline.dueDate)}
-          </span>
-        </p>
-      </div>
-
-      <div className="shrink-0">
-        <FacultyStatusBadge status={status} />
-      </div>
-    </div>
-  );
-}
-
-// Submission table row
-function SubmissionRow({ submission, onView, onEdit, onDelete }) {
-  const actionButton =
-    "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border transition-all duration-200 active:scale-95";
-
-  return (
-    <tr className="border-b border-[#E5EBF1] transition-colors duration-150 last:border-b-0 hover:bg-[#F7F9FB]">
-      <td className="px-5 py-4">
-        <div className="flex min-w-0 items-center gap-3">
-          <StudentAvatar name={submission.student} />
-
-          <div className="min-w-0">
-            <p className="max-w-[170px] truncate text-sm font-semibold text-[#243A52]">
-              {submission.student}
-            </p>
-
-            <p className="mt-1 truncate text-xs text-[#9AA7B5]">
-              {submission.section}
-            </p>
-          </div>
-        </div>
-      </td>
-
-      <td className="max-w-[200px] px-5 py-4">
-        <p className="truncate text-sm text-[#50647A]">
-          {submission.task}
-        </p>
-      </td>
-
-      <td className="whitespace-nowrap px-5 py-4 text-xs text-[#7A8999]">
-        {submission.date || "—"}
-      </td>
-
-      <td className="px-5 py-4">
-        <FacultyStatusBadge status={submission.status} />
-      </td>
-
-      <td className="px-5 py-4">
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            title="View submission"
-            aria-label={`View submission from ${submission.student}`}
-            onClick={() => onView(submission)}
-            className={`${actionButton} border-[#BFCFDF] bg-[#E6EDF4] text-[#1B3553] hover:bg-[#D5E1EC]`}
-          >
-            <Eye size={15} />
-          </button>
-
-          <button
-            type="button"
-            title="Edit submission"
-            aria-label={`Edit submission from ${submission.student}`}
-            onClick={() => onEdit(submission)}
-            className={`${actionButton} border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100`}
-          >
-            <Pencil size={15} />
-          </button>
-
-          <button
-            type="button"
-            title="Delete submission"
-            aria-label={`Delete submission from ${submission.student}`}
-            onClick={() => onDelete(submission)}
-            className={`${actionButton} border-red-200 bg-red-50 text-red-500 hover:bg-red-100`}
-          >
-            <Trash2 size={15} />
-          </button>
-        </div>
-      </td>
-    </tr>
-  );
-}
-
-// Modal that previews a student's submission details before editing
-function SubmissionModal({ submission, onClose, onEdit }) {
-  if (!submission) return null;
-
-  return (
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0C1C2D]/60 p-4 backdrop-blur-sm"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
-    >
-      <div className="w-full max-w-2xl overflow-hidden rounded-2xl border border-[#B8C9DA] bg-white shadow-2xl">
-        <div className="flex items-start justify-between gap-4 bg-gradient-to-r from-[#142A43] to-[#294B70] px-6 py-5">
-          <div>
-            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl border border-white/20 bg-white/10 text-white">
-              <FileText size={20} />
+    return (
+        <div className="flex flex-col items-center justify-center px-5 py-12 text-center">
+            <div
+                className="
+                    mb-3 flex h-12 w-12 items-center justify-center rounded-2xl
+                    border border-[#A9E5D2]/15 bg-[#477F73]/10
+                    text-[#A9E5D2]
+                "
+            >
+                <Icon name={icon} size={21} />
             </div>
 
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#C7D8E8]">
-              Submission Information
-            </p>
+            <p className="text-sm font-semibold text-white/80">{message}</p>
 
-            <h2 className="mt-1 text-lg font-bold text-white">
-              Submission Details
-            </h2>
-
-            <p className="mt-1 text-sm text-[#D5E0EB]">
-              Review the student's submitted work information.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close details"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/20 text-white transition-colors hover:bg-white/10"
-          >
-            <X size={18} />
-          </button>
+            {description && (
+                <p className="mt-1 max-w-xs text-xs leading-5 text-white/40">
+                    {description}
+                </p>
+            )}
         </div>
+    );
+}
 
-        <div className="space-y-5 bg-[#EEF2F6] p-5 sm:p-6">
-          <div className="flex items-center gap-3 rounded-xl border border-[#D6E0E9] bg-white p-4">
-            <StudentAvatar name={submission.student} />
+function ItemRow({ icon, title, subtitle, detail, status }) {
+    return (
+        <div
+            className="
+                group flex min-w-0 items-center gap-3.5
+                px-0 py-4
+                transition-colors duration-200
+                hover:bg-[#A9E5D2]/[0.035]
+            "
+        >
+            <div
+                className="
+                    flex h-10 w-10 shrink-0 items-center justify-center rounded-xl
+                    border border-[#A9E5D2]/15 bg-[#477F73]/15
+                    text-[#A9E5D2]
+                    transition-colors duration-200
+                    group-hover:border-[#A9E5D2]/25
+                    group-hover:bg-[#477F73]/20
+                "
+            >
+                <Icon name={icon} size={19} />
+            </div>
 
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-bold text-[#243A52]">
-                {submission.student || "Unknown student"}
-              </p>
-              <p className="mt-1 text-xs text-[#7A8999]">
-                {submission.section || "No section specified"}
-              </p>
+                <p className="truncate text-sm font-semibold text-white/90">
+                    {title || "Untitled"}
+                </p>
+
+                <p className="mt-1 truncate text-xs text-white/45">
+                    {subtitle || "No details available"}
+                </p>
+
+                {detail && (
+                    <p className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-white/40">
+                        <CalendarDays size={13} />
+                        {detail}
+                    </p>
+                )}
             </div>
 
-            <div className="hidden sm:block">
-              <FacultyStatusBadge status={submission.status} />
-            </div>
-          </div>
-
-          <div>
-            <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-[#526579]">
-              Submission Details
-            </h3>
-
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {[
-                ["Task", submission.task || "Not specified"],
-                ["Submission Date", submission.date || "Not specified"],
-                ["Section", submission.section || "Not specified"],
-                ["Submission ID", submission.id ?? "N/A"],
-              ].map(([label, value]) => (
-                <div
-                  key={label}
-                  className="rounded-xl border border-[#D6E0E9] bg-white p-4"
-                >
-                  <p className="text-[11px] font-semibold text-[#8190A0]">
-                    {label}
-                  </p>
-                  <p className="mt-1 break-words text-sm font-semibold text-[#243A52]">
-                    {value}
-                  </p>
+            {status && (
+                <div className="shrink-0">
+                    <StatusBadge status={status} />
                 </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-[#D6E0E9] bg-white p-4 sm:hidden">
-            <p className="mb-2 text-xs font-semibold text-[#8190A0]">
-              Current Status
-            </p>
-            <FacultyStatusBadge status={submission.status} />
-          </div>
+            )}
         </div>
-
-        <div className="flex flex-wrap justify-end gap-2 border-t border-[#D6E0E9] bg-white px-6 py-4">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg border border-[#BFD2E5] bg-[#EEF4F9] px-4 py-2.5 text-sm font-semibold text-[#294B70] transition-colors hover:bg-[#E0EAF3]"
-          >
-            Close
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onEdit(submission)}
-            className="inline-flex items-center gap-2 rounded-lg bg-[#1B3553] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#294B70]"
-          >
-            <Pencil size={15} />
-            Edit Submission
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+    );
 }
 
-// EDIT SUBMISSION MODAL
+function StudentAvatar({ name }) {
+    const initials = String(name || "Student")
+        .trim()
+        .split(/\s+/)
+        .map((part) => part[0])
+        .slice(0, 2)
+        .join("")
+        .toUpperCase();
 
-function EditSubmissionModal({ submission, onClose, onSave }) {
-  const [form, setForm] = useState({
-    student: submission?.student || "",
-    section: submission?.section || "",
-    task: submission?.task || "",
-    date: submission?.date || "",
-    status: submission?.status || "Pending Review",
-  });
-
-  if (!submission) return null;
-
-  const updateField = (field, value) => {
-    setForm((previous) => ({
-      ...previous,
-      [field]: value,
-    }));
-  };
-
-  const inputClass =
-    "mt-1.5 w-full rounded-lg border border-[#C9D6E4] bg-white px-3 py-2.5 text-sm text-[#243A52] outline-none transition focus:border-[#294B70] focus:ring-2 focus:ring-[#294B70]/10";
-
-  const labelClass =
-    "text-xs font-semibold text-[#526579]";
-
-  return (
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-[#142A43]/50 p-4 backdrop-blur-sm"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
-    >
-      <div className="w-full max-w-2xl overflow-hidden rounded-2xl border border-[#B8C9DA] bg-white shadow-2xl">
-        <div className="flex items-start justify-between gap-4 bg-gradient-to-r from-[#142A43] to-[#294B70] px-6 py-5">
-          <div>
-            <span className="inline-flex rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#D5E0EB]">
-              Submission Management
-            </span>
-
-            <h2 className="mt-3 text-lg font-bold text-white">
-              Edit Submission
-            </h2>
-
-            <p className="mt-1 text-sm text-[#D5E0EB]">
-              Update the submission information and status.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close edit form"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/20 text-white transition-colors hover:bg-white/10"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            onSave({ ...submission, ...form });
-          }}
+    return (
+        <div
+            className="
+                flex h-9 w-9 shrink-0 items-center justify-center rounded-full
+                border border-[#A9E5D2]/20 bg-[#477F73]/15
+                text-xs font-bold text-[#A9E5D2]
+            "
         >
-          <div className="grid grid-cols-1 gap-4 bg-[#EEF2F6] p-5 sm:grid-cols-2 sm:p-6">
-            <label className={labelClass}>
-              Student Name
-              <input
-                required
-                value={form.student}
-                onChange={(event) =>
-                  updateField("student", event.target.value)
-                }
-                className={inputClass}
-                placeholder="Enter student name"
-              />
-            </label>
-
-            <label className={labelClass}>
-              Section
-              <input
-                value={form.section}
-                onChange={(event) =>
-                  updateField("section", event.target.value)
-                }
-                className={inputClass}
-                placeholder="Enter section"
-              />
-            </label>
-
-            <label className={`${labelClass} sm:col-span-2`}>
-              Task Title
-              <input
-                required
-                value={form.task}
-                onChange={(event) =>
-                  updateField("task", event.target.value)
-                }
-                className={inputClass}
-                placeholder="Enter task title"
-              />
-            </label>
-
-            <label className={labelClass}>
-              Submission Date
-              <input
-                type="date"
-                value={form.date}
-                onChange={(event) =>
-                  updateField("date", event.target.value)
-                }
-                className={inputClass}
-              />
-            </label>
-
-            <label className={labelClass}>
-              Submission Status
-              <select
-                value={form.status}
-                onChange={(event) =>
-                  updateField("status", event.target.value)
-                }
-                className={inputClass}
-              >
-                <option value="Submitted">Submitted</option>
-                <option value="Pending Review">Pending Review</option>
-                <option value="Reviewed">Reviewed</option>
-                <option value="Returned for Revision">
-                  Returned for Revision
-                </option>
-                <option value="Approved">Approved</option>
-              </select>
-            </label>
-          </div>
-
-          <div className="flex flex-wrap justify-end gap-2 border-t border-[#D6E0E9] bg-white px-6 py-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-lg border border-[#BFD2E5] bg-[#EEF4F9] px-4 py-2.5 text-sm font-semibold text-[#294B70] transition-colors hover:bg-[#E0EAF3]"
-            >
-              Cancel
-            </button>
-
-            <button
-              type="submit"
-              className="rounded-lg bg-[#1B3553] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#294B70]"
-            >
-              Save Changes
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
+            {initials}
+        </div>
+    );
 }
 
-// DELETE CONFIRMATION
-function DeleteSubmissionModal({ submission, onClose, onConfirm }) {
-  if (!submission) return null;
+function Modal({ title, subtitle, onClose, children }) {
+    return (
+        <div
+            className="
+                fixed inset-0 z-[100] flex items-center justify-center
+                bg-[#020912]/80 p-4 backdrop-blur-md
+            "
+            onMouseDown={(event) => {
+                if (event.target === event.currentTarget) onClose();
+            }}
+        >
+            <div
+                className="
+                    max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl
+                    border border-white/[0.12] bg-[#0C1B2A]
+                    shadow-[0_25px_100px_rgba(0,0,0,0.55)]
+                "
+            >
+                <div
+                    className="
+                        flex items-start justify-between gap-4
+                        border-b border-white/[0.08]
+                        bg-gradient-to-r from-[#14283A] to-[#0D1D2C]
+                        px-5 py-5 sm:px-6
+                    "
+                >
+                    <div className="min-w-0">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#A9E5D2]">
+                            Submission Management
+                        </p>
 
-  return (
-    <div
-      className="fixed inset-0 z-[110] flex items-center justify-center bg-[#142A43]/60 p-4 backdrop-blur-sm"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
-    >
-      <div className="w-full max-w-md overflow-hidden rounded-2xl border border-[#E2BFC3] bg-white shadow-2xl">
-        <div className="p-6">
-          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-[#E2BFC3] bg-[#FBEEF0] text-[#A94A55]">
-            <Trash2 size={22} />
-          </div>
+                        <h2 className="mt-2 text-lg font-bold text-white">
+                            {title}
+                        </h2>
 
-          <h2 className="text-lg font-bold text-[#243A52]">
-            Delete Submission?
-          </h2>
+                        <p className="mt-1 text-sm text-white/50">
+                            {subtitle}
+                        </p>
+                    </div>
 
-          <p className="mt-2 text-sm leading-6 text-[#718096]">
-            Are you sure you want to delete the submission from{" "}
-            <span className="font-semibold text-[#243A52]">
-              {submission.student}
-            </span>{" "}
-            for{" "}
-            <span className="font-semibold text-[#243A52]">
-              {submission.task}
-            </span>
-            ? This action cannot be undone.
-          </p>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        aria-label="Close modal"
+                        className="
+                            flex h-9 w-9 shrink-0 items-center justify-center
+                            rounded-lg border border-white/10 text-white/60
+                            transition-colors hover:border-white/20
+                            hover:bg-white/[0.07] hover:text-white
+                        "
+                    >
+                        <X size={18} />
+                    </button>
+                </div>
+
+                <div className="p-5 sm:p-6">{children}</div>
+            </div>
         </div>
-
-        <div className="flex justify-end gap-2 border-t border-[#E5EBF1] bg-[#F9FBFC] px-6 py-4">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg border border-[#BFD2E5] bg-[#EEF4F9] px-4 py-2.5 text-sm font-semibold text-[#294B70] transition-colors hover:bg-[#E0EAF3]"
-          >
-            Keep Submission
-          </button>
-
-          <button
-            type="button"
-            onClick={onConfirm}
-            className="rounded-lg bg-[#A94A55] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#913C46]"
-          >
-            Delete Submission
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+    );
 }
 
-// DASHBOARD 
+function Field({
+    label,
+    value,
+    onChange,
+    required = false,
+    type = "text",
+    options,
+}) {
+    const inputClass = `
+        mt-1.5 w-full rounded-xl border border-white/[0.10]
+        bg-[#071522] px-3 py-2.5 text-sm text-white
+        outline-none transition-all
+        placeholder:text-white/25
+        focus:border-[#A9E5D2]/45 focus:ring-2
+        focus:ring-[#A9E5D2]/[0.07]
+    `;
+
+    return (
+        <label className="block text-xs font-semibold text-white/60">
+            {label}
+
+            {options ? (
+                <select
+                    value={value}
+                    onChange={(event) => onChange(event.target.value)}
+                    className={inputClass}
+                >
+                    {options.map((option) => (
+                        <option key={option} value={option}>
+                            {option}
+                        </option>
+                    ))}
+                </select>
+            ) : (
+                <input
+                    type={type}
+                    required={required}
+                    value={value}
+                    onChange={(event) => onChange(event.target.value)}
+                    className={inputClass}
+                />
+            )}
+        </label>
+    );
+}
 
 export default function FacultyDashboard() {
-  const [search, setSearch] = useState("");
-  const [submissionItems, setSubmissionItems] = useState(submissions);
-  const [selectedSubmission, setSelectedSubmission] = useState(null);
-  const [editingSubmission, setEditingSubmission] = useState(null);
-  const [deletingSubmission, setDeletingSubmission] = useState(null);
+    const [search, setSearch] = useState("");
+    const [submissionItems, setSubmissionItems] = useState(submissions);
+    const [selectedSubmission, setSelectedSubmission] = useState(null);
+    const [editingSubmission, setEditingSubmission] = useState(null);
+    const [deletingSubmission, setDeletingSubmission] = useState(null);
 
-  const normalizedSearch = search.trim().toLowerCase();
+    const query = search.trim().toLowerCase();
 
-  const matchesSearch = (values) =>
-    values
-      .filter((value) => value !== null && value !== undefined)
-      .join(" ")
-      .toLowerCase()
-      .includes(normalizedSearch);
+    const matchesSearch = (values) =>
+        !query ||
+        values
+            .filter((value) => value !== null && value !== undefined)
+            .join(" ")
+            .toLowerCase()
+            .includes(query);
 
-  const filteredSections = useMemo(
-    () =>
-      sections.filter((section) =>
-        matchesSearch([
-          section.name,
-          section.program,
-          section.year,
-          section.adviser,
-          section.status,
-        ])
-      ),
-    [normalizedSearch]
-  );
-
-  const filteredTasks = useMemo(
-  () =>
-    tasks.filter((task) =>
-      matchesSearch([
-        task.title,
-        task.section,
-        task.deadline,
-        task.dueDate,
-        task.due,
-        task.status,
-      ])
-    ),
-  [normalizedSearch]
-);
-
-  const filteredSubmissions = useMemo(
-    () =>
-      submissionItems.filter((submission) =>
-        matchesSearch([
-          submission.student,
-          submission.task,
-          submission.section,
-          submission.date,
-          submission.status,
-        ])
-      ),
-    [normalizedSearch, submissionItems]
-  );
-
-  const filteredDeadlines = useMemo(
-    () =>
-      deadlines.filter((deadline) =>
-        matchesSearch([
-          deadline.title,
-          deadline.section,
-          deadline.deadline,
-          deadline.dueDate,
-          getDeadlineStatus(
-            deadline.deadline ?? deadline.dueDate,
-            deadline.status
-          ),
-        ])
-      ),
-    [normalizedSearch]
-  );
-
-  const stats = [
-    {
-      label: "Assigned Sections",
-      value: sections.length,
-      icon: "layers-3",
-      variant: "navy",
-    },
-    {
-      label: "Total Students",
-      value: sections.reduce(
-        (total, section) => total + (Number(section.students) || 0),
-        0
-      ),
-      icon: "users",
-      variant: "green",
-    },
-    {
-      label: "Active Tasks",
-      value: tasks.filter(
-        (task) => task.status?.toLowerCase() === "active"
-      ).length,
-      icon: "clipboard-list",
-      variant: "blue",
-    },
-    {
-      label: "Pending Reviews",
-      value: submissionItems.filter((submission) =>
-        ["pending review", "submitted"].includes(
-          submission.status?.toLowerCase()
-        )
-      ).length,
-      icon: "file-clock",
-      variant: "teal",
-    },
-  ];
-
-  const handleEditSubmission = (submission) => {
-    setSelectedSubmission(null);
-    setEditingSubmission(submission);
-  };
-
-  const handleSaveSubmission = (updatedSubmission) => {
-    setSubmissionItems((previous) =>
-      previous.map((item) =>
-        item.id === updatedSubmission.id ? updatedSubmission : item
-      )
+    const filteredSections = useMemo(
+        () =>
+            sections.filter((item) =>
+                matchesSearch([
+                    item.name,
+                    item.program,
+                    item.year,
+                    item.adviser,
+                    item.status,
+                ])
+            ),
+        [query]
     );
 
-    setEditingSubmission(null);
-  };
-
-  const handleConfirmDelete = () => {
-    const deletedId = deletingSubmission?.id;
-
-    setSubmissionItems((previous) =>
-      previous.filter((item) => item.id !== deletedId)
+    const filteredTasks = useMemo(
+        () =>
+            tasks.filter((item) =>
+                matchesSearch([
+                    item.title,
+                    item.section,
+                    item.deadline,
+                    item.dueDate,
+                    item.due,
+                    item.status,
+                ])
+            ),
+        [query]
     );
 
-    setDeletingSubmission(null);
-    setSelectedSubmission((previous) =>
-      previous?.id === deletedId ? null : previous
+    const filteredDeadlines = useMemo(
+        () =>
+            deadlines.filter((item) =>
+                matchesSearch([
+                    item.title,
+                    item.section,
+                    item.deadline,
+                    item.dueDate,
+                    getDeadlineStatus(
+                        item.deadline ?? item.dueDate,
+                        item.status
+                    ),
+                ])
+            ),
+        [query]
     );
-  };
 
-  return (
-    <FacultyLayout
-      title="Faculty Dashboard"
-      showSearch
-      search={search}
-      onSearchChange={setSearch}
-    >
-      <div className="space-y-6">
-        {normalizedSearch && (
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#C9D5E2] bg-white px-4 py-3">
-            <p className="text-sm text-[#50647A]">
-              Search results for{" "}
-              <span className="font-semibold text-[#243A52]">
-                "{search.trim()}"
-              </span>
-            </p>
+    const filteredSubmissions = useMemo(
+        () =>
+            submissionItems.filter((item) =>
+                matchesSearch([
+                    item.student,
+                    item.task,
+                    item.section,
+                    item.date,
+                    item.status,
+                ])
+            ),
+        [query, submissionItems]
+    );
 
-            <button
-              type="button"
-              onClick={() => setSearch("")}
-              className="text-xs font-semibold text-[#36534E] transition-colors hover:text-[#243A52]"
-            >
-              Clear search
-            </button>
-          </div>
-        )}
+    const stats = [
+        {
+            label: "Assigned Sections",
+            value: sections.length,
+            icon: "layers-3",
+            variant: "navy",
+        },
+        {
+            label: "Total Students",
+            value: sections.reduce(
+                (total, section) =>
+                    total + (Number(section.students) || 0),
+                0
+            ),
+            icon: "users",
+            variant: "green",
+        },
+        {
+            label: "Active Tasks",
+            value: tasks.filter(
+                (task) => task.status?.toLowerCase() === "active"
+            ).length,
+            icon: "clipboard-list",
+            variant: "blue",
+        },
+        {
+            label: "Pending Reviews",
+            value: submissionItems.filter((item) =>
+                ["pending review", "submitted"].includes(
+                    item.status?.toLowerCase()
+                )
+            ).length,
+            icon: "file-clock",
+            variant: "teal",
+        },
+    ];
 
-        <StatsGrid stats={stats} />
+    const saveSubmission = (event) => {
+        event.preventDefault();
 
-        <div className="grid min-w-0 grid-cols-1 gap-6 xl:grid-cols-2">
-          <Panel
-            title="Assigned Sections"
-            description="Your current academic sections"
-            actionText="View Sections"
-          >
-            <div className="divide-y divide-[#E5EBF1]">
-              {filteredSections.length > 0 ? (
-                filteredSections.map((section, index) => (
-                  <SectionRow
-                    key={section.id ?? section.name ?? index}
-                    section={section}
-                  />
-                ))
-              ) : (
-                <EmptyState
-                  icon="layers-3"
-                  message="No sections found"
-                  description="Try searching for a different section, program, or year level."
-                />
-              )}
+        const updated = editingSubmission;
+
+        setSubmissionItems((previous) => {
+            const exists = previous.some(
+                (item) => item.id === updated.id
+            );
+
+            if (exists) {
+                return previous.map((item) =>
+                    item.id === updated.id ? updated : item
+                );
+            }
+
+            return [...previous, { ...updated, id: Date.now() }];
+        });
+
+        setEditingSubmission(null);
+    };
+
+    const updateField = (field, value) => {
+        setEditingSubmission((previous) => ({
+            ...previous,
+            [field]: value,
+        }));
+    };
+
+    const panelRows = (items, icon, emptyMessage, getRow) =>
+        items.length ? (
+            <div className="divide-y divide-white/[0.07]">
+                {items.map((item, index) => (
+                    <div key={item.id ?? item.title ?? item.name ?? index}>
+                        {getRow(item, icon)}
+                    </div>
+                ))}
             </div>
-          </Panel>
+        ) : (
+            <EmptyState
+                icon={icon}
+                message={emptyMessage}
+                description="Try changing your search or check back later."
+            />
+        );
 
-          <Panel
-            title="Recent Tasks"
-            description="Recently created accounting activities"
-            actionText="Task Overview"
-          >
-            <div className="divide-y divide-[#E5EBF1]">
-              {filteredTasks.length > 0 ? (
-                filteredTasks.map((task, index) => (
-                  <TaskRow
-                    key={task.id ?? task.title ?? index}
-                    task={task}
-                    
-                  />
-                ))
-              ) : (
-                <EmptyState
-                  icon="clipboard-list"
-                  message="No tasks found"
-                  description="Tasks matching your search will appear here."
-                />
-              )}
-            </div>
-          </Panel>
-        </div>
+    return (
+        <FacultyLayout
+            title="Faculty Dashboard"
+            showSearch
+            search={search}
+            onSearchChange={setSearch}
+            activeMenu={"Dashboard"}
+        >
+            <div className="relative min-w-0 space-y-6 text-white">
+                {/* Dashboard introduction */}
+                <section className="flex min-w-0 flex-wrap items-end justify-between gap-4">
+                    <div className="min-w-0">
+                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#A9E5D2]">
+                            Faculty
+                        </p>
 
-        <div className="grid min-w-0 grid-cols-1 gap-6 xl:grid-cols-2">
-          <Panel
-            title="Upcoming Deadlines"
-            description="Track activity deadlines and submission status"
-            actionText="View Deadlines"
-          >
-            <div className="divide-y divide-[#E5EBF1]">
-              {filteredDeadlines.length > 0 ? (
-                filteredDeadlines.map((deadline, index) => (
-                  <DeadlineRow
-                    key={deadline.id ?? deadline.title ?? index}
-                    deadline={deadline}
-                  />
-                ))
-              ) : (
-                <EmptyState
-                  icon="calendar-clock"
-                  message="No deadlines found"
-                  description="There are no deadlines matching your search."
-                />
-              )}
-            </div>
-          </Panel>
+                        <h1 className="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">
+                            Dashboard Overview
+                        </h1>
 
-          <Panel
-            title="Recent Submissions"
-            description="Latest student task submissions"
-            actionText="View Submissions"
-          >
-            <div className="w-full overflow-x-auto">
-              <table className="w-full min-w-[720px] border-collapse">
-                <thead>
-                  <tr className="border-b border-[#CDD8E3] bg-[#E7EDF3]">
-                    {["Student", "Task", "Date", "Status", "Actions"].map(
-                      (heading) => (
-                        <th
-                          key={heading}
-                          className="px-5 py-3.5 text-left text-[11px] font-bold uppercase tracking-wide text-[#40566E]"
+                        <p className="mt-2 max-w-2xl text-sm leading-6 text-white/55">
+                            Manage your academic sections, accounting tasks,
+                            deadlines, and student submissions in one place.
+                        </p>
+                    </div>
+
+                    <div className="inline-flex items-center gap-2 rounded-xl border border-[#A9E5D2]/20 bg-[#477F73]/10 px-4 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+                        <span className="h-2 w-2 rounded-full bg-[#A9E5D2] shadow-[0_0_10px_rgba(169,229,210,0.45)]" />
+
+                        <span className="text-xs font-medium text-[#A9E5D2]">
+                            Faculty Workspace
+                        </span>
+                    </div>
+                </section>
+
+                {/* Search results */}
+                {query && (
+                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/[0.10] bg-white/[0.04] px-4 py-3 backdrop-blur-xl">
+                        <p className="text-sm text-white/65">
+                            Search results for{" "}
+                            <span className="font-semibold text-[#A9E5D2]">
+                                "{search.trim()}"
+                            </span>
+                        </p>
+
+                        <button
+                            type="button"
+                            onClick={() => setSearch("")}
+                            className="text-xs font-semibold text-[#A9E5D2] transition-colors hover:text-white"
                         >
-                          {heading}
-                        </th>
-                      )
-                    )}
-                  </tr>
-                </thead>
+                            Clear search
+                        </button>
+                    </div>
+                )}
 
-                <tbody>
-                  {filteredSubmissions.length > 0 ? (
-                    filteredSubmissions.map((submission, index) => (
-                      <SubmissionRow
-                        key={
-                          submission.id ??
-                          `${submission.student}-${index}`
-                        }
-                        submission={submission}
-                        onView={setSelectedSubmission}
-                        onEdit={handleEditSubmission}
-                        onDelete={setDeletingSubmission}
-                      />
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={5}>
-                        <EmptyState
-                          icon="file-text"
-                          message="No submissions found"
-                          description="Student submissions matching your search will appear here."
-                        />
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                {/* Statistics */}
+                <section className="min-w-0">
+                    <StatsGrid stats={stats} />
+                </section>
+
+                {/* Assigned sections and recent tasks */}
+                <section className="grid min-w-0 grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] gap-5 max-[1100px]:grid-cols-1">
+                    <Panel
+                        title="Assigned Sections"
+                        description="Your current academic sections"
+                       
+                    >
+                        {panelRows(
+                            filteredSections,
+                            "layers-3",
+                            "No sections found",
+                            (section) => (
+                                <ItemRow
+                                    icon="layers-3"
+                                    title={section.name}
+                                    subtitle={`${section.program || ""} · ${section.year || ""}`}
+                                    detail={
+                                        section.adviser
+                                            ? `Adviser: ${section.adviser}`
+                                            : ""
+                                    }
+                                    status={section.status}
+                                />
+                            )
+                        )}
+                    </Panel>
+
+                    <Panel
+                        title="Recent Tasks"
+                        description="Recently created accounting activities"
+                        
+                    >
+                        {panelRows(
+                            filteredTasks,
+                            "clipboard-list",
+                            "No tasks found",
+                            (task) => (
+                                <ItemRow
+                                    icon="clipboard-list"
+                                    title={task.title}
+                                    subtitle={task.section}
+                                    detail={formatDeadline(
+                                        task.deadline ??
+                                            task.dueDate ??
+                                            task.due ??
+                                            task.due_date
+                                    )}
+                                    status={task.status}
+                                />
+                            )
+                        )}
+                    </Panel>
+                </section>
+
+                {/* Upcoming deadlines and recent submissions */}
+                <section className="grid min-w-0 grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] gap-5 max-[1100px]:grid-cols-1">
+                    <Panel
+                        title="Upcoming Deadlines"
+                        description="Track activity deadlines and submission status"
+                      
+                    >
+                        {panelRows(
+                            filteredDeadlines,
+                            "calendar-clock",
+                            "No deadlines found",
+                            (item) => (
+                                <ItemRow
+                                    icon="calendar-clock"
+                                    title={item.title}
+                                    subtitle={
+                                        item.section || "No section specified"
+                                    }
+                                    detail={formatDeadline(
+                                        item.deadline ?? item.dueDate
+                                    )}
+                                    status={getDeadlineStatus(
+                                        item.deadline ?? item.dueDate,
+                                        item.status
+                                    )}
+                                />
+                            )
+                        )}
+                    </Panel>
+
+                    <Panel
+                        title="Recent Submissions"
+                        description="Review and manage student task submissions"
+                    
+                    >
+                        <div className="-mx-5 overflow-x-auto sm:-mx-6">
+                            <table className="w-full min-w-[650px] border-collapse text-left">
+                                <thead>
+                                    <tr className="border-y border-white/[0.08] bg-white/[0.025]">
+                                        {[
+                                            "Student",
+                                            "Task",
+                                            "Status",
+                                            "Actions",
+                                        ].map((heading) => (
+                                            <th
+                                                key={heading}
+                                                className="px-4 py-3 text-[10px] font-bold uppercase tracking-[0.14em] text-white/45"
+                                            >
+                                                {heading}
+                                            </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    {filteredSubmissions.length ? (
+                                        filteredSubmissions.map((item, index) => (
+                                            <tr
+                                                key={
+                                                    item.id ??
+                                                    `${item.student}-${index}`
+                                                }
+                                                className="border-b border-white/[0.07] transition-colors last:border-0 hover:bg-[#A9E5D2]/[0.035]"
+                                            >
+                                                <td className="px-4 py-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <StudentAvatar
+                                                            name={item.student}
+                                                        />
+
+                                                        <div className="min-w-0">
+                                                            <p className="max-w-[130px] truncate text-sm font-semibold text-white/90">
+                                                                {item.student}
+                                                            </p>
+
+                                                            <p className="mt-1 max-w-[130px] truncate text-xs text-white/40">
+                                                                {item.section}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </td>
+
+                                                <td className="max-w-[150px] px-4 py-4">
+                                                    <p className="truncate text-sm text-white/65">
+                                                        {item.task}
+                                                    </p>
+
+                                                    <p className="mt-1 text-xs text-white/35">
+                                                        {item.date || "—"}
+                                                    </p>
+                                                </td>
+
+                                                <td className="px-4 py-4">
+                                                    <StatusBadge status={item.status} />
+                                                </td>
+
+                                                <td className="px-4 py-4">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <button
+                                                            type="button"
+                                                            title="View submission"
+                                                            aria-label="View submission"
+                                                            onClick={() =>
+                                                                setSelectedSubmission(item)
+                                                            }
+                                                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/[0.035] text-white/60 transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
+                                                        >
+                                                            <Eye size={15} />
+                                                        </button>
+
+                                                        <button
+                                                            type="button"
+                                                            title="Edit submission"
+                                                            aria-label="Edit submission"
+                                                            onClick={() =>
+                                                                setEditingSubmission({ ...item })
+                                                            }
+                                                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#A9E5D2]/15 bg-[#477F73]/10 text-[#A9E5D2] transition-colors hover:bg-[#477F73]/25"
+                                                        >
+                                                            <Pencil size={15} />
+                                                        </button>
+
+                                                        <button
+                                                            type="button"
+                                                            title="Delete submission"
+                                                            aria-label="Delete submission"
+                                                            onClick={() =>
+                                                                setDeletingSubmission(item)
+                                                            }
+                                                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-rose-400/15 bg-rose-400/[0.07] text-rose-300 transition-colors hover:bg-rose-400/15"
+                                                        >
+                                                            <Trash2 size={15} />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan={4}>
+                                                <EmptyState
+                                                    icon="file-text"
+                                                    message="No submissions found"
+                                                    description="Submissions matching your search will appear here."
+                                                />
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </Panel>
+                </section>
+
+                {/* View submission modal */}
+                {selectedSubmission && (
+                    <Modal
+                        title="Submission Details"
+                        subtitle="Review the student's submitted work information."
+                        onClose={() => setSelectedSubmission(null)}
+                    >
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-3 rounded-xl border border-[#A9E5D2]/10 bg-[#A9E5D2]/[0.035] p-4">
+                                <StudentAvatar name={selectedSubmission.student} />
+
+                                <div className="min-w-0">
+                                    <p className="text-sm font-bold text-white">
+                                        {selectedSubmission.student}
+                                    </p>
+
+                                    <p className="mt-1 text-xs text-white/45">
+                                        {selectedSubmission.section}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {[
+                                ["Task", selectedSubmission.task],
+                                ["Submission Date", selectedSubmission.date],
+                                ["Section", selectedSubmission.section],
+                                ["Submission ID", selectedSubmission.id],
+                            ].map(([label, value]) => (
+                                <div
+                                    key={label}
+                                    className="rounded-xl border border-white/[0.08] bg-white/[0.025] p-4"
+                                >
+                                    <p className="text-xs text-white/40">
+                                        {label}
+                                    </p>
+
+                                    <p className="mt-1 break-words text-sm font-semibold text-white/85">
+                                        {value || "Not specified"}
+                                    </p>
+                                </div>
+                            ))}
+
+                            <div className="flex flex-wrap justify-end gap-2 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setSelectedSubmission(null)}
+                                    className="rounded-xl border border-white/10 px-4 py-2.5 text-sm font-semibold text-white/65 transition-colors hover:bg-white/[0.05] hover:text-white"
+                                >
+                                    Close
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setEditingSubmission({
+                                            ...selectedSubmission,
+                                        });
+                                        setSelectedSubmission(null);
+                                    }}
+                                    className="inline-flex items-center gap-2 rounded-xl border border-[#A9E5D2]/15 bg-[#477F73]/20 px-4 py-2.5 text-sm font-semibold text-[#A9E5D2] transition-colors hover:bg-[#477F73]/30"
+                                >
+                                    <Pencil size={15} />
+                                    Edit Submission
+                                </button>
+                            </div>
+                        </div>
+                    </Modal>
+                )}
+
+                {/* Edit submission modal */}
+                {editingSubmission && (
+                    <Modal
+                        title="Edit Submission"
+                        subtitle="Update the submission information and status."
+                        onClose={() => setEditingSubmission(null)}
+                    >
+                        <form onSubmit={saveSubmission} className="space-y-4">
+                            <Field
+                                label="Student Name"
+                                required
+                                value={editingSubmission.student || ""}
+                                onChange={(value) => updateField("student", value)}
+                            />
+
+                            <Field
+                                label="Section"
+                                value={editingSubmission.section || ""}
+                                onChange={(value) => updateField("section", value)}
+                            />
+
+                            <Field
+                                label="Task Title"
+                                required
+                                value={editingSubmission.task || ""}
+                                onChange={(value) => updateField("task", value)}
+                            />
+
+                            <Field
+                                label="Submission Date"
+                                type="date"
+                                value={editingSubmission.date || ""}
+                                onChange={(value) => updateField("date", value)}
+                            />
+
+                            <Field
+                                label="Submission Status"
+                                value={editingSubmission.status || "Pending Review"}
+                                onChange={(value) => updateField("status", value)}
+                                options={[
+                                    "Submitted",
+                                    "Pending Review",
+                                    "Reviewed",
+                                    "Returned for Revision",
+                                    "Approved",
+                                ]}
+                            />
+
+                            <div className="flex justify-end gap-2 border-t border-white/[0.08] pt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => setEditingSubmission(null)}
+                                    className="rounded-xl border border-white/10 px-4 py-2.5 text-sm font-semibold text-white/65 transition-colors hover:bg-white/[0.05] hover:text-white"
+                                >
+                                    Cancel
+                                </button>
+
+                                <button
+                                    type="submit"
+                                    className="rounded-xl border border-[#A9E5D2]/15 bg-[#477F73]/20 px-4 py-2.5 text-sm font-semibold text-[#A9E5D2] transition-colors hover:bg-[#477F73]/30"
+                                >
+                                    Save Changes
+                                </button>
+                            </div>
+                        </form>
+                    </Modal>
+                )}
+
+                {/* Delete confirmation modal */}
+                {deletingSubmission && (
+                    <Modal
+                        title="Delete Submission?"
+                        subtitle="This action cannot be undone."
+                        onClose={() => setDeletingSubmission(null)}
+                    >
+                        <p className="text-sm leading-6 text-white/65">
+                            Are you sure you want to delete the submission from{" "}
+                            <strong className="text-white">
+                                {deletingSubmission.student}
+                            </strong>{" "}
+                            for{" "}
+                            <strong className="text-white">
+                                {deletingSubmission.task}
+                            </strong>
+                            ?
+                        </p>
+
+                        <div className="mt-6 flex justify-end gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setDeletingSubmission(null)}
+                                className="rounded-xl border border-white/10 px-4 py-2.5 text-sm font-semibold text-white/65 transition-colors hover:bg-white/[0.05] hover:text-white"
+                            >
+                                Keep Submission
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const deletedId = deletingSubmission.id;
+
+                                    setSubmissionItems((previous) =>
+                                        previous.filter(
+                                            (item) => item.id !== deletedId
+                                        )
+                                    );
+
+                                    setSelectedSubmission((previous) =>
+                                        previous?.id === deletedId
+                                            ? null
+                                            : previous
+                                    );
+
+                                    setDeletingSubmission(null);
+                                }}
+                                className="rounded-xl border border-rose-400/20 bg-rose-500/15 px-4 py-2.5 text-sm font-semibold text-rose-200 transition-colors hover:bg-rose-500/25"
+                            >
+                                Delete Submission
+                            </button>
+                        </div>
+                    </Modal>
+                )}
             </div>
-          </Panel>
-        </div>
-
-        {selectedSubmission && (
-          <SubmissionModal
-            submission={selectedSubmission}
-            onClose={() => setSelectedSubmission(null)}
-            onEdit={handleEditSubmission}
-          />
-        )}
-
-        {editingSubmission && (
-          <EditSubmissionModal
-            key={editingSubmission.id ?? editingSubmission.student}
-            submission={editingSubmission}
-            onClose={() => setEditingSubmission(null)}
-            onSave={handleSaveSubmission}
-          />
-        )}
-
-        {deletingSubmission && (
-          <DeleteSubmissionModal
-            submission={deletingSubmission}
-            onClose={() => setDeletingSubmission(null)}
-            onConfirm={handleConfirmDelete}
-          />
-        )}
-      </div>
-    </FacultyLayout>
-  );
+        </FacultyLayout>
+    );
 }
