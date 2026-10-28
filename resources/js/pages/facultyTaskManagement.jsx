@@ -1956,9 +1956,7 @@ export default function TaskManagement() {
 
                             <div className="grid gap-3 border-b border-white/[0.08] p-4 sm:grid-cols-2">
                                 <div>
-                                    <label className={labelClass}>
-                                        Search Students
-                                    </label>
+                                  
                                     <div className="relative">
                                         <Search
                                             size={16}
@@ -1977,9 +1975,7 @@ export default function TaskManagement() {
                                 </div>
 
                                 <div>
-                                    <label className={labelClass}>
-                                        Filter by Section
-                                    </label>
+
                                     <select
                                         value={studentSectionFilter}
                                         onChange={(event) => {
