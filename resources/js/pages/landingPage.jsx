@@ -563,11 +563,13 @@ export default function LandingPage() {
                             className="flex items-center gap-3 text-left"
                             aria-label="ACCENTRA home"
                         >
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/20 bg-white/10 transition duration-300 hover:rotate-6 hover:scale-110">
-                                <span className="text-xl font-bold text-[#A9E5D2]">
-                                    A
-                                </span>
-                            </div>
+                           <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-white/20 bg-white/10 transition duration-300 hover:scale-110">
+                            <img
+                                src="/images/accentra-logoo.png"
+                                alt="ACCENTRA Logo"
+                                className="h-full w-full rounded-full object-cover"
+                            />
+                        </div>
 
                             <div>
                                 <p className="text-lg font-semibold tracking-[.16em] sm:text-xl">

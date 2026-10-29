@@ -85,10 +85,13 @@ export default function ForgotPassword() {
                         aria-label="ACCENTRA login"
                         className="flex w-fit items-center gap-3"
                     >
-                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/25 bg-white/10 shadow-lg backdrop-blur-xl">
-                            <span className="text-2xl font-bold text-[#A9E5D2]">
-                                A
-                            </span>
+                        <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-white/20 bg-white/10 transition duration-300 hover:scale-110">
+                            <img
+                                src="/images/accentra-logoo.png"
+                                alt="ACCENTRA Logo"
+                                className="h-full w-full object-contain"
+                                
+                            />
                         </div>
 
                         <div>

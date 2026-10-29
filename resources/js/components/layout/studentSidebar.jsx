@@ -234,7 +234,7 @@ export default function StudentSidebar({
                     <div className="flex items-center gap-3">
                         <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-[#A9E5D2]/30 bg-[#A9E5D2]/10 shadow-[0_0_18px_rgba(169,229,210,0.10)]">
                             <img
-                                src="/images/accentra-logo.png"
+                                src="/images/accentra-logoo.png"
                                 alt="ACCENTRA Logo"
                                 className="h-full w-full rounded-full object-contain p-1"
                             />
