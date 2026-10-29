@@ -584,7 +584,7 @@ function StudentAccount() {
                                     className={buttonSecondary}
                                 >
                                     <Pencil size={15} />
-                                    Edit Information
+                                    Edit Profile
                                 </button>
                             ) : (
                                 <span className="inline-flex w-fit items-center gap-1.5 rounded-lg border border-[#A9E5D2]/20 bg-[#A9E5D2]/[0.07] px-2.5 py-1.5 text-xs font-semibold text-[#A9E5D2]">
