@@ -128,6 +128,7 @@ const getSubjectCode = (subject) =>
 const getTaskSubjectName = (task) =>
     task?.subject?.subject_name ??
     task?.subject?.name ??
+    task?.subject?.title ??
     task?.subject_name ??
     "Unassigned subject";
 
@@ -249,6 +250,7 @@ const isBrowserFile = (value) =>
     typeof File !== "undefined" && value instanceof File;
 
 function StatusBadge({ status }) {
+    const currentStatus = status || "Draft";
     const styles = {
         Published:
             "border-emerald-400/20 bg-emerald-400/10 text-emerald-300",
@@ -258,14 +260,26 @@ function StatusBadge({ status }) {
             "border-amber-400/20 bg-amber-400/10 text-amber-300",
         Submitted: "border-sky-400/20 bg-sky-400/10 text-sky-300",
     };
+    const dots = {
+        Published: "bg-emerald-300",
+        Draft: "bg-slate-300",
+        Cancelled: "bg-rose-300",
+        Overdue: "bg-amber-300",
+        Submitted: "bg-sky-300",
+    };
 
     return (
         <span
-            className={`inline-flex whitespace-nowrap rounded-full border px-2.5 py-1 text-[10px] font-bold ${
-                styles[status] ?? styles.Draft
+            className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-[10px] font-bold ${
+                styles[currentStatus] ?? styles.Draft
             }`}
         >
-            {status || "Draft"}
+            <span
+                className={`h-1.5 w-1.5 rounded-full ${
+                    dots[currentStatus] ?? "bg-slate-300"
+                }`}
+            />
+            {currentStatus}
         </span>
     );
 }
@@ -853,6 +867,7 @@ export default function TaskManagement() {
     } = usePage().props;
 
     const [selectedSubjectId, setSelectedSubjectId] = useState("");
+    const [showAllTasks, setShowAllTasks] = useState(false);
     const [search, setSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState("All Status");
     const [sectionFilter, setSectionFilter] = useState("All Sections");
@@ -1170,8 +1185,9 @@ export default function TaskManagement() {
 
     const filteredTasks = useMemo(() => {
         const query = search.trim().toLowerCase();
+        const tasksToFilter = showAllTasks ? tasks : subjectTasks;
 
-        return subjectTasks.filter((task) => {
+        return tasksToFilter.filter((task) => {
             const matchesSearch =
                 !query ||
                 [
@@ -1186,7 +1202,7 @@ export default function TaskManagement() {
                 );
 
             const matchesStatus =
-                statusFilter === "All Statuses" ||
+                statusFilter === "All Status" ||
                 String(task.status ?? "Draft") === statusFilter;
 
             const selectedSection = sections.find(
@@ -1202,7 +1218,7 @@ export default function TaskManagement() {
 
             return matchesSearch && matchesStatus && matchesSection;
         });
-    }, [subjectTasks, search, statusFilter, sectionFilter, sections]);
+    }, [tasks, subjectTasks, showAllTasks, search, statusFilter, sectionFilter, sections]);
 
     const totalPages = Math.max(
         1,
@@ -1218,7 +1234,7 @@ export default function TaskManagement() {
 
     const resetFilters = () => {
         setSearch("");
-        setStatusFilter("All Statuses");
+        setStatusFilter("All Status");
         setSectionFilter("All Sections");
         setCurrentPage(1);
         setStudentSearch("");
@@ -1437,9 +1453,9 @@ export default function TaskManagement() {
             <div className="space-y-6 pb-8">
                 <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                     <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#A9E5D2]">
-                            Faculty Workspace
-                        </p>
+                         <span className="inline-flex items-center gap-1.5 rounded-full border border-[#A9E5D2]/20 bg-[#A9E5D2]/[0.07] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#A9E5D2]">
+                           Faculty Workspace
+                        </span>
                         <h1 className="mt-2 text-2xl font-bold text-white sm:text-3xl">
                             Task Management
                         </h1>
@@ -1465,19 +1481,31 @@ export default function TaskManagement() {
                 )}
 
                 <section>
-                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                        <div>
-                            <h2 className="font-bold text-white">My Subjects</h2>
-                            <p className="mt-1 text-xs text-slate-400">
-                                Select a subject to view its tasks and students.
-                            </p>
+                    <div className={`${panelClass} mb-4 p-5`}>
+                        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <h2 className="font-bold text-white">My Subjects</h2>
+                                <p className="mt-1 text-xs text-slate-400">
+                                    Select a subject to view its tasks and students, or view every task across all assigned subjects.
+                                </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowAllTasks(true);
+                                        setSelectedSubjectId("");
+                                        resetFilters();
+                                    }}
+                                    className={`rounded-xl border px-3 py-2 text-xs font-semibold transition ${showAllTasks ? "border-[#A9E5D2]/40 bg-[#A9E5D2]/10 text-[#A9E5D2]" : "border-white/10 bg-white/[0.04] text-slate-200 hover:border-[#A9E5D2]/30 hover:text-[#A9E5D2]"}`}
+                                >
+                                    View All Tasks
+                                </button>
+                                <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-slate-400">
+                                    {subjects.length} subject{subjects.length !== 1 ? "s" : ""}
+                                </span>
+                            </div>
                         </div>
-
-                        <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-slate-400">
-                            {subjects.length} subject
-                            {subjects.length !== 1 ? "s" : ""}
-                        </span>
-                    </div>
 
                     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                         {subjects.map((subject, index) => {
@@ -1521,6 +1549,7 @@ export default function TaskManagement() {
                                     key={subject.id}
                                     type="button"
                                     onClick={() => {
+                                        setShowAllTasks(false);
                                         setSelectedSubjectId(String(subject.id));
                                         resetFilters();
                                     }}
@@ -1580,22 +1609,23 @@ export default function TaskManagement() {
                             );
                         })}
                     </div>
+                    </div>
                 </section>
 
-                {selectedSubject && (
+                {(selectedSubject || showAllTasks) ? (
                     <>
                         <section
                             className={`${panelClass} flex flex-col justify-between gap-3 p-4 sm:flex-row sm:items-center sm:p-5`}
                         >
                             <div>
                                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#A9E5D2]">
-                                    Selected Subject
+                                    {showAllTasks ? "All Assigned Subjects" : "Selected Subject"}
                                 </p>
                                 <h2 className="mt-1 text-lg font-bold text-white">
-                                    {getSubjectName(selectedSubject)}
+                                    {showAllTasks ? "All Tasks" : getSubjectName(selectedSubject)}
                                 </h2>
                                 <p className="mt-1 text-xs text-slate-400">
-                                    {getSubjectCode(selectedSubject) || "Accounting Subject"}
+                                    {showAllTasks ? "Tasks from every assigned subject." : (getSubjectCode(selectedSubject) || "Accounting Subject")}
                                 </p>
                             </div>
 
@@ -1650,7 +1680,7 @@ export default function TaskManagement() {
                                         }}
                                         className={inputClass}
                                     >
-                                        <option>All Statuses</option>
+                                        <option>All Status</option>
                                         <option>Published</option>
                                         <option>Draft</option>
                                         <option>Cancelled</option>
@@ -1685,16 +1715,15 @@ export default function TaskManagement() {
                             </div>
 
                             <div className="overflow-x-auto">
-                                <table className="w-full min-w-[1050px] border-collapse text-left">
+                                <table className="w-full min-w-[980px] border-collapse text-left">
                                     <thead>
                                         <tr className="border-b border-white/[0.08] bg-white/[0.025]">
                                             {[
                                                 "Task Details",
                                                 "Topic",
-                                                "Section",
+                                                "Subject",
                                                 "Due Date",
                                                 "Points",
-                                                "Recipients",
                                                 "Attachment",
                                                 "Status",
                                                 "Actions",
@@ -1731,10 +1760,6 @@ export default function TaskManagement() {
                                                         String(task.subject_id),
                                                 );
 
-                                                const recipientCount =
-                                                    task.recipient_count ??
-                                                    task.recipient_student_ids?.length;
-
                                                 return (
                                                     <tr
                                                         key={task.id}
@@ -1758,7 +1783,10 @@ export default function TaskManagement() {
                                                         </td>
 
                                                         <td className="px-4 py-4 text-xs text-slate-300">
-                                                            {getTaskSectionName(task)}
+                                                            <span className="inline-flex max-w-[220px] items-center gap-1.5 rounded-lg border border-[#A9E5D2]/15 bg-[#A9E5D2]/[0.06] px-2.5 py-1 text-xs font-medium text-[#BDEBDD]">
+                                                                <BookOpen size={13} className="shrink-0" />
+                                                                <span className="truncate">{getSubjectName(subject || task.subject || { subject_name: task.subject_name })}</span>
+                                                            </span>
                                                         </td>
 
                                                         <td className="whitespace-nowrap px-4 py-4">
@@ -1773,16 +1801,6 @@ export default function TaskManagement() {
 
                                                         <td className="px-4 py-4 text-xs text-slate-300">
                                                             {task.points ?? 100}
-                                                        </td>
-
-                                                        <td className="px-4 py-4 text-xs text-slate-300">
-                                                            {recipientCount == null
-                                                                ? "—"
-                                                                : `${recipientCount} student${
-                                                                      recipientCount !== 1
-                                                                          ? "s"
-                                                                          : ""
-                                                                  }`}
                                                         </td>
 
                                                         <td className="px-4 py-4">
@@ -1868,7 +1886,7 @@ export default function TaskManagement() {
                                             })
                                         ) : (
                                             <tr>
-                                                <td colSpan={9} className="px-4 py-14 text-center">
+                                                <td colSpan={8} className="px-4 py-14 text-center">
                                                     <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-white/[0.04] text-slate-500">
                                                         <ClipboardList size={23} />
                                                     </div>
@@ -1903,25 +1921,32 @@ export default function TaskManagement() {
                                           )} of ${filteredTasks.length} tasks`}
                                 </p>
 
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1.5">
                                     <button
                                         type="button"
-                                        disabled={safePage <= 1}
-                                        onClick={() => setCurrentPage(safePage - 1)}
-                                        className="rounded-lg border border-white/10 p-2 text-slate-300 transition hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-30"
                                         aria-label="Previous page"
+                                        disabled={safePage <= 1}
+                                        onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                                        className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/[0.03] text-slate-300 transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-30"
                                     >
                                         <ChevronLeft size={16} />
                                     </button>
-                                    <span className="min-w-[76px] text-center text-xs text-slate-400">
-                                        Page {safePage} of {totalPages}
-                                    </span>
+                                    {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+                                        <button
+                                            key={page}
+                                            type="button"
+                                            onClick={() => setCurrentPage(page)}
+                                            className={`flex h-9 min-w-9 items-center justify-center rounded-lg border px-2.5 text-xs font-semibold transition ${page === safePage ? "border-[#A9E5D2] bg-[#A9E5D2] text-[#10251F]" : "border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/[0.08]"}`}
+                                        >
+                                            {page}
+                                        </button>
+                                    ))}
                                     <button
                                         type="button"
-                                        disabled={safePage >= totalPages}
-                                        onClick={() => setCurrentPage(safePage + 1)}
-                                        className="rounded-lg border border-white/10 p-2 text-slate-300 transition hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-30"
                                         aria-label="Next page"
+                                        disabled={safePage >= totalPages}
+                                        onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                                        className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/[0.03] text-slate-300 transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-30"
                                     >
                                         <ChevronRight size={16} />
                                     </button>
@@ -1930,7 +1955,7 @@ export default function TaskManagement() {
                         </section>
                 
                         {/* STUDENT LIST */}
-                        <section className={`${panelClass} overflow-hidden`}>
+                        {selectedSubject && !showAllTasks && <section className={`${panelClass} overflow-hidden`}>
                             <div className="flex flex-col gap-3 border-b border-white/[0.08] p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
                                 <div>
                                     <div className="flex items-center gap-2">
@@ -2030,10 +2055,16 @@ export default function TaskManagement() {
                                                 >
                                                     <td className="px-4 py-4">
                                                         <div className="flex items-center gap-3">
-                                                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#A9E5D2]/15 bg-[#A9E5D2]/[0.06] text-[#A9E5D2]">
-                                                                <User
-                                                                    size={17}
-                                                                />
+                                                            <div
+                                                                aria-hidden="true"
+                                                                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#A9E5D2]/25 bg-gradient-to-br from-[#A9E5D2]/20 to-[#A9E5D2]/[0.04] text-[11px] font-bold uppercase tracking-wide text-[#BDEBDD] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+                                                            >
+                                                                {getStudentName(student)
+                                                                    .split(/\s+/)
+                                                                    .filter(Boolean)
+                                                                    .slice(0, 2)
+                                                                    .map((part) => part[0])
+                                                                    .join("") || "ST"}
                                                             </div>
                                                             <span className="text-sm font-semibold text-slate-200">
                                                                 {getStudentName(student)}
@@ -2096,42 +2127,56 @@ export default function TaskManagement() {
                                           )} of ${subjectStudents.length} students`}
                                 </p>
 
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1.5">
                                     <button
                                         type="button"
+                                        aria-label="Previous student page"
                                         disabled={safeStudentPage <= 1}
                                         onClick={() =>
-                                            setStudentPage(safeStudentPage - 1)
+                                            setStudentPage((page) => Math.max(1, page - 1))
                                         }
-                                        className="rounded-lg border border-white/10 p-2 text-slate-300 transition hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-30"
-                                        aria-label="Previous student page"
+                                        className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/[0.03] text-slate-300 transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-30"
                                     >
                                         <ChevronLeft size={16} />
                                     </button>
-
-                                    <span className="min-w-[76px] text-center text-xs text-slate-400">
-                                        Page {safeStudentPage} of{" "}
-                                        {studentTotalPages}
-                                    </span>
-
+                                    {Array.from(
+                                        { length: studentTotalPages },
+                                        (_, index) => index + 1,
+                                    ).map((page) => (
+                                        <button
+                                            key={page}
+                                            type="button"
+                                            aria-label={`Go to student page ${page}`}
+                                            onClick={() => setStudentPage(page)}
+                                            className={`flex h-9 min-w-9 items-center justify-center rounded-lg border px-2.5 text-xs font-semibold transition ${page === safeStudentPage ? "border-[#A9E5D2] bg-[#A9E5D2] text-[#10251F]" : "border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/[0.08]"}`}
+                                        >
+                                            {page}
+                                        </button>
+                                    ))}
                                     <button
                                         type="button"
-                                        disabled={
-                                            safeStudentPage >= studentTotalPages
-                                        }
-                                        onClick={() =>
-                                            setStudentPage(safeStudentPage + 1)
-                                        }
-                                        className="rounded-lg border border-white/10 p-2 text-slate-300 transition hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-30"
                                         aria-label="Next student page"
+                                        disabled={safeStudentPage >= studentTotalPages}
+                                        onClick={() =>
+                                            setStudentPage((page) => Math.min(studentTotalPages, page + 1))
+                                        }
+                                        className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/[0.03] text-slate-300 transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-30"
                                     >
                                         <ChevronRight size={16} />
                                     </button>
                                 </div>
                             </div>
-                        </section>
+                        </section>}
                          </>
-  )}
+                ) : (
+                    <section className={`${panelClass} mb-6 flex flex-col items-center justify-center border-dashed px-6 py-12 text-center`}>
+                        <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl border border-[#A9E5D2]/20 bg-[#A9E5D2]/[0.07] text-[#A9E5D2]">
+                            <BookOpen size={25} />
+                        </div>
+                        <h2 className="text-base font-bold text-white">Select a subject to view tasks</h2>
+                        <p className="mt-1 max-w-md text-sm text-slate-400">Choose one of your enrolled subjects above. Its assigned tasks, status, and deadlines will appear here.</p>
+                    </section>
+                )}
                 {modalMode && (
                     <TaskModal
                         mode={modalMode}

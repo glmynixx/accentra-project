@@ -325,10 +325,9 @@ function MyAccount() {
                 {/* Page heading */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                        <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#A9E5D2]/15 bg-[#A9E5D2]/[0.07] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[#A9E5D2]">
-                            <UserRound size={13} />
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-[#A9E5D2]/20 bg-[#A9E5D2]/[0.07] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#A9E5D2]">
                             Faculty Workspace
-                        </div>
+                        </span>
 
                         <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
                             My Account

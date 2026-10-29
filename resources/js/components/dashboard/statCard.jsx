@@ -7,6 +7,7 @@ import {
     Layers3,
     ClipboardList,
     FileClock,
+    FileCheck2,
 } from "lucide-react";
 
 const iconMap = {
@@ -17,6 +18,7 @@ const iconMap = {
     "layers-3": Layers3,
     "clipboard-list": ClipboardList,
     "file-clock": FileClock,
+    "file-check-2": FileCheck2,
 };
 
 export default function StatCard({

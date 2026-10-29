@@ -738,9 +738,9 @@ export default function FacultySections() {
                 {/* Page heading */}
                 <section className="flex min-w-0 flex-wrap items-end justify-between gap-4">
                     <div className="min-w-0">
-                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#A9E5D2]">
+                         <span className="inline-flex items-center gap-1.5 rounded-full border border-[#A9E5D2]/20 bg-[#A9E5D2]/[0.07] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#A9E5D2]">
                             Faculty
-                        </p>
+                        </span>
 
                         <h1 className="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">
                             My Sections

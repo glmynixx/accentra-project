@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { usePage } from "@inertiajs/react";
 import {
     Search,
     Eye,
@@ -32,21 +33,57 @@ import { initialTasks as facultyTasks } from "../assets/data/facultyData";
 // Shared styling
 // --------------------------------------------------
 
+const ENROLLED_SUBJECTS = [
+    { code: "ACC101", name: "Fundamentals of Accounting" },
+    { code: "ACC102", name: "Financial Accounting" },
+    { code: "ACC103", name: "Management Accounting" },
+    { code: "ACC104", name: "Cost Accounting" },
+    { code: "BUS101", name: "Business Finance" },
+    { code: "BUS102", name: "Business Law" },
+];
+
+function getSubjectLabel(task) {
+    const subjectObject = task?.subject && typeof task.subject === "object" ? task.subject : null;
+    const raw = String(
+        task?.subjectName ||
+        task?.subject_name ||
+        subjectObject?.subject_name ||
+        subjectObject?.name ||
+        task?.subject ||
+        task?.topic ||
+        task?.category ||
+        "",
+    ).trim();
+    const code = String(
+        task?.subjectCode ||
+        task?.subject_code ||
+        subjectObject?.subject_code ||
+        subjectObject?.code ||
+        "",
+    ).trim().toUpperCase();
+    const found = ENROLLED_SUBJECTS.find((subject) =>
+        subject.code === code ||
+        subject.name.toLowerCase() === raw.toLowerCase() ||
+        subject.code === raw.toUpperCase()
+    );
+    return found ? found.name : raw || "General Accounting";
+}
+
 const inputClass =
-    "w-full rounded-xl border border-[#C9D6E4] bg-white px-3.5 py-2.5 text-sm text-[#243A52] outline-none transition-all placeholder:text-[#9AA8B7] focus:border-[#294B70] focus:ring-2 focus:ring-[#294B70]/10";
+    "w-full rounded-xl border border-white/10 bg-[#091725] px-3.5 py-2.5 text-sm text-slate-100 outline-none transition-all placeholder:text-slate-500 focus:border-[#A9E5D2]/70 focus:ring-2 focus:ring-[#A9E5D2]/10";
 
 const buttonSecondary =
-    "inline-flex items-center justify-center gap-2 rounded-xl border border-[#C9D6E3] bg-white px-4 py-2.5 text-sm font-semibold text-[#526579] shadow-sm transition-all hover:bg-[#E7EDF3] hover:text-[#243A52] disabled:cursor-not-allowed disabled:opacity-40";
+    "inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-slate-200 transition-all hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-40";
 
 const buttonPrimary =
-    "inline-flex items-center justify-center gap-2 rounded-xl bg-[#1B3553] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#142A43] disabled:cursor-not-allowed disabled:opacity-50";
+    "inline-flex items-center justify-center gap-2 rounded-xl bg-[#A9E5D2] px-4 py-2.5 text-sm font-bold text-[#10251F] shadow-sm transition-all hover:bg-[#C0F0E1] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50";
 
 // Student Workspace 
 const workspaceHeader =
-    "flex items-center gap-3 border-b border-[#DCE5EC] bg-gradient-to-r from-[#EDF4FA] via-[#F4F7F8] to-[#F0F6F1] px-5 py-4 text-[#1B3553]";
+    "flex items-center gap-3 border-b border-white/10 bg-gradient-to-r from-white/[0.07] via-white/[0.035] to-[#A9E5D2]/[0.04] px-5 py-4 text-slate-100";
 
 const workspaceCard =
-    "overflow-hidden rounded-2xl border border-[#D3DFE8] bg-white shadow-[0_5px_20px_rgba(27,53,83,0.06)]";
+    "overflow-hidden rounded-2xl border border-white/[0.13] bg-gradient-to-br from-white/[0.075] to-white/[0.025] shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_18px_55px_rgba(0,0,0,0.18)] backdrop-blur-[22px]";
 
 // --------------------------------------------------
 // Date helpers
@@ -209,26 +246,26 @@ function getFileIconColor(filename = "") {
     const extension = getFileExtension(filename);
 
     if (extension === "PDF") {
-        return "border-red-100 bg-red-50 text-red-600";
+        return "border-rose-300/20 bg-rose-400/10 text-rose-300";
     }
 
     if (["DOC", "DOCX"].includes(extension)) {
-        return "border-blue-100 bg-blue-50 text-blue-600";
+        return "border-sky-300/20 bg-sky-400/10 text-sky-300";
     }
 
     if (["XLS", "XLSX", "CSV"].includes(extension)) {
-        return "border-emerald-100 bg-emerald-50 text-emerald-600";
+        return "border-emerald-300/20 bg-emerald-400/10 text-emerald-300";
     }
 
     if (["PPT", "PPTX"].includes(extension)) {
-        return "border-orange-100 bg-orange-50 text-orange-600";
+        return "border-orange-300/20 bg-orange-400/10 text-orange-300";
     }
 
     if (["PNG", "JPG", "JPEG"].includes(extension)) {
-        return "border-purple-100 bg-purple-50 text-purple-600";
+        return "border-violet-300/20 bg-violet-400/10 text-violet-300";
     }
 
-    return "border-slate-200 bg-slate-100 text-slate-600";
+    return "border-white/10 bg-white/[0.06] text-slate-300";
 }
 
 // --------------------------------------------------
@@ -240,11 +277,15 @@ function normalizeFacultyTask(task, index) {
         ...task,
         id: task.id ?? task.taskId ?? index + 1,
         title: task.title || task.taskTitle || "Untitled Task",
-        topic:
-            task.topic ||
-            task.subject ||
-            task.category ||
-            "General Accounting",
+        topic: getSubjectLabel(task),
+        subjectCode:
+            task.subjectCode ||
+            task.subject_code ||
+            task.subject?.subject_code ||
+            task.subject?.code ||
+            ENROLLED_SUBJECTS.find((subject) => subject.name === getSubjectLabel(task))?.code ||
+            "",
+        subjectId: task.subject_id ?? task.subjectId ?? task.subject?.id ?? "",
         section:
             task.section ||
             task.assignedSection ||
@@ -276,15 +317,122 @@ function normalizeFacultyTask(task, index) {
     };
 }
 
-function getAvailableFacultyTasks() {
-    return (facultyTasks || [])
+const SAMPLE_SUBJECT_TASKS = [
+    {
+        id: "sample-ACC101",
+        title: "Accounting Equation Practice",
+        subjectCode: "ACC101",
+        subjectName: "Fundamentals of Accounting",
+        topic: "Fundamentals of Accounting",
+        section: "My Section",
+        dateCreated: "2026-10-28",
+        dueDate: "2026-11-05",
+        points: 20,
+        status: "Active",
+        description: "Apply the accounting equation to common business transactions.",
+        instructions: "Analyze each transaction and identify its effect on assets, liabilities, and owner's equity.",
+    },
+    {
+        id: "sample-ACC102",
+        title: "Journalizing and Adjusting Entries",
+        subjectCode: "ACC102",
+        subjectName: "Financial Accounting",
+        topic: "Financial Accounting",
+        section: "My Section",
+        dateCreated: "2026-10-28",
+        dueDate: "2026-11-06",
+        points: 25,
+        status: "Active",
+        description: "Prepare journal entries for the given financial transactions.",
+        instructions: "Record the accounts to debit and credit, then provide a brief explanation for each entry.",
+    },
+    {
+        id: "sample-ACC103",
+        title: "Cost-Volume-Profit Analysis",
+        subjectCode: "ACC103",
+        subjectName: "Management Accounting",
+        topic: "Management Accounting",
+        section: "My Section",
+        dateCreated: "2026-10-28",
+        dueDate: "2026-11-07",
+        points: 20,
+        status: "Active",
+        description: "Solve basic CVP problems for management decision-making.",
+        instructions: "Show your solution for contribution margin, break-even point, and target profit.",
+    },
+    {
+        id: "sample-ACC104",
+        title: "Job Order Costing Worksheet",
+        subjectCode: "ACC104",
+        subjectName: "Cost Accounting",
+        topic: "Cost Accounting",
+        section: "My Section",
+        dateCreated: "2026-10-28",
+        dueDate: "2026-11-08",
+        points: 25,
+        status: "Active",
+        description: "Compute total job cost using direct materials, direct labor, and applied overhead.",
+        instructions: "Complete the worksheet and show all computations.",
+    },
+    {
+        id: "sample-BUS101",
+        title: "Time Value of Money Exercises",
+        subjectCode: "BUS101",
+        subjectName: "Business Finance",
+        topic: "Business Finance",
+        section: "My Section",
+        dateCreated: "2026-10-28",
+        dueDate: "2026-11-09",
+        points: 20,
+        status: "Active",
+        description: "Practice present value and future value calculations.",
+        instructions: "Answer the problems and include the formula and computation used for each item.",
+    },
+    {
+        id: "sample-BUS102",
+        title: "Business Law Case Analysis",
+        subjectCode: "BUS102",
+        subjectName: "Business Law",
+        topic: "Business Law",
+        section: "My Section",
+        dateCreated: "2026-10-28",
+        dueDate: "2026-11-10",
+        points: 20,
+        status: "Active",
+        description: "Analyze a short business scenario and identify the relevant legal principle.",
+        instructions: "State the issue, applicable principle, and your conclusion in a short paragraph.",
+    },
+];
+
+function getAvailableFacultyTasks(sourceTasks = null) {
+    const taskSource = Array.isArray(sourceTasks) ? sourceTasks : facultyTasks;
+    const activeTasks = (taskSource || [])
         .filter(
             (task) =>
-                String(task.status || "Active")
-                    .trim()
-                    .toLowerCase() === "active",
+                ["active", "published"].includes(
+                    String(task.status || "Active").trim().toLowerCase(),
+                ) &&
+                !["journal entries exercise", "general ledger practice"].includes(
+                    String(task.title || task.taskTitle || "").trim().toLowerCase(),
+                ),
         )
         .map(normalizeFacultyTask);
+
+    // Keep actual faculty tasks, and add one demo task only for subjects that
+    // do not yet have a matching active/published task.
+    const sampleTasks = SAMPLE_SUBJECT_TASKS.filter((sample) => {
+        const hasSubjectTask = activeTasks.some((task) => {
+            const code = String(task.subjectCode || task.subject_code || "").trim().toUpperCase();
+            const name = String(task.subjectName || task.subject_name || task.topic || task.subject || "").trim().toLowerCase();
+            return code === sample.subjectCode || name === sample.subjectName.toLowerCase();
+        });
+        return !hasSubjectTask;
+    }).map((task, index) => normalizeFacultyTask(task, activeTasks.length + index));
+
+    return [...activeTasks, ...sampleTasks].map((task, index) => ({
+        ...task,
+        taskCode: `TSK-${String(index + 1).padStart(3, "0")}`,
+    }));
 }
 
 // --------------------------------------------------
@@ -339,17 +487,17 @@ function isTaskInProgress(task) {
 
 function StatusBadge({ status }) {
     const styles = {
-        "Not Started": "border-[#D7C7A8] bg-[#FAF5E9] text-[#8A6A25]",
-        "In Progress": "border-[#BFD2E5] bg-[#EEF4F9] text-[#294B70]",
-        Submitted: "border-[#B9D9C8] bg-[#F0F8F3] text-[#267653]",
-        Overdue: "border-[#E2BFC3] bg-[#FBEEF0] text-[#A94A55]",
+        "Not Started": "border-amber-300/20 bg-amber-400/10 text-amber-200",
+        "In Progress": "border-sky-300/20 bg-sky-400/10 text-sky-200",
+        Submitted: "border-[#A9E5D2]/25 bg-[#A9E5D2]/10 text-[#A9E5D2]",
+        Overdue: "border-rose-300/20 bg-rose-400/10 text-rose-200",
     };
 
     const dots = {
-        "Not Started": "bg-[#B18A37]",
-        "In Progress": "bg-[#426B94]",
-        Submitted: "bg-[#31805E]",
-        Overdue: "bg-[#A94A55]",
+        "Not Started": "bg-amber-300",
+        "In Progress": "bg-sky-300",
+        Submitted: "bg-[#A9E5D2]",
+        Overdue: "bg-rose-300",
     };
 
     return (
@@ -385,7 +533,7 @@ function SummaryCard({
 }) {
     return (
         <div
-            className={`group relative min-w-0 overflow-hidden rounded-2xl border ${borderColor} bg-gradient-to-br ${gradient} p-5 shadow-[0_5px_22px_rgba(27,53,83,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_30px_rgba(27,53,83,0.13)]`}
+            className={`group relative min-w-0 overflow-hidden rounded-2xl border ${borderColor} bg-gradient-to-br ${gradient} p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_18px_55px_rgba(0,0,0,0.18)] backdrop-blur-[22px] transition-all duration-300 hover:-translate-y-1 hover:border-white/20`}
         >
             <div
                 className={`absolute bottom-0 left-0 h-1 w-full ${accentColor}`}
@@ -399,13 +547,13 @@ function SummaryCard({
                 </div>
 
                 <div className="min-w-0">
-                    <span className="block text-xs font-bold text-[#526579]">
+                    <span className="block text-xs font-bold text-slate-400">
                         {title}
                     </span>
-                    <span className="mt-1 block text-2xl font-bold tracking-tight text-[#142A43]">
+                    <span className="mt-1 block text-2xl font-bold tracking-tight text-white">
                         {value}
                     </span>
-                    <span className="mt-1 block text-[11px] text-[#738396]">
+                    <span className="mt-1 block text-[11px] text-slate-400">
                         {description}
                     </span>
                 </div>
@@ -423,9 +571,9 @@ function AttachmentPanel({
     description = "Task resource provided by your faculty.",
 }) {
     return (
-        <div className="rounded-xl border border-[#D6E0E9] bg-white p-3">
+        <div className="rounded-xl border border-white/10 bg-white/[0.025] p-3">
             {attachment ? (
-                <div className="rounded-xl border border-[#DCE4EC] bg-[#F7F9FB] p-3.5 transition hover:border-[#AFC1D4]">
+                <div className="rounded-xl border border-white/10 bg-white/[0.035] p-3.5 transition hover:border-[#A9E5D2]/30 hover:bg-white/[0.05]">
                     <div className="flex min-w-0 items-start gap-3">
                         <div
                             className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border ${getFileIconColor(
@@ -436,17 +584,17 @@ function AttachmentPanel({
                         </div>
 
                         <div className="min-w-0 flex-1">
-                            <p className="break-all text-sm font-bold text-[#243A52]">
+                            <p className="break-all text-sm font-bold text-slate-100">
                                 {getAttachmentName(attachment)}
                             </p>
 
                             <div className="mt-2 flex flex-wrap items-center gap-2">
-                                <span className="rounded-md border border-[#DCE4EC] bg-white px-2 py-1 text-[10px] font-bold text-[#526579]">
+                                <span className="rounded-md border border-white/10 bg-white/[0.05] px-2 py-1 text-[10px] font-bold text-slate-300">
                                     {getFileExtension(
                                         getAttachmentName(attachment),
                                     )}
                                 </span>
-                                <span className="text-[11px] text-[#8292A3]">
+                                <span className="text-[11px] text-slate-400">
                                     Faculty-provided file
                                 </span>
                             </div>
@@ -456,21 +604,21 @@ function AttachmentPanel({
                     <button
                         type="button"
                         onClick={() => downloadAttachment(attachment)}
-                        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-[#B9D5C8] bg-[#EAF4EE] px-4 py-2.5 text-sm font-bold text-[#267653] transition hover:bg-[#D7EBDD]"
+                        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-[#A9E5D2]/20 bg-[#A9E5D2]/10 px-4 py-2.5 text-sm font-bold text-[#A9E5D2] transition hover:bg-[#A9E5D2]/15"
                     >
                         <Download size={16} />
                         Download Attachment
                     </button>
                 </div>
             ) : (
-                <div className="rounded-xl border border-dashed border-[#C9D6E3] bg-[#F7F9FB] px-4 py-7 text-center">
-                    <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-[#E7EDF3] text-[#8292A3]">
+                <div className="rounded-xl border border-dashed border-white/15 bg-white/[0.025] px-4 py-7 text-center">
+                    <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] text-slate-400">
                         <FolderOpen size={22} />
                     </div>
-                    <p className="mt-3 text-sm font-semibold text-[#526579]">
+                    <p className="mt-3 text-sm font-semibold text-slate-200">
                         No attachment available
                     </p>
-                    <p className="mt-1 text-xs leading-5 text-[#8292A3]">
+                    <p className="mt-1 text-xs leading-5 text-slate-400">
                         {description}
                     </p>
                 </div>
@@ -493,7 +641,7 @@ function StudentFileCard({ file, onRemove, disabled = false }) {
             : "";
 
     return (
-        <div className="rounded-xl border border-[#B9D5C8] bg-[#F0F8F3] p-3.5">
+        <div className="rounded-xl border border-[#A9E5D2]/20 bg-[#A9E5D2]/[0.045] p-3.5">
             <div className="flex min-w-0 items-center gap-3">
                 <div
                     className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${getFileIconColor(
@@ -504,10 +652,10 @@ function StudentFileCard({ file, onRemove, disabled = false }) {
                 </div>
 
                 <div className="min-w-0 flex-1">
-                    <p className="break-all text-sm font-bold text-[#243A52]">
+                    <p className="break-all text-sm font-bold text-slate-100">
                         {filename}
                     </p>
-                    <p className="mt-1 text-xs text-[#738396]">
+                    <p className="mt-1 text-xs text-slate-400">
                         {getFileExtension(filename)}
                         {fileSize ? ` · ${fileSize}` : ""}
                     </p>
@@ -519,7 +667,7 @@ function StudentFileCard({ file, onRemove, disabled = false }) {
                         onClick={onRemove}
                         aria-label="Remove selected file"
                         title="Remove file"
-                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[#A94A55] transition hover:bg-[#FBEEF0]"
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-rose-300 transition hover:bg-rose-400/10"
                     >
                         <X size={17} />
                     </button>
@@ -539,8 +687,7 @@ function TaskDetailsModal({ task, onClose, onStart, today }) {
     const status = getTaskStatus(task, today);
 
     const details = [
-        ["Topic", task.topic],
-        ["Assigned Section", task.section],
+        ["Subject", getSubjectLabel(task)],
         ["Date Created", formatDate(getDatePosted(task))],
         ["Due Date", formatDate(task.dueDate)],
         ["Total Points", `${task.points} points`],
@@ -548,17 +695,17 @@ function TaskDetailsModal({ task, onClose, onStart, today }) {
 
     return (
         <div
-            className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-[#0C1C2D]/60 p-4 backdrop-blur-sm"
+            className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-[#06111D]/80 p-4 backdrop-blur-md"
             onMouseDown={onClose}
         >
             <div
-                className="my-auto w-full max-w-3xl overflow-hidden rounded-2xl border border-[#B8C9DA] bg-white shadow-[0_25px_70px_rgba(10,30,50,0.30)]"
+                className="my-auto w-full max-w-3xl overflow-hidden rounded-2xl border border-white/[0.13] bg-[#0D1B2A] shadow-[0_25px_70px_rgba(0,0,0,0.45)]"
                 onMouseDown={(event) => event.stopPropagation()}
             >
-                <div className="bg-gradient-to-br from-[#142A43] via-[#1B3553] to-[#294B70] px-6 py-6">
+                <div className="border-b border-white/10 bg-gradient-to-br from-[#142A43] via-[#102638] to-[#0D1B2A] px-6 py-6">
                     <div className="flex items-start justify-between gap-4">
                         <div className="flex min-w-0 items-center gap-4">
-                            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/25 bg-white/15 text-white">
+                            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-[#A9E5D2]/25 bg-[#A9E5D2]/10 text-[#A9E5D2]">
                                 <ClipboardList size={25} />
                             </div>
 
@@ -570,7 +717,7 @@ function TaskDetailsModal({ task, onClose, onStart, today }) {
                                     {task.title}
                                 </h2>
                                 <span className="mt-1.5 inline-block rounded-md bg-white/10 px-2 py-1 text-xs font-semibold text-[#D8E4EF]">
-                                    TSK-{String(task.id).padStart(3, "0")}
+                                    {task.taskCode || "TSK-001"}
                                 </span>
                             </div>
                         </div>
@@ -586,21 +733,21 @@ function TaskDetailsModal({ task, onClose, onStart, today }) {
                     </div>
                 </div>
 
-                <div className="max-h-[65vh] space-y-5 overflow-y-auto bg-[#EEF2F6] px-5 py-5 sm:px-6">
+                <div className="max-h-[65vh] space-y-5 overflow-y-auto bg-gradient-to-br from-white/[0.045] to-white/[0.015] px-5 py-5 sm:px-6">
                     <section>
-                        <h3 className="text-sm font-bold text-[#1B3553]">
+                        <h3 className="text-sm font-bold text-white">
                             Task & Academic Details
                         </h3>
-                        <p className="mb-4 mt-0.5 text-xs text-[#738396]">
+                        <p className="mb-4 mt-0.5 text-xs text-slate-400">
                             These details reflect the task information provided by your faculty.
                         </p>
 
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                            <div className="rounded-xl border border-[#C9D6E3] bg-white px-4 py-3.5 sm:col-span-2">
-                                <span className="block text-[10px] font-bold uppercase tracking-wider text-[#53677D]">
+                            <div className="rounded-xl border border-white/10 bg-white/[0.035] px-4 py-3.5 sm:col-span-2">
+                                <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
                                     Task Title
                                 </span>
-                                <strong className="mt-1 block break-words text-sm font-semibold text-[#243A52]">
+                                <strong className="mt-1 block break-words text-sm font-semibold text-slate-100">
                                     {task.title}
                                 </strong>
                             </div>
@@ -608,19 +755,19 @@ function TaskDetailsModal({ task, onClose, onStart, today }) {
                             {details.map(([label, value]) => (
                                 <div
                                     key={label}
-                                    className="rounded-xl border border-[#C9D6E3] bg-white px-4 py-3.5"
+                                    className="rounded-xl border border-white/10 bg-white/[0.035] px-4 py-3.5"
                                 >
-                                    <span className="block text-[10px] font-bold uppercase tracking-wider text-[#53677D]">
+                                    <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
                                         {label}
                                     </span>
-                                    <strong className="mt-1 block break-words text-sm font-semibold text-[#243A52]">
+                                    <strong className="mt-1 block break-words text-sm font-semibold text-slate-100">
                                         {value || "—"}
                                     </strong>
                                 </div>
                             ))}
 
-                            <div className="rounded-xl border border-[#C9D6E3] bg-white px-4 py-3.5">
-                                <span className="block text-[10px] font-bold uppercase tracking-wider text-[#53677D]">
+                            <div className="rounded-xl border border-white/10 bg-white/[0.035] px-4 py-3.5">
+                                <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
                                     Submission Status
                                 </span>
                                 <div className="mt-2">
@@ -628,20 +775,20 @@ function TaskDetailsModal({ task, onClose, onStart, today }) {
                                 </div>
                             </div>
 
-                            <div className="rounded-xl border border-[#C9D6E3] bg-white px-4 py-3.5 sm:col-span-2">
-                                <span className="block text-[10px] font-bold uppercase tracking-wider text-[#53677D]">
+                            <div className="rounded-xl border border-white/10 bg-white/[0.035] px-4 py-3.5 sm:col-span-2">
+                                <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
                                     Description
                                 </span>
-                                <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-[#243A52]">
+                                <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-slate-300">
                                     {task.description || "No description provided."}
                                 </p>
                             </div>
 
-                            <div className="rounded-xl border border-[#C9D6E3] bg-white px-4 py-3.5 sm:col-span-2">
-                                <span className="block text-[10px] font-bold uppercase tracking-wider text-[#53677D]">
+                            <div className="rounded-xl border border-white/10 bg-white/[0.035] px-4 py-3.5 sm:col-span-2">
+                                <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
                                     Instructions
                                 </span>
-                                <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-[#243A52]">
+                                <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-slate-300">
                                     {task.instructions ||
                                         "No additional instructions provided."}
                                 </p>
@@ -652,7 +799,7 @@ function TaskDetailsModal({ task, onClose, onStart, today }) {
                     <AttachmentPanel attachment={task.attachment} />
                 </div>
 
-                <div className="flex flex-col-reverse gap-3 border-t border-[#DCE4EC] bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col-reverse gap-3 border-t border-white/10 bg-[#0A1623] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                     <button
                         type="button"
                         onClick={onClose}
@@ -735,13 +882,13 @@ function TaskWorkspace({ task, onClose, onSubmitTask, today }) {
     };
 
     return (
-        <div className="fixed inset-0 z-[110] overflow-y-auto bg-[#EEF2F6]">
+        <div className="fixed inset-0 z-[110] overflow-y-auto bg-[#071321]">
             <div className="min-h-screen">
                 {/* Workspace top bar */}
-                <header className="sticky top-0 z-20 border-b border-[#C9D6E3] bg-white/95 shadow-sm backdrop-blur">
+                <header className="sticky top-0 z-20 border-b border-white/10 bg-[#0A1623]/95 shadow-lg shadow-black/10 backdrop-blur-xl">
                     <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:px-6 lg:px-8">
                         <div className="flex min-w-0 items-center gap-3">
-                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#142A43] to-[#36534E] text-white shadow-sm">
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#A9E5D2]/25 bg-[#A9E5D2]/10 text-[#A9E5D2] shadow-sm">
                                 <BookOpen size={21} />
                             </div>
 
@@ -749,7 +896,7 @@ function TaskWorkspace({ task, onClose, onSubmitTask, today }) {
                                 <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#738396]">
                                     ACCENTRA · Student Workspace
                                 </p>
-                                <h1 className="mt-1 truncate text-base font-bold text-[#1B3553] sm:text-lg">
+                                <h1 className="mt-1 truncate text-base font-bold text-white sm:text-lg">
                                     {task.title}
                                 </h1>
                             </div>
@@ -769,7 +916,7 @@ function TaskWorkspace({ task, onClose, onSubmitTask, today }) {
 
                 <main className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
                     
-                    <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#142A43] via-[#1B3553] to-[#36534E] p-6 text-white shadow-[0_12px_35px_rgba(20,42,67,0.18)] sm:p-8">
+                    <section className="relative overflow-hidden rounded-3xl border border-white/[0.13] bg-gradient-to-br from-white/[0.10] via-[#102638] to-[#0D1B2A] p-6 text-white shadow-[0_18px_55px_rgba(0,0,0,0.25)] backdrop-blur-[22px] sm:p-8">
                         <div className="relative z-10">
                             <div className="mb-4 flex flex-wrap items-center gap-2">
                                 <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white/90">
@@ -820,7 +967,7 @@ function TaskWorkspace({ task, onClose, onSubmitTask, today }) {
 
                             <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-white/15 pt-5">
                                 <span className="text-xs font-medium text-blue-100">
-                                    TSK-{String(task.id).padStart(3, "0")}
+                                    {task.taskCode || "TSK-001"}
                                 </span>
                                 <span className="h-1 w-1 rounded-full bg-white/40" />
                                 <span className="text-xs text-blue-100">
@@ -838,44 +985,44 @@ function TaskWorkspace({ task, onClose, onSubmitTask, today }) {
                             {/* Task Overview */}
                             <section className={workspaceCard}>
                                 <div className={workspaceHeader}>
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#D3E1EF] bg-[#DCEAF7] text-[#294B70] shadow-sm">
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#A9E5D2]/25 bg-[#A9E5D2]/10 text-[#A9E5D2] shadow-sm">
                                         <ClipboardList size={20} />
                                     </div>
                                     <div>
-                                        <h3 className="font-bold text-[#1B3553]">
+                                        <h3 className="font-bold text-white">
                                             Task Overview
                                         </h3>
-                                        <p className="mt-0.5 text-xs text-[#738396]">
+                                        <p className="mt-0.5 text-xs text-slate-400">
                                             Academic and submission details
                                         </p>
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 gap-3 bg-[#FAFCFE] p-5 sm:grid-cols-2 sm:p-6">
+                                <div className="grid grid-cols-1 gap-3 bg-transparent p-5 sm:grid-cols-2 sm:p-6">
                                     {[
                                         {
                                             label: "Task Title",
                                             value: task.title,
                                             icon: ClipboardList,
-                                            iconStyle: "bg-[#DCEAF7] text-[#294B70]",
+                                            iconStyle: "border border-[#A9E5D2]/20 bg-[#A9E5D2]/10 text-[#A9E5D2]",
                                         },
                                         {
                                             label: "Topic / Subject",
                                             value: task.topic,
                                             icon: BookOpen,
-                                            iconStyle: "bg-[#DCEFE4] text-[#36765A]",
+                                            iconStyle: "border border-white/10 bg-white/[0.06] text-slate-300",
                                         },
                                         {
                                             label: "Assigned Section",
                                             value: task.section,
                                             icon: Users,
-                                            iconStyle: "bg-[#F9EED7] text-[#92702C]",
+                                            iconStyle: "border border-white/10 bg-white/[0.06] text-slate-300",
                                         },
                                         {
                                             label: "Date Posted",
                                             value: formatDate(getDatePosted(task)),
                                             icon: CalendarDays,
-                                            iconStyle: "bg-[#F4E4EA] text-[#A45470]",
+                                            iconStyle: "border border-white/10 bg-white/[0.06] text-slate-300",
                                         },
                                     ].map((item) => {
                                         const Icon = item.icon;
@@ -883,7 +1030,7 @@ function TaskWorkspace({ task, onClose, onSubmitTask, today }) {
                                         return (
                                             <div
                                                 key={item.label}
-                                                className="flex min-w-0 items-start gap-3 rounded-xl border border-[#DFE8EF] bg-white p-4 transition hover:border-[#B9CEDD] hover:bg-[#F6FAFD]"
+                                                className="flex min-w-0 items-start gap-3 rounded-xl border border-white/10 bg-white/[0.035] p-4 transition hover:border-[#A9E5D2]/30 hover:bg-white/[0.06]"
                                             >
                                                 <div
                                                     className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${item.iconStyle}`}
@@ -891,10 +1038,10 @@ function TaskWorkspace({ task, onClose, onSubmitTask, today }) {
                                                     <Icon size={17} />
                                                 </div>
                                                 <div className="min-w-0">
-                                                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#8292A3]">
+                                                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                                                         {item.label}
                                                     </p>
-                                                    <p className="mt-1 break-words text-sm font-semibold text-[#243A52]">
+                                                    <p className="mt-1 break-words text-sm font-semibold text-slate-100">
                                                         {item.value || "—"}
                                                     </p>
                                                 </div>
@@ -906,23 +1053,23 @@ function TaskWorkspace({ task, onClose, onSubmitTask, today }) {
 
                             {/* Task Description */}
                             <section className={workspaceCard}>
-                                <div className="flex items-center gap-3 border-b border-[#D9E8DF] bg-gradient-to-r from-[#E8F3EC] via-[#F1F7F2] to-[#FAFCFA] px-5 py-4">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#CBE0D2] bg-[#DCEFE4] text-[#36765A] shadow-sm">
+                                <div className="flex items-center gap-3 border-b border-white/10 bg-gradient-to-r from-white/[0.06] via-white/[0.025] to-[#A9E5D2]/[0.035] px-5 py-4">
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#A9E5D2]/20 bg-[#A9E5D2]/10 text-[#A9E5D2] shadow-sm">
                                         <BookOpen size={20} />
                                     </div>
                                     <div>
-                                        <h3 className="font-bold text-[#285B45]">
+                                        <h3 className="font-bold text-slate-100">
                                             Task Description
                                         </h3>
-                                        <p className="mt-0.5 text-xs text-[#718C7D]">
+                                        <p className="mt-0.5 text-xs text-slate-400">
                                             Activity overview from your faculty
                                         </p>
                                     </div>
                                 </div>
 
-                                <div className="bg-[#FCFEFC] p-5 sm:p-6">
-                                    <div className="rounded-xl border border-[#DCE9E0] bg-[#F3F8F4] p-4 sm:p-5">
-                                        <p className="whitespace-pre-wrap break-words text-sm leading-7 text-[#526B5D]">
+                                <div className="bg-[#0B1927]/70 p-5 sm:p-6">
+                                    <div className="rounded-xl border border-white/10 bg-white/[0.035] p-4 sm:p-5">
+                                        <p className="whitespace-pre-wrap break-words text-sm leading-7 text-slate-300">
                                             {task.description ||
                                                 "No description provided by the faculty."}
                                         </p>
@@ -932,37 +1079,37 @@ function TaskWorkspace({ task, onClose, onSubmitTask, today }) {
 
                             {/* Task Instructions */}
                             <section className={workspaceCard}>
-                                <div className="flex items-center gap-3 border-b border-[#E8DFC8] bg-gradient-to-r from-[#FAF1DE] via-[#FCF7EB] to-[#FFFDF8] px-5 py-4">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#E9DAB7] bg-[#F7EBCB] text-[#92702C] shadow-sm">
+                                <div className="flex items-center gap-3 border-b border-white/10 bg-gradient-to-r from-white/[0.06] via-white/[0.025] to-[#A9E5D2]/[0.035] px-5 py-4">
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#A9E5D2]/20 bg-[#A9E5D2]/10 text-[#A9E5D2] shadow-sm">
                                         <ListChecks size={20} />
                                     </div>
                                     <div>
-                                        <h3 className="font-bold text-[#765B27]">
+                                        <h3 className="font-bold text-slate-100">
                                             Task Instructions
                                         </h3>
-                                        <p className="mt-0.5 text-xs text-[#9A865F]">
+                                        <p className="mt-0.5 text-xs text-slate-400">
                                             Requirements and directions
                                         </p>
                                     </div>
                                 </div>
 
-                                <div className="bg-[#FFFEFA] p-5 sm:p-6">
+                                <div className="bg-[#0B1927]/70 p-5 sm:p-6">
                                     {task.instructions ? (
-                                        <div className="rounded-xl border border-[#EEE4CF] bg-[#FCF8EE] p-4 sm:p-5">
-                                            <p className="whitespace-pre-wrap break-words text-sm leading-7 text-[#77694D]">
+                                        <div className="rounded-xl border border-white/10 bg-white/[0.035] p-4 sm:p-5">
+                                            <p className="whitespace-pre-wrap break-words text-sm leading-7 text-slate-300">
                                                 {task.instructions}
                                             </p>
                                         </div>
                                     ) : (
-                                        <div className="rounded-xl border border-dashed border-[#E5D8BC] bg-[#FCF8EE] px-4 py-7 text-center">
+                                        <div className="rounded-xl border border-dashed border-white/15 bg-white/[0.025] px-4 py-7 text-center">
                                             <ListChecks
                                                 size={25}
-                                                className="mx-auto text-[#B29B69]"
+                                                className="mx-auto text-[#A9E5D2]"
                                             />
-                                            <p className="mt-2 text-sm font-semibold text-[#765B27]">
+                                            <p className="mt-2 text-sm font-semibold text-slate-100">
                                                 No additional instructions
                                             </p>
-                                            <p className="mt-1 text-xs text-[#9A865F]">
+                                            <p className="mt-1 text-xs text-slate-400">
                                                 Follow any directions discussed by your faculty.
                                             </p>
                                         </div>
@@ -971,30 +1118,30 @@ function TaskWorkspace({ task, onClose, onSubmitTask, today }) {
                             </section>
 
                             {/* Compact red Deadline Reminder */}
-                            <section className="rounded-xl border border-[#E2BFC3] bg-[#FBF0F1] p-3.5 shadow-sm sm:p-4">
+                            <section className="rounded-xl border border-rose-300/20 bg-rose-400/[0.07] p-3.5 shadow-sm sm:p-4">
                                 <div className="flex items-start gap-3">
-                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#A94A55] text-white">
+                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-rose-400/15 text-rose-300">
                                         <Clock3 size={17} />
                                     </div>
 
                                     <div className="min-w-0 flex-1">
                                         <div className="flex flex-wrap items-center justify-between gap-2">
-                                            <h3 className="text-sm font-bold text-[#8E3540]">
+                                            <h3 className="text-sm font-bold text-rose-200">
                                                 Deadline Reminder
                                             </h3>
 
-                                            <span className="rounded-full border border-[#E2BFC3] bg-white/80 px-2 py-0.5 text-[10px] font-semibold text-[#A94A55]">
+                                            <span className="rounded-full border border-rose-300/20 bg-rose-400/10 px-2 py-0.5 text-[10px] font-semibold text-rose-200">
                                                 {isSubmitted ? "Submitted" : "Due Date"}
                                             </span>
                                         </div>
 
-                                        <p className="mt-1 text-xs font-semibold text-[#8E3540]">
+                                        <p className="mt-1 text-xs font-semibold text-rose-200">
                                             {task.dueDate
                                                 ? `Due on ${formatDate(task.dueDate)}`
                                                 : "Check the deadline announced by your faculty"}
                                         </p>
 
-                                        <p className="mt-1 text-xs leading-5 text-[#9A555D]">
+                                        <p className="mt-1 text-xs leading-5 text-rose-200/80">
                                             {isSubmitted
                                                 ? "Your work has been submitted. Keep a copy for your records."
                                                 : task.dueDate
@@ -1010,21 +1157,21 @@ function TaskWorkspace({ task, onClose, onSubmitTask, today }) {
                         <aside className="space-y-6">
                             {/* Learning Materials */}
                             <section className={workspaceCard}>
-                                <div className="flex items-center gap-3 border-b border-[#E8DFC8] bg-gradient-to-r from-[#FAF1DE] via-[#FCF7EB] to-[#FFFDF8] px-5 py-4">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#E9DAB7] bg-[#F7EBCB] text-[#92702C] shadow-sm">
+                                <div className="flex items-center gap-3 border-b border-white/10 bg-gradient-to-r from-white/[0.06] via-white/[0.025] to-[#A9E5D2]/[0.035] px-5 py-4">
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#A9E5D2]/20 bg-[#A9E5D2]/10 text-[#A9E5D2] shadow-sm">
                                         <FolderOpen size={20} />
                                     </div>
                                     <div>
-                                        <h3 className="font-bold text-[#B29B69]">
+                                        <h3 className="font-bold text-[#A9E5D2]">
                                             Learning Materials
                                         </h3>
-                                        <p className="mt-0.5 text-xs text-[#765B27]">
+                                        <p className="mt-0.5 text-xs text-slate-100">
                                             Files attached by your faculty
                                         </p>
                                     </div>
                                 </div>
 
-                                <div className="bg-[#FFFEFA] p-4">
+                                <div className="bg-transparent p-4">
                                     <AttachmentPanel
                                         attachment={task.attachment}
                                         description="Your faculty has not attached a file to this task."
@@ -1035,30 +1182,30 @@ function TaskWorkspace({ task, onClose, onSubmitTask, today }) {
 
                             {/* Submit Your Work */}
                             <section className={workspaceCard}>
-                                <div className="flex items-center gap-3 border-b border-[#D6E6DB] bg-gradient-to-r from-[#E6F2E9] via-[#F1F8F2] to-[#FAFDFA] px-5 py-4">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#C8E0D0] bg-[#D8EBDD] text-[#317653] shadow-sm">
+                                <div className="flex items-center gap-3 border-b border-white/10 bg-gradient-to-r from-white/[0.06] via-white/[0.025] to-[#A9E5D2]/[0.035] px-5 py-4">
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#A9E5D2]/20 bg-[#A9E5D2]/10 text-[#A9E5D2] shadow-sm">
                                         <Upload size={19} />
                                     </div>
                                     <div>
-                                        <h3 className="font-bold text-[#285B45]">
+                                        <h3 className="font-bold text-slate-100">
                                             Submit Your Work
                                         </h3>
-                                        <p className="mt-0.5 text-xs text-[#718C7D]">
+                                        <p className="mt-0.5 text-xs text-slate-400">
                                             Upload your completed task
                                         </p>
                                     </div>
                                 </div>
 
-                                <div className="bg-[#FCFEFC] p-5">
+                                <div className="bg-[#0B1927]/70 p-5">
                                     {isSubmitted ? (
-                                        <div className="rounded-xl border border-[#B9D9C8] bg-[#F0F8F3] p-4">
-                                            <div className="flex items-center gap-2 text-[#267653]">
+                                        <div className="rounded-xl border border-emerald-300/20 bg-emerald-400/[0.07] p-4">
+                                            <div className="flex items-center gap-2 text-emerald-300">
                                                 <CheckCircle2 size={19} />
                                                 <p className="text-sm font-bold">
                                                     Task Submitted
                                                 </p>
                                             </div>
-                                            <p className="mt-2 text-xs leading-5 text-[#527D67]">
+                                            <p className="mt-2 text-xs leading-5 text-slate-300">
                                                 Your task has been marked as submitted.
                                             </p>
 
@@ -1075,19 +1222,19 @@ function TaskWorkspace({ task, onClose, onSubmitTask, today }) {
                                         <>
                                             <label
                                                 htmlFor="student-answer-file"
-                                                className="flex cursor-pointer flex-col items-center rounded-xl border-2 border-dashed border-[#BDD8C7] bg-[#F1F8F3] px-4 py-6 text-center transition hover:border-[#78AF8E] hover:bg-[#E8F3EB]"
+                                                className="flex cursor-pointer flex-col items-center rounded-xl border-2 border-dashed border-[#A9E5D2]/25 bg-[#A9E5D2]/[0.04] px-4 py-6 text-center transition hover:border-[#A9E5D2]/50 hover:bg-[#A9E5D2]/[0.08]"
                                             >
-                                                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#D8EBDD] text-[#317653] shadow-sm">
+                                                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#A9E5D2]/10 text-[#A9E5D2] shadow-sm">
                                                     <Upload size={23} />
                                                 </div>
 
-                                                <span className="mt-3 text-sm font-bold text-[#285B45]">
+                                                <span className="mt-3 text-sm font-bold text-[#C7F0E3]">
                                                     Choose a file to upload
                                                 </span>
-                                                <span className="mt-1 text-xs leading-5 text-[#718C7D]">
+                                                <span className="mt-1 text-xs leading-5 text-slate-400">
                                                     PDF, Word, PowerPoint, Excel, JPG, or PNG
                                                 </span>
-                                                <span className="mt-1 text-[11px] font-medium text-[#82998B]">
+                                                <span className="mt-1 text-[11px] font-medium text-slate-500">
                                                     Maximum file size: 10 MB
                                                 </span>
                                             </label>
@@ -1128,10 +1275,10 @@ function TaskWorkspace({ task, onClose, onSubmitTask, today }) {
                                                 Submit Task
                                             </button>
 
-                                            <div className="mt-4 flex items-start gap-2 rounded-xl border border-[#E2EAF0] bg-[#F3F7FA] p-3 text-xs leading-5 text-[#738396]">
+                                            <div className="mt-4 flex items-start gap-2 rounded-xl border border-white/10 bg-white/[0.035] p-3 text-xs leading-5 text-slate-400">
                                                 <AlertCircle
                                                     size={15}
-                                                    className="mt-0.5 shrink-0 text-[#8292A3]"
+                                                    className="mt-0.5 shrink-0 text-slate-400"
                                                 />
                                                 <p>
                                                     Double-check your selected file before submitting.
@@ -1149,10 +1296,10 @@ function TaskWorkspace({ task, onClose, onSubmitTask, today }) {
 
             {/* Confirm submission modal */}
             {confirmSubmit && (
-                <div className="fixed inset-0 z-[120] flex items-center justify-center bg-[#0C1C2D]/65 p-4 backdrop-blur-sm">
-                    <div className="w-full max-w-md overflow-hidden rounded-2xl border border-[#C9D6E3] bg-white shadow-2xl">
-                        <div className="bg-[#1B3553] px-6 py-5 text-white">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-white/20 bg-white/10">
+                <div className="fixed inset-0 z-[120] flex items-center justify-center bg-[#06111D]/80 p-4 backdrop-blur-md">
+                    <div className="w-full max-w-md overflow-hidden rounded-2xl border border-white/[0.13] bg-[#0D1B2A] shadow-2xl">
+                        <div className="border-b border-white/10 bg-gradient-to-r from-[#142A43] to-[#0D1B2A] px-6 py-5 text-white">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-[#A9E5D2]/25 bg-[#A9E5D2]/10 text-[#A9E5D2]">
                                 <Send size={23} />
                             </div>
                             <h3 className="mt-4 text-xl font-bold">
@@ -1163,12 +1310,12 @@ function TaskWorkspace({ task, onClose, onSubmitTask, today }) {
                             </p>
                         </div>
 
-                        <div className="p-6">
-                            <div className="rounded-xl border border-[#DCE4EC] bg-[#F7F9FB] p-4">
-                                <p className="text-[10px] font-bold uppercase tracking-wider text-[#8292A3]">
+                        <div className="p-6 text-slate-300">
+                            <div className="rounded-xl border border-white/10 bg-white/[0.035] p-4">
+                                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                                     Task
                                 </p>
-                                <p className="mt-1 break-words text-sm font-bold text-[#1B3553]">
+                                <p className="mt-1 break-words text-sm font-bold text-white">
                                     {task.title}
                                 </p>
 
@@ -1194,7 +1341,7 @@ function TaskWorkspace({ task, onClose, onSubmitTask, today }) {
                                 <button
                                     type="button"
                                     onClick={confirmSubmission}
-                                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1B3553] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#142A43]"
+                                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#A9E5D2] px-4 py-2.5 text-sm font-bold text-[#10251F] shadow-sm transition hover:bg-[#C0F0E1]"
                                 >
                                     <CheckCircle2 size={16} />
                                     Confirm Submit
@@ -1212,11 +1359,11 @@ function TaskWorkspace({ task, onClose, onSubmitTask, today }) {
                         role="dialog"
                         aria-modal="true"
                         aria-labelledby="submission-success-title"
-                        className="w-full max-w-md overflow-hidden rounded-3xl border border-[#D5E5DB] bg-white text-center shadow-[0_25px_80px_rgba(10,30,50,0.30)]"
+                        className="w-full max-w-md overflow-hidden rounded-3xl border border-white/[0.13] bg-[#0D1B2A] text-center text-slate-200 shadow-[0_25px_80px_rgba(0,0,0,0.45)]"
                     >
                         <div className="bg-[#1B3553] px-6 pb-8 pt-7 text-white">
                             <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border-4 border-white/20 bg-white/10 shadow-lg">
-                                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#DDF2E5] text-[#267653]">
+                                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#DDF2E5] text-emerald-300">
                                     <Check size={32} strokeWidth={3} />
                                 </div>
                             </div>
@@ -1238,20 +1385,20 @@ function TaskWorkspace({ task, onClose, onSubmitTask, today }) {
                         </div>
 
                         <div className="px-6 py-6">
-                            <div className="rounded-2xl border border-[#DCE4EC] bg-[#F7F9FB] p-4 text-left">
+                            <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 text-left">
                                 <div className="flex items-start gap-3">
-                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#E3F0EA] text-[#267653]">
+                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#A9E5D2]/25 bg-[#A9E5D2]/10 text-[#A9E5D2]">
                                         <CheckCircle2 size={21} />
                                     </div>
                                     <div className="min-w-0">
-                                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#8292A3]">
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                                             Task Submitted
                                         </p>
-                                        <p className="mt-1 break-words text-sm font-bold text-[#1B3553]">
+                                        <p className="mt-1 break-words text-sm font-bold text-white">
                                             {task.title}
                                         </p>
-                                        <p className="mt-1 text-xs text-[#738396]">
-                                            TSK-{String(task.id).padStart(3, "0")}
+                                        <p className="mt-1 text-xs text-slate-400">
+                                            {task.taskCode || "TSK-001"}
                                         </p>
                                     </div>
                                 </div>
@@ -1263,12 +1410,12 @@ function TaskWorkspace({ task, onClose, onSubmitTask, today }) {
                                 )}
                             </div>
 
-                            <div className="mt-4 flex items-start gap-2 rounded-xl border border-[#B9D9C8] bg-[#F0F8F3] p-3 text-left">
+                            <div className="mt-4 flex items-start gap-2 rounded-xl border border-emerald-300/20 bg-emerald-400/[0.07] p-3 text-left">
                                 <CheckCircle2
                                     size={17}
-                                    className="mt-0.5 shrink-0 text-[#267653]"
+                                    className="mt-0.5 shrink-0 text-emerald-300"
                                 />
-                                <p className="text-xs leading-5 text-[#527D67]">
+                                <p className="text-xs leading-5 text-slate-300">
                                     Your submission status is now marked as Submitted.
                                     Keep a copy of your uploaded file for your records.
                                 </p>
@@ -1295,10 +1442,20 @@ function TaskWorkspace({ task, onClose, onSubmitTask, today }) {
 // --------------------------------------------------
 
 export default function StudentTasks() {
-    const [tasks, setTasks] = useState(() => getAvailableFacultyTasks());
+    const pageProps = usePage().props || {};
+    const providedTasks = Array.isArray(pageProps.facultyTasks)
+        ? pageProps.facultyTasks
+        : Array.isArray(pageProps.databaseTasks)
+          ? pageProps.databaseTasks
+          : Array.isArray(pageProps.tasks)
+            ? pageProps.tasks
+            : Array.isArray(pageProps.tasks?.data)
+              ? pageProps.tasks.data
+              : null;
+    const [tasks, setTasks] = useState(() => getAvailableFacultyTasks(providedTasks));
 
     const [searchValue, setSearchValue] = useState("");
-    const [topicFilter, setTopicFilter] = useState("All Topics");
+    const [topicFilter, setTopicFilter] = useState("Select Subject");
     const [statusFilter, setStatusFilter] = useState("All Status");
     const [dateFilter, setDateFilter] = useState("All Dates");
     const [currentPage, setCurrentPage] = useState(1);
@@ -1316,13 +1473,27 @@ export default function StudentTasks() {
         return () => window.clearInterval(interval);
     }, []);
 
+    const getTasksForSubject = (subject) => tasks.filter((task) => {
+        const taskCode = String(task.subjectCode || task.subject_code || task.subject?.subject_code || "").trim().toUpperCase();
+        const taskName = String(task.subject_name || task.subjectName || task.subject?.subject_name || task.subject?.name || task.topic || "").trim().toLowerCase();
+        const taskSubjectId = String(task.subjectId ?? task.subject_id ?? task.subject?.id ?? "");
+        return taskCode === subject.code || taskName === subject.name.toLowerCase() || taskName === subject.code.toLowerCase() || taskSubjectId === String(subject.id ?? `demo-${subject.code.toLowerCase()}`);
+    });
+
+    const selectSubject = (subject) => {
+        setTopicFilter(subject.name);
+        setSearchValue("");
+        setStatusFilter("All Status");
+        setDateFilter("All Dates");
+        setCurrentPage(1);
+    };
+
     const topics = useMemo(() => {
         const uniqueTopics = [
-            ...new Set(
-                tasks
-                    .map((task) => task.topic || task.subject)
-                    .filter(Boolean),
-            ),
+            ...new Set([
+                ...ENROLLED_SUBJECTS.map((subject) => subject.name),
+                ...tasks.map((task) => task.topic || task.subject).filter(Boolean),
+            ]),
         ];
 
         return uniqueTopics.sort((a, b) => a.localeCompare(b));
@@ -1358,14 +1529,23 @@ export default function StudentTasks() {
                     task.description,
                     task.instructions,
                     getAttachmentName(task.attachment),
-                    `TSK-${String(task.id).padStart(3, "0")}`,
+                    task.taskCode || "TSK-001",
                 ].some((value) =>
                     String(value || "").toLowerCase().includes(search),
                 );
 
+            const selectedSubject = ENROLLED_SUBJECTS.find((subject) => subject.name === topicFilter);
+            const taskSubjectCode = String(task.subjectCode || task.subject_code || task.subject?.subject_code || task.subject?.code || "").trim().toUpperCase();
+            const taskSubjectName = getSubjectLabel(task).trim().toLowerCase();
+            const taskSubjectId = String(task.subjectId ?? task.subject_id ?? task.subject?.id ?? "");
             const matchesTopic =
                 topicFilter === "All Topics" ||
-                (task.topic || task.subject) === topicFilter;
+                (selectedSubject
+                    ? taskSubjectCode === selectedSubject.code ||
+                      taskSubjectName === selectedSubject.name.toLowerCase() ||
+                      taskSubjectName === selectedSubject.code.toLowerCase() ||
+                      taskSubjectId === String(selectedSubject.id ?? `demo-${selectedSubject.code.toLowerCase()}`)
+                    : topicFilter === "Select Subject" || getSubjectLabel(task) === topicFilter);
 
             const matchesStatus =
                 statusFilter === "All Status" || taskStatus === statusFilter;
@@ -1436,7 +1616,7 @@ export default function StudentTasks() {
 
     const clearFilters = () => {
         setSearchValue("");
-        setTopicFilter("All Topics");
+        setTopicFilter("Select Subject");
         setStatusFilter("All Status");
         setDateFilter("All Dates");
         setCurrentPage(1);
@@ -1492,7 +1672,7 @@ export default function StudentTasks() {
 
     return (
         <StudentLayout
-            activeMenu="My Tasks"
+            activeMenu="Subjects"
             showPageInfo={false}
             showSearch={false}
         >
@@ -1500,81 +1680,94 @@ export default function StudentTasks() {
                 {/* Page heading */}
                 <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                     <div className="min-w-0">
-                        <span className="inline-flex items-center gap-1.5 rounded-full border border-[#BFD2E5] bg-[#E2EAF2] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#294B70]">
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-[#A9E5D2]/20 bg-[#A9E5D2]/[0.07] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#A9E5D2]">
                             Academic Management
                         </span>
 
-                        <h1 className="mt-3 text-2xl font-bold tracking-tight text-[#1B3553] sm:text-3xl">
-                            My Tasks
+                        <h1 className="mt-3 text-2xl font-bold tracking-tight text-white sm:text-3xl">
+                            Subjects
                         </h1>
 
-                        <p className="mt-1 text-sm text-[#738396]">
+                        <p className="mt-1 text-sm text-slate-400">
                             View tasks assigned by your faculty, review instructions,
                             and submit your work before the deadline.
                         </p>
                     </div>
                 </div>
 
-                {/* Summary cards */}
-                <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                    <SummaryCard
-                        title="Total Tasks"
-                        value={counts.total}
-                        description="Available faculty tasks"
-                        icon={ClipboardList}
-                        gradient="from-[#E2EAF2] via-[#EDF2F7] to-white"
-                        borderColor="border-[#AFC1D4]"
-                        accentColor="bg-[#1B3553]/20"
-                        iconBackground="bg-[#1B3553]"
-                    />
+                {/* Enrolled subjects */}
+                <section className="mb-6 rounded-2xl border border-white/[0.13] bg-gradient-to-br from-white/[0.07] to-white/[0.02] p-5 shadow-[0_18px_55px_rgba(0,0,0,0.18)] backdrop-blur-[22px]">
+                    <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                            <h2 className="text-sm font-bold text-white">Enrolled Subjects</h2>
+                            <p className="mt-1 text-xs text-slate-400">Tasks are shown for these accounting and business subjects.</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setTopicFilter("All Topics");
+                                    setSearchValue("");
+                                    setStatusFilter("All Status");
+                                    setDateFilter("All Dates");
+                                    setCurrentPage(1);
+                                }}
+                                className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-semibold text-slate-200 transition hover:border-[#A9E5D2]/30 hover:bg-[#A9E5D2]/[0.06] hover:text-[#A9E5D2]"
+                            >
+                                View all tasks
+                            </button>
+                            <span className="rounded-full border border-[#A9E5D2]/20 bg-[#A9E5D2]/[0.07] px-3 py-1 text-[10px] font-bold text-[#A9E5D2]">{ENROLLED_SUBJECTS.length} Subjects</span>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                        {ENROLLED_SUBJECTS.map((subject) => {
+                            const subjectTaskCount = getTasksForSubject(subject).length;
+                            const isSelected = topicFilter === subject.name;
+                            return (
+                                <button
+                                    key={subject.code}
+                                    type="button"
+                                    aria-pressed={isSelected}
+                                    onClick={() => selectSubject(subject)}
+                                    className={`rounded-xl border p-3.5 text-left transition ${isSelected ? "border-[#A9E5D2]/40 bg-[#A9E5D2]/[0.08] shadow-[0_0_0_1px_rgba(169,229,210,0.08)]" : "border-white/10 bg-[#091725]/60 hover:border-white/20 hover:bg-white/[0.04]"}`}
+                                >
+                                    <div className="flex items-center justify-between gap-3">
+                                        <span className="text-[10px] font-bold tracking-wider text-[#A9E5D2]">{subject.code}</span>
+                                        <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[10px] font-semibold text-slate-300">
+                                            {subjectTaskCount} {subjectTaskCount === 1 ? "task" : "tasks"}
+                                        </span>
+                                    </div>
+                                    <span className="mt-1 block text-sm font-semibold text-slate-100">{subject.name}</span>
+                                    <span className="mt-2 block text-xs text-slate-400">{isSelected ? "Showing subject tasks" : "Click to view tasks"}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </section>
 
-                    <SummaryCard
-                        title="Pending Tasks"
-                        value={counts.pending}
-                        description="Not yet submitted"
-                        icon={Clock3}
-                        gradient="from-[#FAF0DC] via-[#FCF6E9] to-white"
-                        borderColor="border-[#E3D1A8]"
-                        accentColor="bg-[#B18A37]/30"
-                        iconBackground="bg-[#8A6A25]"
-                    />
-
-                    <SummaryCard
-                        title="Completed Tasks"
-                        value={counts.completed}
-                        description="Successfully submitted"
-                        icon={CheckCircle2}
-                        gradient="from-[#E3F0EA] via-[#EFF6F2] to-white"
-                        borderColor="border-[#B9D5C8]"
-                        accentColor="bg-[#31805E]/30"
-                        iconBackground="bg-[#31795B]"
-                    />
-
-                    <SummaryCard
-                        title="Overdue Tasks"
-                        value={counts.overdue}
-                        description="Past the due date"
-                        icon={AlertCircle}
-                        gradient="from-[#F8E5E7] via-[#FBF0F1] to-white"
-                        borderColor="border-[#E2BFC3]"
-                        accentColor="bg-[#A94A55]/30"
-                        iconBackground="bg-[#A94A55]"
-                    />
-                </div>
+                {topicFilter === "Select Subject" && (
+                    <section className="mb-6 flex flex-col items-center justify-center rounded-2xl border border-dashed border-white/[0.16] bg-gradient-to-br from-white/[0.05] to-white/[0.015] px-6 py-12 text-center">
+                        <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl border border-[#A9E5D2]/20 bg-[#A9E5D2]/[0.07] text-[#A9E5D2]">
+                            <BookOpen size={25} />
+                        </div>
+                        <h2 className="text-base font-bold text-white">Select a subject to view tasks</h2>
+                        <p className="mt-1 max-w-md text-sm text-slate-400">Choose one of your enrolled subjects above. Its assigned tasks, status, and deadlines will appear here.</p>
+                    </section>
+                )}
 
                 {/* Task list */}
-                <section className="overflow-hidden rounded-2xl border border-[#C9D6E3] bg-white shadow-[0_5px_20px_rgba(27,53,83,0.06)]">
-                    <div className="flex flex-col gap-3 border-b border-[#C9D6E3] bg-gradient-to-r from-[#F8FAFC] to-[#EEF3F8] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <section className={`overflow-hidden rounded-2xl border border-white/[0.13] bg-gradient-to-br from-white/[0.07] to-white/[0.02] shadow-[0_18px_55px_rgba(0,0,0,0.18)] backdrop-blur-[22px] ${topicFilter === "Select Subject" ? "hidden" : ""}`}>
+                    <div className="flex flex-col gap-3 border-b border-white/10 bg-[#0C1B2A]/80 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <h2 className="text-base font-bold text-[#1B3553]">
+                            <h2 className="text-base font-bold text-white">
                                 Task List
                             </h2>
-                            <p className="mt-0.5 text-xs text-[#738396]">
+                            <p className="mt-0.5 text-xs text-slate-400">
                                 Tasks and deadlines posted by your faculty
                             </p>
                         </div>
 
-                        <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-[#C9D6E3] bg-white px-3 py-1.5 text-xs font-semibold text-[#526579]">
+                        <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-slate-300">
                             <ClipboardList size={14} />
                             {filteredTasks.length}{" "}
                             {filteredTasks.length === 1 ? "task" : "tasks"}
@@ -1582,12 +1775,12 @@ export default function StudentTasks() {
                     </div>
 
                     {/* Search and filters */}
-                    <div className="border-b border-[#DCE4EC] bg-[#F7F9FB] px-5 py-4">
+                    <div className="border-b border-white/10 bg-[#091725]/70 px-5 py-4">
                         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(220px,1fr)_190px_190px_190px]">
                             <div className="relative min-w-0">
                                 <Search
                                     size={17}
-                                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8292A3]"
+                                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
                                 />
                                 <input
                                     type="text"
@@ -1598,7 +1791,7 @@ export default function StudentTasks() {
                                     }}
                                     placeholder="Search tasks or topics..."
                                     aria-label="Search tasks"
-                                    className="w-full rounded-xl border border-[#C9D6E4] bg-white py-2.5 pl-10 pr-4 text-sm text-[#243A52] outline-none placeholder:text-[#9AA8B7] focus:border-[#294B70] focus:ring-2 focus:ring-[#294B70]/10"
+                                    className="w-full rounded-xl border border-white/10 bg-[#091725] py-2.5 pl-10 pr-4 text-sm text-slate-100 outline-none placeholder:text-slate-500 focus:border-[#A9E5D2]/70"
                                 />
                             </div>
 
@@ -1608,7 +1801,7 @@ export default function StudentTasks() {
                                     setTopicFilter(event.target.value);
                                     setCurrentPage(1);
                                 }}
-                                className={inputClass}
+                                className="w-full rounded-xl border border-white/10 bg-[#091725] px-3.5 py-2.5 text-sm text-slate-100 outline-none transition hover:border-white/20 focus:border-[#A9E5D2]/70 focus:ring-2 focus:ring-[#A9E5D2]/10 [color-scheme:dark]"
                                 aria-label="Filter by topic"
                             >
                                 <option value="All Topics">All Topics</option>
@@ -1625,7 +1818,7 @@ export default function StudentTasks() {
                                     setStatusFilter(event.target.value);
                                     setCurrentPage(1);
                                 }}
-                                className={inputClass}
+                                className="w-full rounded-xl border border-white/10 bg-[#091725] px-3.5 py-2.5 text-sm text-slate-100 outline-none transition hover:border-white/20 focus:border-[#A9E5D2]/70 focus:ring-2 focus:ring-[#A9E5D2]/10 [color-scheme:dark]"
                                 aria-label="Filter by status"
                             >
                                 {[
@@ -1647,7 +1840,7 @@ export default function StudentTasks() {
                                     setDateFilter(event.target.value);
                                     setCurrentPage(1);
                                 }}
-                                className={inputClass}
+                                className="w-full rounded-xl border border-white/10 bg-[#091725] px-3.5 py-2.5 text-sm text-slate-100 outline-none transition hover:border-white/20 focus:border-[#A9E5D2]/70 focus:ring-2 focus:ring-[#A9E5D2]/10 [color-scheme:dark]"
                                 aria-label="Filter by due date"
                             >
                                 {[
@@ -1670,12 +1863,11 @@ export default function StudentTasks() {
                     <div className="w-full overflow-x-auto">
                         <table className="w-full min-w-[1200px] border-collapse text-left">
                             <thead>
-                                <tr className="border-b border-[#C9D6E3] bg-[#E7EDF3]">
+                                <tr className="border-b border-white/10 bg-white/[0.04]">
                                     {[
                                         "#",
                                         "Task Title",
-                                        "Topic",
-                                        "Assigned Section",
+                                        "Subject",
                                         "Date Posted",
                                         "Due Date",
                                         "Status",
@@ -1683,7 +1875,7 @@ export default function StudentTasks() {
                                     ].map((heading) => (
                                         <th
                                             key={heading}
-                                            className="whitespace-nowrap px-5 py-3.5 text-[10px] font-bold uppercase tracking-[0.09em] text-[#53677D]"
+                                            className="whitespace-nowrap px-5 py-3.5 text-[10px] font-bold uppercase tracking-[0.09em] text-slate-400"
                                         >
                                             {heading}
                                         </th>
@@ -1691,7 +1883,7 @@ export default function StudentTasks() {
                                 </tr>
                             </thead>
 
-                            <tbody className="divide-y divide-[#E5EBF1]">
+                            <tbody className="divide-y divide-white/[0.07]">
                                 {paginatedTasks.map((task, index) => {
                                     const status = getTaskStatus(task, currentDate);
                                     const isSubmitted = status === "Submitted";
@@ -1700,49 +1892,45 @@ export default function StudentTasks() {
                                     return (
                                         <tr
                                             key={task.id}
-                                            className="group transition-colors hover:bg-[#F7F9FC]"
+                                            className="group transition-colors hover:bg-white/[0.04]"
                                         >
-                                            <td className="px-5 py-4 text-sm font-semibold text-[#8292A3]">
+                                            <td className="px-5 py-4 text-sm font-semibold text-slate-400">
                                                 {(safePage - 1) * itemsPerPage + index + 1}
                                             </td>
 
                                             <td className="px-5 py-4">
                                                 <div className="flex min-w-0 items-center gap-3">
-                                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#C9D6E3] bg-[#EEF4F9] text-[#294B70]">
+                                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#A9E5D2]/25 bg-[#A9E5D2]/10 text-[#A9E5D2] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
                                                         <BookOpen size={18} />
                                                     </div>
                                                     <div className="min-w-0">
-                                                        <p className="max-w-[250px] truncate text-sm font-semibold text-[#243A52]">
+                                                        <p className="max-w-[250px] truncate text-sm font-semibold text-slate-100">
                                                             {task.title}
                                                         </p>
-                                                        <p className="mt-1 text-[11px] text-[#8292A3]">
-                                                            TSK-{String(task.id).padStart(3, "0")}
+                                                        <p className="mt-1 text-[11px] text-slate-400">
+                                                            {task.taskCode || "TSK-001"}
                                                         </p>
                                                     </div>
                                                 </div>
                                             </td>
 
-                                            <td className="px-5 py-4 text-sm text-[#526579]">
-                                                {task.topic || "—"}
-                                            </td>
-
                                             <td className="px-5 py-4">
-                                                <div className="flex items-center gap-2 whitespace-nowrap text-sm text-[#526579]">
-                                                    <Users size={15} className="text-[#8292A3]" />
-                                                    {task.section || "—"}
+                                                <div className="flex min-w-[180px] flex-col gap-1">
+                                                    <span className="text-[10px] font-bold tracking-wider text-[#A9E5D2]">{task.subjectCode || task.subject_code || ""}</span>
+                                                    <span className="text-sm text-slate-300">{getSubjectLabel(task)}</span>
                                                 </div>
                                             </td>
 
                                             <td className="px-5 py-4">
                                                 <div className="flex items-center gap-2 whitespace-nowrap text-sm text-[#526579]">
-                                                    <CalendarDays size={15} className="text-[#8292A3]" />
+                                                    <CalendarDays size={15} className="text-slate-400" />
                                                     {formatDate(getDatePosted(task))}
                                                 </div>
                                             </td>
 
                                             <td className="px-5 py-4">
                                                 <div className="flex items-center gap-2 whitespace-nowrap text-sm text-[#526579]">
-                                                    <CalendarDays size={15} className="text-[#8292A3]" />
+                                                    <CalendarDays size={15} className="text-slate-400" />
                                                     {formatDate(task.dueDate)}
                                                 </div>
                                             </td>
@@ -1760,9 +1948,9 @@ export default function StudentTasks() {
                                                         onClick={() => openTask(task)}
                                                        className="
                                                         flex h-8 w-8 shrink-0 items-center justify-center
-                                                        rounded-lg border border-[#142A43] bg-[#1B3553]
-                                                        text-white shadow-sm transition-all duration-200
-                                                        hover:border-[#0F2035] hover:bg-[#142A43]
+                                                        rounded-lg border border-white/10 bg-white/[0.05]
+                                                        text-slate-200 transition-all duration-200
+                                                        hover:border-[#A9E5D2]/30 hover:bg-[#A9E5D2]/10 hover:text-[#A9E5D2]
                                                         active:scale-95
                                             "
                                                     >   
@@ -1781,7 +1969,7 @@ export default function StudentTasks() {
                                                         onClick={() =>
                                                             downloadAttachment(task.attachment)
                                                         }
-                                                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#B9D5C8] bg-[#EAF4EE] text-[#267653] transition hover:bg-[#D7EBDD] disabled:cursor-not-allowed disabled:opacity-40"
+                                                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/[0.05] text-slate-300 transition hover:border-[#A9E5D2]/30 hover:bg-[#A9E5D2]/10 hover:text-[#A9E5D2] disabled:cursor-not-allowed disabled:opacity-30"
                                                     >
                                                         <Download size={15} />
                                                     </button>
@@ -1790,7 +1978,7 @@ export default function StudentTasks() {
                                                         <button
                                                             type="button"
                                                             onClick={() => handleStartTask(task)}
-                                                            className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-[#1B3553] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#142A43]"
+                                                            className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-[#A9E5D2]/30 bg-[#A9E5D2] px-3.5 py-2 text-xs font-bold text-[#10251F] shadow-sm transition-all duration-200 hover:border-[#C0F0E1] hover:bg-[#C0F0E1] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-[#A9E5D2]/40"
                                                         >
                                                             {canContinue ? (
                                                                 <RotateCcw size={13} />
@@ -1809,7 +1997,7 @@ export default function StudentTasks() {
                                 {paginatedTasks.length === 0 && (
                                     <tr>
                                         <td colSpan={8} className="px-5 py-16 text-center">
-                                            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-[#C9D6E3] bg-[#EEF4F9] text-[#8292A3]">
+                                            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-[#A9E5D2]/20 bg-[#A9E5D2]/[0.07] text-[#A9E5D2]">
                                                 {hasFilters ? (
                                                     <Search size={23} />
                                                 ) : (
@@ -1823,7 +2011,7 @@ export default function StudentTasks() {
                                                     : "No tasks available"}
                                             </h3>
 
-                                            <p className="mx-auto mt-1 max-w-sm text-xs leading-5 text-[#8292A3]">
+                                            <p className="mx-auto mt-1 max-w-sm text-xs leading-5 text-slate-400">
                                                 {hasFilters
                                                     ? "Try changing your search or filters to find a task."
                                                     : "Active tasks assigned by your faculty will appear here."}
@@ -1847,20 +2035,20 @@ export default function StudentTasks() {
                     </div>
 
                     {/* Pagination */}
-                    <div className="flex flex-col gap-3 border-t border-[#DCE4EC] bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                        <p className="text-xs text-[#738396]">
+                    <div className="flex flex-col gap-3 border-t border-white/10 bg-[#0C1B2A]/70 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="text-xs text-slate-400">
                             Showing{" "}
-                            <strong className="font-semibold text-[#243A52]">
+                            <strong className="font-semibold text-slate-100">
                                 {filteredTasks.length === 0
                                     ? 0
                                     : (safePage - 1) * itemsPerPage + 1}
                             </strong>{" "}
                             to{" "}
-                            <strong className="font-semibold text-[#243A52]">
+                            <strong className="font-semibold text-slate-100">
                                 {Math.min(safePage * itemsPerPage, filteredTasks.length)}
                             </strong>{" "}
                             of{" "}
-                            <strong className="font-semibold text-[#243A52]">
+                            <strong className="font-semibold text-slate-100">
                                 {filteredTasks.length}
                             </strong>{" "}
                             tasks
@@ -1874,7 +2062,7 @@ export default function StudentTasks() {
                                 onClick={() =>
                                     setCurrentPage((page) => Math.max(1, page - 1))
                                 }
-                                className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#C9D6E3] bg-white text-[#526579] hover:bg-[#EEF4F9] disabled:cursor-not-allowed disabled:opacity-40"
+                                className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] text-slate-300 hover:border-[#A9E5D2]/25 hover:bg-[#A9E5D2]/[0.07] hover:text-[#A9E5D2] disabled:cursor-not-allowed disabled:opacity-40"
                             >
                                 <ChevronLeft size={17} />
                             </button>
@@ -1890,7 +2078,7 @@ export default function StudentTasks() {
                                     className={`flex h-9 min-w-9 items-center justify-center rounded-lg border px-2.5 text-xs font-semibold ${
                                         page === safePage
                                             ? "border-[#1B3553] bg-[#1B3553] text-white shadow-sm"
-                                            : "border-[#C9D6E3] bg-white text-[#526579] hover:bg-[#EEF4F9]"
+                                            : "border-white/10 bg-white/[0.04] text-slate-300 hover:border-[#A9E5D2]/25 hover:bg-[#A9E5D2]/[0.07] hover:text-[#A9E5D2]"
                                     }`}
                                 >
                                     {page}
@@ -1906,7 +2094,7 @@ export default function StudentTasks() {
                                         Math.min(totalPages, page + 1),
                                     )
                                 }
-                                className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#C9D6E3] bg-white text-[#526579] hover:bg-[#EEF4F9] disabled:cursor-not-allowed disabled:opacity-40"
+                                className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] text-slate-300 hover:border-[#A9E5D2]/25 hover:bg-[#A9E5D2]/[0.07] hover:text-[#A9E5D2] disabled:cursor-not-allowed disabled:opacity-40"
                             >
                                 <ChevronRight size={17} />
                             </button>

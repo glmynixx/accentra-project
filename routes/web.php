@@ -45,8 +45,8 @@ Route::inertia('/student/dashboard', 'studentDashboard')
     ->name('student.dashboard');
 
 // Student Pages
-// Route::inertia('/student/sections', 'studentSections')
- //   ->name('student.sections');
+ Route::inertia('/student/sections', 'studentMySection')
+    ->name('student.sections');
 
 Route::inertia('/student/content', 'studentContent')
     ->name('student.content');

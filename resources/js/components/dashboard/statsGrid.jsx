@@ -16,4 +16,4 @@ export default function StatsGrid({ stats = [], compact = false }) {
             ))}
         </div>
     );
-}
+}  
