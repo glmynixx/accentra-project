@@ -26,7 +26,7 @@ import FacultyLayout from "../components/layout/facultyLayout";
 const initialFacultyData = {
     facultyId: "FAC-001",
     name: "Cai Soriano",
-    email: "cai.soriano@example.com",
+    email: "cai.soriano@accentra.com",
     contactNo: "09123456789",
     specialization: "Accounting",
     address: "Malolos, Bulacan",
