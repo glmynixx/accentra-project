@@ -15,7 +15,7 @@ const menuItems = [
     },
   
     {
-        label: "Subjects",
+        label: "Tasks",
         icon: "clipboard-list",
         path: "/student/tasks",
     },

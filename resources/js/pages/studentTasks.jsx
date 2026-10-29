@@ -1672,7 +1672,7 @@ export default function StudentTasks() {
 
     return (
         <StudentLayout
-            activeMenu="Subjects"
+            activeMenu="Tasks"
             showPageInfo={false}
             showSearch={false}
         >
