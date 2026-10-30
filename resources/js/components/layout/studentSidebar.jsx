@@ -3,6 +3,7 @@ import { useRef, useState } from 'react';
 import { usePage } from '@inertiajs/react';
 
 import Icon from '../common/icon';
+
 import SystemLogo from '../common/systemLogo';
 
 const menuItems = [
@@ -195,9 +196,9 @@ export default function StudentSidebar({
 
         active
 
-            ? 'bg-white text-[#142A43] shadow-[0_5px_18px_rgba(0,0,0,0.12)]'
+            ? 'border border-[#A9E5D2]/20 bg-[#A9E5D2]/10 text-[#A9E5D2] shadow-[0_4px_20px_rgba(169,229,210,0.08)]'
 
-            : 'text-[#C7D2E0] hover:bg-white/[0.08] hover:text-white'
+            : 'border border-transparent text-white/65 hover:border-[#A9E5D2]/20 hover:bg-[#A9E5D2]/[0.09] hover:text-[#A9E5D2]'
 
     }`;
 
@@ -233,7 +234,7 @@ export default function StudentSidebar({
 
                 {active && (
 
-                    <span className="absolute top-1/2 bottom-1/2 left-0 h-7 w-1 -translate-y-1/2 rounded-r-full bg-[#6FA58F]" />
+                    <span className="absolute top-1/2 bottom-1/2 left-0 h-7 w-1 -translate-y-1/2 rounded-r-full bg-[#A9E5D2]" />
 
                 )}
 
@@ -245,9 +246,9 @@ export default function StudentSidebar({
 
                         active
 
-                            ? 'text-[#36534E]'
+                            ? 'text-[#A9E5D2]'
 
-                            : 'text-[#8FA3BA] group-hover:text-white'
+                            : 'text-white/40 group-hover:text-[#A9E5D2]'
 
                     }`}
 
@@ -267,7 +268,7 @@ export default function StudentSidebar({
 
             <aside
 
-                className={`fixed top-0 left-0 z-[60] flex h-screen w-[260px] shrink-0 flex-col overflow-hidden border-r border-[#263B55] bg-[#142A43] shadow-[8px_0_30px_rgba(15,35,60,0.20)] transition-transform duration-300 ease-out ${open ? 'translate-x-0' : '-translate-x-full'} min-[769px]:translate-x-0`}
+                className={`fixed top-0 left-0 z-[60] flex h-screen w-[260px] shrink-0 flex-col overflow-hidden border-r border-white/[0.13] bg-[#071522]/95 shadow-[8px_0_40px_rgba(0,0,0,0.25)] backdrop-blur-[22px] transition-transform duration-300 ease-out ${open ? 'translate-x-0' : '-translate-x-full'} min-[769px]:translate-x-0`}
 
             >
 
@@ -287,7 +288,7 @@ export default function StudentSidebar({
 
                     <div className="flex items-center gap-3">
 
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#142A43] shadow-md">
+                        <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border-2 border-[#A9E5D2]/30 bg-[#A9E5D2]/10 shadow-[0_0_18px_rgba(169,229,210,0.10)]">
 
                             <SystemLogo />
 
@@ -351,7 +352,7 @@ export default function StudentSidebar({
 
                         ) && (
 
-                            <span className="absolute top-1/2 bottom-1/2 left-0 h-7 w-1 -translate-y-1/2 rounded-r-full bg-[#6FA58F]" />
+                            <span className="absolute top-1/2 bottom-1/2 left-0 h-7 w-1 -translate-y-1/2 rounded-r-full bg-[#A9E5D2]" />
 
                         )}
 
@@ -367,9 +368,9 @@ export default function StudentSidebar({
 
                                 )
 
-                                    ? 'text-[#36534E]'
+                                    ? 'text-[#A9E5D2]'
 
-                                    : 'text-[#8FA3BA] group-hover:text-white'
+                                    : 'text-white/40 group-hover:text-[#A9E5D2]'
 
                             }`}
 
@@ -425,7 +426,7 @@ export default function StudentSidebar({
 
                                                 ? 'bg-white text-[#142A43] shadow-[0_3px_12px_rgba(0,0,0,0.10)]'
 
-                                                : 'text-[#C7D2E0] hover:bg-white/[0.08] hover:text-white'
+                                                : 'border border-transparent text-white/65 hover:border-[#A9E5D2]/20 hover:bg-[#A9E5D2]/[0.09] hover:text-[#A9E5D2]'
 
                                         }`}
 
@@ -439,9 +440,9 @@ export default function StudentSidebar({
 
                                                 active
 
-                                                    ? 'text-[#36534E]'
+                                                    ? 'text-[#A9E5D2]'
 
-                                                    : 'text-[#8FA3BA] group-hover:text-white'
+                                                    : 'text-white/40 group-hover:text-[#A9E5D2]'
 
                                             }`}
 
@@ -551,7 +552,7 @@ export default function StudentSidebar({
 
                         {/* Navy Header */}
 
-                        <div className="flex items-center justify-between border-b border-white/10 bg-[#142A43] px-6 py-5">
+                        <div className="flex items-center justify-between border-b border-white/10 bg-[#102437] px-6 py-5">
 
                             <div className="flex items-center gap-3">
 
@@ -694,6 +695,5 @@ export default function StudentSidebar({
             )}
 
         </>
-
     );
 }

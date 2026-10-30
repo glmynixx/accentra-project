@@ -21,6 +21,7 @@ use Illuminate\Notifications\Notifiable;
     'address',
     'status',
     'section_id',
+    'subjects',
 ])]
 #[Hidden(['password', 'remember_token'])]
 class Student extends Authenticatable
@@ -33,6 +34,7 @@ class Student extends Authenticatable
     {
         return [
             'password' => 'hashed',
+            'subjects' => 'array',
         ];
     }
 

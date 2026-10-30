@@ -13,6 +13,8 @@ use App\Http\Controllers\SectionController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\StudentController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Faculty\FacultySectionController;
+use App\Http\Controllers\Student\StudentTaskController;
 
 
 // Public landing page
@@ -68,7 +70,15 @@ Route::middleware(['auth:student,web', 'active.student'])->group(function () {
     Route::inertia('/student/dashboard', 'studentDashboard')->name('student.dashboard');
     Route::post('/student/logout', [StudentLoginController::class, 'logout'])->name('student.logout');
     Route::inertia('/student/content', 'studentContent')->name('student.content');
-    Route::inertia('/student/tasks', 'studentTasks')->name('student.tasks');
+    Route::get('/student/tasks', [
+    StudentTaskController::class,
+    'index'
+])->name('student.tasks');
+
+Route::get('/student/tasks/{task}/attachment', [
+    StudentTaskController::class,
+    'downloadAttachment'
+])->name('student.tasks.attachment');
     Route::inertia('/student/accounting/chart-of-accounts', 'studentChartOfAccounts')->name('student.accounting.chart-of-accounts');
     Route::inertia('/student/accounting/journal-entries', 'studentJournalEntries')->name('student.accounting.journal-entries');
     Route::inertia('/student/accounting/general-ledger', 'studentGeneralLedger')->name('student.accounting.general-ledger');
@@ -88,9 +98,32 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/settings/academic', [SettingsController::class, 'academic'])->name('settings.academic');
     Route::post('/settings/academic', [SettingsController::class, 'updateAcademic'])->name('settings.academic.update');
     Route::get('/settings/information', [SettingsController::class, 'information'])->name('settings.information');
-    Route::get('/students', [StudentController::class, 'index'])->name('students');
-    Route::post('/students', [StudentController::class, 'store'])->name('students.store');
-    Route::put('/students/{student}', [StudentController::class, 'update'])->name('students.update');
+    // Student Management
+    Route::get('/students', [StudentController::class, 'index'])
+        ->name('students');
+
+    Route::post('/students', [StudentController::class, 'store'])
+        ->name('students.store');
+
+    Route::put('/students/{student}', [StudentController::class, 'update'])
+        ->name('students.update');
+
+    // Assign Subjects to Student
+    Route::put('/students/{student}/subjects', [
+        StudentController::class,
+        'assignSubjects'
+    ])->name('students.subjects');
+
+    Route::patch('/students/{student}/status', [
+        StudentController::class,
+        'updateStatus'
+    ])->name('students.status');
+
+    Route::delete('/students/{student}', [
+        StudentController::class,
+        'destroy'
+    ])->name('students.destroy');
+
     Route::patch('/students/{student}/status', [StudentController::class, 'updateStatus'])->name('students.status');
     Route::delete('/students/{student}', [StudentController::class, 'destroy'])->name('students.destroy');
 
@@ -114,18 +147,28 @@ Route::middleware(['auth', 'admin'])->group(function () {
 Route::middleware(['auth', 'faculty'])->group(function () {
     Route::inertia('/faculty/dashboard', 'facultyDashboard')->name('faculty.dashboard');
     Route::inertia('/faculty/content', 'contentManagement')->name('faculty.content');
-    Route::inertia('/faculty/sections', 'facultySections')->name('faculty.portal.sections');
+    Route::get('/faculty/sections', [
+    FacultySectionController::class,
+    'index'
+])->name('faculty.portal.sections');
     Route::inertia('/faculty/submissions', 'facultySubmissions')->name('faculty.submissions');
     Route::inertia('/faculty/my-account', 'facultyMyAccount')->name('faculty.my-account');
 
     Route::get('/faculty/tasks', [TaskController::class, 'index'])->name('faculty.tasks');
+    Route::get('/faculty/tasks/{task}/attachment', [TaskController::class, 'downloadAttachment'])->name('faculty.tasks.attachment');
     Route::post('/faculty/tasks', [TaskController::class, 'store'])->name('faculty.tasks.store');
     Route::post('/faculty/tasks/{id}', [TaskController::class, 'update'])->whereNumber('id')->name('faculty.tasks.update');
     Route::patch('/faculty/tasks/{id}/publish', [TaskController::class, 'publish'])->whereNumber('id')->name('faculty.tasks.publish');
     Route::patch('/faculty/tasks/{id}/cancel', [TaskController::class, 'cancel'])->whereNumber('id')->name('faculty.tasks.cancel');
     Route::delete('/faculty/tasks/{id}', [TaskController::class, 'destroy'])->whereNumber('id')->name('faculty.tasks.destroy');
-    Route::get('/faculty/tasks/{id}/attachment', [TaskController::class, 'downloadAttachment'])->whereNumber('id')->name('faculty.tasks.attachment');
+    });
+
+// Student Sections
+Route::middleware(['auth:student,web', 'active.student'])->group(function () {
+    Route::inertia('/student/sections', 'studentMySection')
+        ->name('student.sections');
+});
 
    
 
-    });
+

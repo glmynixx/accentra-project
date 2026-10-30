@@ -113,8 +113,12 @@ export default function Dashboard() {
                 <div className="mt-6 min-w-0 space-y-6">
                     <section className="flex min-w-0 flex-wrap items-end justify-between gap-4">
                         <div className="min-w-0">
-                            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#A9E5D2]">Administration</p>
-                            <h1 className="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">Dashboard Overview</h1>
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#A9E5D2]/20 bg-[#A9E5D2]/[0.07] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#A9E5D2]">
+                                Administration
+                            </span>
+                            <h1 className="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">
+                                Dashboard Overview
+                            </h1>
                             <p className="mt-2 max-w-2xl text-sm leading-6 text-white/55">
                                 Monitor users, academic sections, and recent system activities in one place.
                             </p>

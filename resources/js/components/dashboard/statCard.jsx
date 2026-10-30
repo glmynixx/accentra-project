@@ -1,16 +1,24 @@
-import React from "react";
+
 import {
+    Users,
     UsersRound,
     GraduationCap,
     UserRound,
     Layers3,
+    ClipboardList,
+    FileClock,
+    FileCheck2,
 } from "lucide-react";
 
 const iconMap = {
+    "users": Users,
     "users-round": UsersRound,
     "graduation-cap": GraduationCap,
     "user-round": UserRound,
     "layers-3": Layers3,
+    "clipboard-list": ClipboardList,
+    "file-clock": FileClock,
+    "file-check-2": FileCheck2,
 };
 
 export default function StatCard({

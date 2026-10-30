@@ -17,6 +17,8 @@ use App\Support\PasswordSetupLink;
 use App\Support\AccountIdGenerator;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
+use App\Models\Task;
+use App\Models\Section;
 
 class FacultyController extends Controller
 {
@@ -178,37 +180,50 @@ public function update(Request $request, Faculty $faculty)
 
 
     public function updateStatus(Request $request, Faculty $faculty)
-    {
-        $validated = $request->validate([
-            'status' => 'required|in:Active,Inactive',
+{
+    $validated = $request->validate([
+        'status' => 'required|in:Active,Inactive',
+    ]);
+
+    DB::transaction(function () use ($faculty, $validated) {
+        $faculty->update([
+            'status' => $validated['status'],
         ]);
 
-        $faculty->update($validated);
+        if ($validated['status'] === 'Inactive') {
+            Section::where('faculty_id', $faculty->id)
+                ->update([
+                    'faculty_id' => null,
+                ]);
+        }
+    });
 
-        ActivityLog::create([
-        'actor' => 'Admin',
-        'action' => $validated['status'] === 'Active'
-            ? 'activated a faculty member'
-            : 'deactivated a faculty member',
-        'module' => 'Faculty Management',
-        'description' => $faculty->name,
-        'icon' => 'user-check',
-        ]);
-
-        return redirect()->route('faculty');
-    }
+    return back()->with(
+        'success',
+        'Faculty status updated successfully.'
+    );
+}
 
     
 public function destroy(Faculty $faculty)
 {
+    // Prevent deletion when faculty has existing tasks
+    $taskCount = Task::where('faculty_id', $faculty->id)->count();
+
+    if ($taskCount > 0) {
+        return back()->withErrors([
+            'delete' => "Cannot delete {$faculty->name}. This faculty member has {$taskCount} existing task(s). Please reassign or remove the tasks first."
+        ]);
+    }
+
     DB::transaction(function () use ($faculty) {
         $facultyName = $faculty->name;
         $userId = $faculty->user_id;
 
-        // Delete the Faculty profile first
+        // Delete faculty profile
         $faculty->delete();
 
-        // Delete its linked login account
+        // Delete linked faculty login account
         if ($userId) {
             User::whereKey($userId)
                 ->where('role', 'Faculty')
@@ -216,17 +231,16 @@ public function destroy(Faculty $faculty)
         }
 
         ActivityLog::create([
-            'actor' => 'Admin',
-            'action' => 'deleted a faculty member',
-            'module' => 'Faculty Management',
-            'description' => $facultyName,
-            'icon' => 'trash-2',
+        'actor' => 'Admin',
+        'module' => 'Faculty Management',
+        'action' => 'deleted a faculty member',
+        'description' => "Deleted faculty member: {$facultyName}",
+
         ]);
+        
     });
 
-    return redirect()
-        ->route('faculty')
-        ->with('success', 'Faculty deleted successfully.');
+    return back()->with('success', 'Faculty member deleted successfully.');
 }
 
 

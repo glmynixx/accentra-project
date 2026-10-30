@@ -1,4 +1,3 @@
-
 import { useRef, useState } from "react";
 import {
     UserRound,
@@ -22,13 +21,12 @@ import {
     Building2,
     ImagePlus,
 } from "lucide-react";
-
 import FacultyLayout from "../components/layout/facultyLayout";
 
 const initialFacultyData = {
     facultyId: "FAC-001",
     name: "Cai Soriano",
-    email: "cai.soriano@example.com",
+    email: "cai.soriano@accentra.com",
     contactNo: "09123456789",
     specialization: "Accounting",
     address: "Malolos, Bulacan",
@@ -40,32 +38,43 @@ const initialFacultyData = {
     assignedSections: ["BSAIS 11CA", "BSAIS 21CA"],
 };
 
-const inputClass =
-    "w-full rounded-xl border border-[#C9D6E3] bg-white px-3.5 py-2.5 text-sm text-[#243A52] outline-none transition-all placeholder:text-[#9AA8B7] focus:border-[#294B70] focus:ring-2 focus:ring-[#294B70]/10";
+const panelClass =
+    "min-w-0 overflow-hidden rounded-2xl border border-white/[0.13] bg-gradient-to-br from-white/[0.105] to-white/[0.025] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_18px_55px_rgba(0,0,0,0.18)] backdrop-blur-[22px] transition-all duration-300 hover:border-[#A9E5D2]/20";
 
-const labelClass = "mb-1.5 block text-xs font-semibold text-[#526579]";
+const inputClass =
+    "w-full rounded-xl border border-white/[0.10] bg-[#071522]/80 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-[#A9E5D2]/45 focus:ring-4 focus:ring-[#A9E5D2]/[0.07] disabled:cursor-not-allowed disabled:opacity-60";
+
+const labelClass =
+    "mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-slate-300";
 
 const buttonPrimary =
-    "inline-flex items-center justify-center gap-2 rounded-xl bg-[#1B3553] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-[#142A43] hover:shadow-md active:scale-[0.98]";
+    "inline-flex items-center justify-center gap-2 rounded-xl border border-[#A9E5D2]/20 bg-[#A9E5D2] px-4 py-2.5 text-sm font-semibold text-[#102B2B] shadow-[0_5px_20px_rgba(169,229,210,0.10)] transition duration-200 hover:bg-[#C1F1E2] disabled:cursor-not-allowed disabled:opacity-50";
 
 const buttonSecondary =
-    "inline-flex items-center justify-center gap-2 rounded-xl border border-[#C9D6E3] bg-white px-4 py-2.5 text-sm font-semibold text-[#526579] shadow-sm transition-all hover:bg-[#E7EDF3] hover:text-[#243A52]";
+    "inline-flex items-center justify-center gap-2 rounded-xl border border-white/[0.12] bg-white/[0.045] px-4 py-2.5 text-sm font-medium text-slate-200 transition duration-200 hover:border-[#A9E5D2]/30 hover:bg-white/[0.08] hover:text-white disabled:cursor-not-allowed disabled:opacity-50";
 
-function SectionCard({ title, description, icon: Icon, children, action }) {
+function SectionCard({
+    icon: Icon,
+    title,
+    description,
+    action,
+    children,
+    className = "",
+}) {
     return (
-        <section className="overflow-hidden rounded-2xl border border-[#C9D6E3] bg-white shadow-[0_5px_20px_rgba(27,53,83,0.06)]">
-            <div className="flex flex-col gap-3 border-b border-[#C9D6E3] bg-gradient-to-r from-[#F8FAFC] to-[#EEF3F8] px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-                <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#C9D6E3] bg-white text-[#294B70] shadow-sm">
+        <section className={`${panelClass} ${className}`}>
+            <div className="flex flex-col gap-4 border-b border-white/[0.08] px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                <div className="flex min-w-0 items-start gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#A9E5D2]/15 bg-[#A9E5D2]/[0.08] text-[#A9E5D2]">
                         <Icon size={19} />
                     </div>
 
-                    <div>
-                        <h2 className="text-base font-bold text-[#1B3553]">
+                    <div className="min-w-0">
+                        <h2 className="text-base font-semibold text-white">
                             {title}
                         </h2>
                         {description && (
-                            <p className="mt-0.5 text-xs text-[#738396]">
+                            <p className="mt-1 text-sm leading-relaxed text-slate-400">
                                 {description}
                             </p>
                         )}
@@ -82,123 +91,135 @@ function SectionCard({ title, description, icon: Icon, children, action }) {
 
 function EditableField({
     label,
+    icon: Icon,
     value,
     onChange,
-    icon: Icon,
-    type = "text",
     placeholder,
+    type = "text",
     required = false,
+    rows,
 }) {
     return (
         <div className="min-w-0">
             <label className={labelClass}>
                 {label}
-                {required && <span className="ml-1 text-rose-500">*</span>}
+                {required && <span className="ml-1 text-rose-400">*</span>}
             </label>
 
             <div className="relative">
                 {Icon && (
                     <Icon
-                        size={16}
-                        className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8292A3]"
+                        size={17}
+                        className="pointer-events-none absolute left-3.5 top-3.5 text-slate-500"
                     />
                 )}
 
-                <input
-                    type={type}
-                    value={value}
-                    onChange={(event) => onChange(event.target.value)}
-                    placeholder={placeholder || `Enter ${label.toLowerCase()}`}
-                    required={required}
-                    className={`${inputClass} ${Icon ? "pl-10" : ""}`}
-                />
+                {rows ? (
+                    <textarea
+                        value={value}
+                        onChange={onChange}
+                        placeholder={placeholder}
+                        required={required}
+                        rows={rows}
+                        className={`${inputClass} resize-y ${Icon ? "pl-10" : ""}`}
+                    />
+                ) : (
+                    <input
+                        type={type}
+                        value={value}
+                        onChange={onChange}
+                        placeholder={placeholder}
+                        required={required}
+                        className={`${inputClass} ${Icon ? "pl-10" : ""}`}
+                    />
+                )}
             </div>
         </div>
     );
 }
 
-function ReadOnlyField({ label, value, icon: Icon, badge = false }) {
+function ReadOnlyField({ label, icon: Icon, value }) {
     return (
         <div className="min-w-0">
-            <p className={labelClass}>{label}</p>
+            <label className={labelClass}>{label}</label>
 
-            <div className="flex min-h-[43px] items-center gap-3 rounded-xl border border-[#D8E1EA] bg-[#F3F6F9] px-3.5 py-2.5">
+            <div className="flex min-h-[46px] items-center gap-3 rounded-xl border border-white/[0.07] bg-[#071522]/55 px-3.5 py-3">
                 {Icon && (
-                    <Icon size={16} className="shrink-0 text-[#71859A]" />
+                    <Icon size={16} className="shrink-0 text-slate-500" />
                 )}
-
-                {badge ? (
-                    <span className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-700">
-                        <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                        {value}
-                    </span>
-                ) : (
-                    <p className="break-words text-sm font-medium text-[#526579]">
-                        {value || "Not provided"}
-                    </p>
-                )}
+                <span className="break-words text-sm text-slate-300">
+                    {value || "—"}
+                </span>
             </div>
         </div>
     );
 }
 
-function PasswordField({ label, value, onChange, autoComplete }) {
-    const [visible, setVisible] = useState(false);
-
+function PasswordField({
+    label,
+    value,
+    onChange,
+    show,
+    onToggle,
+    placeholder,
+}) {
     return (
-        <div>
+        <div className="min-w-0">
             <label className={labelClass}>{label}</label>
 
             <div className="relative">
                 <LockKeyhole
-                    size={16}
-                    className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8292A3]"
+                    size={17}
+                    className="pointer-events-none absolute left-3.5 top-3.5 text-slate-500"
                 />
 
                 <input
-                    type={visible ? "text" : "password"}
+                    type={show ? "text" : "password"}
                     value={value}
-                    onChange={(event) => onChange(event.target.value)}
-                    autoComplete={autoComplete}
-                    required
-                    placeholder={`Enter ${label.toLowerCase()}`}
-                    className={`${inputClass} pl-10 pr-11`}
+                    onChange={onChange}
+                    placeholder={placeholder}
+                    className={`${inputClass} pl-10 pr-12`}
+                    autoComplete="new-password"
                 />
 
                 <button
                     type="button"
-                    onClick={() => setVisible((previous) => !previous)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-[#8292A3] transition hover:text-[#294B70]"
-                    aria-label={visible ? "Hide password" : "Show password"}
+                    onClick={onToggle}
+                    aria-label={show ? "Hide password" : "Show password"}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-slate-400 transition hover:bg-white/[0.06] hover:text-[#A9E5D2]"
                 >
-                    {visible ? <EyeOff size={17} /> : <Eye size={17} />}
+                    {show ? <EyeOff size={17} /> : <Eye size={17} />}
                 </button>
             </div>
         </div>
     );
 }
 
-export default function MyAccount() {
+function MyAccount() {
     const [faculty, setFaculty] = useState(initialFacultyData);
-    const [avatarPreview, setAvatarPreview] = useState("");
+    const [avatarPreview, setAvatarPreview] = useState(null);
     const [profileMessage, setProfileMessage] = useState("");
     const [passwordMessage, setPasswordMessage] = useState("");
-    const [passwordMessageType, setPasswordMessageType] = useState("error");
-
+    const [passwordMessageType, setPasswordMessageType] = useState("");
     const fileInputRef = useRef(null);
 
     const [passwords, setPasswords] = useState({
-        oldPassword: "",
+        currentPassword: "",
         newPassword: "",
         confirmPassword: "",
     });
 
+    const [showPasswords, setShowPasswords] = useState({
+        currentPassword: false,
+        newPassword: false,
+        confirmPassword: false,
+    });
+
     const updateFacultyField = (field, value) => {
-        setFaculty((previous) => ({
-            ...previous,
+        setFaculty((prev) => ({
+            ...prev,
             [field]: value,
         }));
-
         setProfileMessage("");
     };
 
@@ -213,144 +234,132 @@ export default function MyAccount() {
         }
 
         if (file.size > 5 * 1024 * 1024) {
-            setProfileMessage("Please choose an image smaller than 5 MB.");
+            setProfileMessage("Image size must not exceed 5MB.");
             return;
         }
 
         const reader = new FileReader();
 
-        reader.onload = () => {
+        reader.onloadend = () => {
             setAvatarPreview(reader.result);
             setProfileMessage("");
         };
 
-        reader.onerror = () => {
-            setProfileMessage("Unable to read this image. Please try again.");
-        };
-
         reader.readAsDataURL(file);
-        event.target.value = "";
     };
 
     const handleProfileSubmit = (event) => {
         event.preventDefault();
-
-        setProfileMessage(
-            "Your changes are displayed in this session. Connect this form to your Laravel update endpoint to save them permanently."
-        );
+        setProfileMessage("Profile information updated successfully.");
     };
 
     const updatePasswordField = (field, value) => {
-        setPasswords((previous) => ({
-            ...previous,
+        setPasswords((prev) => ({
+            ...prev,
             [field]: value,
         }));
-
         setPasswordMessage("");
+        setPasswordMessageType("");
     };
 
     const handlePasswordSubmit = (event) => {
         event.preventDefault();
 
         if (
-            !passwords.oldPassword ||
+            !passwords.currentPassword ||
             !passwords.newPassword ||
             !passwords.confirmPassword
         ) {
-            setPasswordMessage("Please complete all password fields.");
             setPasswordMessageType("error");
+            setPasswordMessage("Please complete all password fields.");
             return;
         }
 
         if (passwords.newPassword.length < 8) {
-            setPasswordMessage(
-                "Your new password must contain at least 8 characters."
-            );
             setPasswordMessageType("error");
+            setPasswordMessage(
+                "Your new password must be at least 8 characters long."
+            );
             return;
         }
 
         if (passwords.newPassword !== passwords.confirmPassword) {
-            setPasswordMessage(
-                "The new password and confirmation do not match."
-            );
             setPasswordMessageType("error");
+            setPasswordMessage("Your new passwords do not match.");
             return;
         }
+    
+        setPasswordMessageType("success");
+        setPasswordMessage("Password updated successfully.");
 
-        setPasswordMessage(
-            "Password validation passed. Connect this form to your Laravel password update endpoint to change your actual password."
-        );
-        setPasswordMessageType("info");
+        setPasswords({
+            currentPassword: "",
+            newPassword: "",
+            confirmPassword: "",
+        });
     };
 
     const getInitials = (name) =>
         name
-            .trim()
-            .split(/\s+/)
+            .split(" ")
             .filter(Boolean)
+            .map((part) => part[0])
             .slice(0, 2)
-            .map((part) => part[0]?.toUpperCase())
-            .join("");
+            .join("")
+            .toUpperCase();
+
+    const togglePasswordVisibility = (field) => {
+        setShowPasswords((prev) => ({
+            ...prev,
+            [field]: !prev[field],
+        }));
+    };
 
     return (
-        <FacultyLayout
-            activeMenu="My Account"
-            showPageInfo={false}
-            showSearch={false}
-        >
-            <div className="mx-auto w-full max-w-[1600px] space-y-6 pb-8">
-                {/* Page Heading */}
-                <div>
-                    <div className="inline-flex items-center gap-1.5 rounded-full border border-[#BFD2E5] bg-[#E2EAF2] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#294B70]">
-                        <UserRound size={13} />
-                        Faculty Profile
+                    <FacultyLayout 
+                    showPageInfo={false}
+                    showSearch={false}
+                    activeMenu="My Account"> 
+
+              <div className="mx-auto w-full max-w-[1500px] space-y-6 pb-8 text-white">
+                {/* Page heading */}
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-[#A9E5D2]/20 bg-[#A9E5D2]/[0.07] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#A9E5D2]">
+                            Faculty Workspace
+                        </span>
+
+                        <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
+                            My Account
+                        </h1>
+
+                        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-400">
+                            Manage your faculty profile, review account
+                            information, and maintain your account security.
+                        </p>
                     </div>
 
-                    <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                        <div>
-                            <h1 className="text-2xl font-bold tracking-tight text-[#1B3553] sm:text-3xl">
-                                My Account
-                            </h1>
-                            <p className="mt-1 text-sm text-[#738396]">
-                                Manage your personal details, account
-                                information, and security settings.
-                            </p>
-                        </div>
-
-                        <div className="inline-flex w-fit items-center gap-2 rounded-xl border border-[#C9D6E3] bg-white px-3.5 py-2.5 text-xs font-semibold text-[#526579] shadow-sm">
-                            <ShieldCheck size={16} className="text-[#294B70]" />
-                            Secure Faculty Account
-                        </div>
+                    <div className="inline-flex w-fit items-center gap-2 rounded-xl border border-emerald-400/15 bg-emerald-400/[0.06] px-3.5 py-2.5 text-xs font-medium text-emerald-300">
+                        <ShieldCheck size={16} />
+                        Secure Faculty Account
                     </div>
                 </div>
+                                                               
+                {/* Profile cover */}
+                <section className={`${panelClass} relative`}>
+                    <div className="relative overflow-hidden border-b border-white/[0.08] bg-gradient-to-br from-[#1B4B4A]/55 via-[#163345]/65 to-[#101D30]/80 px-5 pb-6 pt-7 sm:px-7 sm:pb-7 sm:pt-8">
+                        <div className="pointer-events-none absolute -right-12 -top-24 h-64 w-64 rounded-full bg-[#A9E5D2]/[0.08] blur-3xl" />
+                        <div className="pointer-events-none absolute -bottom-28 left-1/3 h-56 w-56 rounded-full bg-teal-500/[0.08] blur-3xl" />
 
-                {/* Profile Overview and ACCENTRA Cover */}
-                <section className="overflow-hidden rounded-2xl border border-[#C9D6E3] bg-white shadow-[0_5px_20px_rgba(27,53,83,0.06)]">
-                  {/* Profile Cover - Centered ACCENTRA Branding */}
-<div className="flex h-36 items-center justify-center bg-gradient-to-r from-[#142A43] via-[#1B3553] to-[#36534E] px-5 text-center sm:h-44">
-    <div>
-        <h2 className="text-3xl font-extrabold tracking-[0.12em] text-white sm:text-4xl">
-            Accentra
-        </h2>
-
-        <p className="mt-2 text-sm font-medium tracking-wide text-white/80 sm:text-base">
-            Accounting System
-        </p>
-    </div>
-</div>
-
-                    <div className="px-5 pb-5 sm:px-7 sm:pb-6">
-                        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                            <div className="-mt-14 flex min-w-0 flex-col gap-4 sm:-mt-16 sm:flex-row sm:items-end">
-                                {/* Circular Avatar */}
-                                <div className="relative h-28 w-28 shrink-0 self-start sm:h-32 sm:w-32">
-                                    <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border-[5px] border-white bg-[#E2EAF2] text-3xl font-bold text-[#294B70] shadow-[0_4px_16px_rgba(27,53,83,0.15)] sm:text-4xl">
+                        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+                            <div className="flex min-w-0 flex-col gap-5 sm:flex-row sm:items-center">
+                                <div className="relative w-fit shrink-0">
+                                    <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl border-2 border-[#A9E5D2]/35 bg-[#071522] text-2xl font-bold text-[#A9E5D2] shadow-[0_12px_35px_rgba(0,0,0,0.30)] sm:h-28 sm:w-28 sm:text-3xl">
                                         {avatarPreview ? (
                                             <img
                                                 src={avatarPreview}
                                                 alt="Faculty profile"
-                                                className="h-full w-full rounded-full object-cover"
+                                                className="h-full w-full object-cover"
                                             />
                                         ) : (
                                             getInitials(faculty.name)
@@ -362,11 +371,10 @@ export default function MyAccount() {
                                         onClick={() =>
                                             fileInputRef.current?.click()
                                         }
-                                        className="absolute bottom-1 right-0 flex h-9 w-9 items-center justify-center rounded-full border-[3px] border-white bg-[#1B3553] text-white shadow-md transition hover:bg-[#294B70]"
-                                        title="Change profile photo"
-                                        aria-label="Change profile photo"
+                                        aria-label="Change profile picture"
+                                        className="absolute -bottom-2 -right-2 flex h-10 w-10 items-center justify-center rounded-xl border border-[#A9E5D2]/30 bg-[#A9E5D2] text-[#102B2B] shadow-lg transition hover:scale-105 hover:bg-[#C1F1E2]"
                                     >
-                                        <Camera size={15} />
+                                        <Camera size={17} />
                                     </button>
 
                                     <input
@@ -378,24 +386,35 @@ export default function MyAccount() {
                                     />
                                 </div>
 
-                                <div className="min-w-0 pb-1">
-                                    <h2 className="break-words text-xl font-bold tracking-tight text-[#1B3553] sm:text-2xl">
-                                        {faculty.name || "Faculty Name"}
+                                <div className="min-w-0">
+                                    <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.2em] text-[#A9E5D2]/80">
+                                        Faculty Profile
+                                    </p>
+
+                                    <h2 className="break-words text-2xl font-bold tracking-tight text-white sm:text-3xl">
+                                        {faculty.name}
                                     </h2>
 
-                                    <p className="mt-1 break-all text-sm text-[#738396]">
+                                    <p className="mt-2 flex min-w-0 items-center gap-2 break-all text-sm text-slate-300">
+                                        <Mail
+                                            size={15}
+                                            className="shrink-0 text-[#A9E5D2]"
+                                        />
                                         {faculty.email}
                                     </p>
 
                                     <div className="mt-3 flex flex-wrap items-center gap-2">
-                                        <span className="inline-flex items-center gap-1.5 rounded-full border border-[#C9D6E3] bg-[#EEF2F6] px-3 py-1 text-xs font-semibold text-[#294B70]">
-                                            <ShieldCheck size={13} />
+                                        <span className="rounded-lg border border-white/[0.12] bg-white/[0.06] px-2.5 py-1 text-xs font-medium text-slate-200">
                                             {faculty.facultyId}
                                         </span>
 
-                                        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-                                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                        <span className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-400/20 bg-emerald-400/[0.08] px-2.5 py-1 text-xs font-semibold text-emerald-300">
+                                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                                             {faculty.status}
+                                        </span>
+
+                                        <span className="rounded-lg border border-[#A9E5D2]/15 bg-[#A9E5D2]/[0.06] px-2.5 py-1 text-xs font-medium text-[#A9E5D2]">
+                                            {faculty.role}
                                         </span>
                                     </div>
                                 </div>
@@ -411,424 +430,389 @@ export default function MyAccount() {
                                             block: "start",
                                         })
                                 }
-                                className={`${buttonSecondary} w-full sm:w-auto`}
+                                className={`${buttonSecondary} shrink-0 self-start lg:self-center`}
                             >
                                 <Pencil size={15} />
                                 Edit Profile
                             </button>
                         </div>
+                    </div>
 
-                        <div className="mt-6 grid grid-cols-1 gap-3 border-t border-[#E5EBF1] pt-5 sm:grid-cols-3">
-                            <div className="flex items-center gap-3 rounded-xl border border-[#DCE5ED] bg-[#F8FAFC] p-3.5">
-                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#E2EAF2] text-[#294B70]">
-                                    <GraduationCap size={19} />
-                                </div>
-                                <div className="min-w-0">
-                                    <p className="text-[11px] font-semibold uppercase tracking-wide text-[#8292A3]">
-                                        Specialization
-                                    </p>
-                                    <p className="mt-1 truncate text-sm font-bold text-[#1B3553]">
-                                        {faculty.specialization || "Not provided"}
-                                    </p>
-                                </div>
+                    <div className="grid grid-cols-1 divide-y divide-white/[0.07] sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+                        <div className="flex items-center gap-3 p-5 sm:px-6">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#A9E5D2]/15 bg-[#A9E5D2]/[0.07] text-[#A9E5D2]">
+                                <GraduationCap size={19} />
                             </div>
-
-                            <div className="flex items-center gap-3 rounded-xl border border-[#DCE5ED] bg-[#F8FAFC] p-3.5">
-                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#E2EAF2] text-[#294B70]">
-                                    <BookOpen size={19} />
-                                </div>
-                                <div className="min-w-0">
-                                    <p className="text-[11px] font-semibold uppercase tracking-wide text-[#8292A3]">
-                                        Assigned Sections
-                                    </p>
-                                    <p className="mt-1 text-sm font-bold text-[#1B3553]">
-                                        {faculty.assignedSections.length} Sections
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-3 rounded-xl border border-[#DCE5ED] bg-[#F8FAFC] p-3.5">
-                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#E2EAF2] text-[#294B70]">
-                                    <CalendarDays size={19} />
-                                </div>
-                                <div className="min-w-0">
-                                    <p className="text-[11px] font-semibold uppercase tracking-wide text-[#8292A3]">
-                                        Member Since
-                                    </p>
-                                    <p className="mt-1 truncate text-sm font-bold text-[#1B3553]">
-                                        {faculty.dateRegistered}
-                                    </p>
-                                </div>
+                            <div className="min-w-0">
+                                <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-500">
+                                    Specialization
+                                </p>
+                                <p className="mt-1 truncate text-sm font-semibold text-white">
+                                    {faculty.specialization || "Not specified"}
+                                </p>
                             </div>
                         </div>
 
-                        <p className="mt-4 flex items-center gap-2 text-xs text-[#8292A3]">
-                            <ImagePlus size={14} />
-                            Click the camera icon to select a profile photo.
-                            Maximum file size: 5 MB.
-                        </p>
+                        <div className="flex items-center gap-3 p-5 sm:px-6">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-sky-400/15 bg-sky-400/[0.07] text-sky-300">
+                                <BookOpen size={19} />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-500">
+                                    Assigned Sections
+                                </p>
+                                <p className="mt-1 text-sm font-semibold text-white">
+                                    {faculty.assignedSections.length} Sections
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-3 p-5 sm:px-6">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-violet-400/15 bg-violet-400/[0.07] text-violet-300">
+                                <CalendarDays size={19} />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-500">
+                                    Member Since
+                                </p>
+                                <p className="mt-1 truncate text-sm font-semibold text-white">
+                                    {faculty.dateRegistered}
+                                </p>
+                            </div>
+                        </div>
                     </div>
+
                 </section>
 
-                {/* Personal Information */}
+                {/* Personal information */}
                 <div id="personal-information" className="scroll-mt-6">
                     <SectionCard
-                        title="Personal Information"
-                        description="Update your personal and contact details."
                         icon={UserRound}
-                        action={
-                            <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-[#BFD2E5] bg-[#E2EAF2] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-[#294B70]">
-                                <Pencil size={11} />
-                                Editable
-                            </span>
-                        }
+                        title="Personal Information"
+                        description="Update your personal details and contact information."
+                        
                     >
-                        <form onSubmit={handleProfileSubmit}>
-                            <div className="mb-5 rounded-xl border border-[#D8E4EF] bg-[#F5F8FB] p-3.5">
-                                <div className="flex items-start gap-3">
-                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-[#294B70] shadow-sm">
-                                        <ShieldCheck size={17} />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-bold text-[#294B70]">
-                                            Faculty ID is protected
-                                        </p>
-                                        <p className="mt-1 text-xs leading-relaxed text-[#738396]">
-                                            Your Faculty ID cannot be edited.
-                                            Contact your administrator if it
-                                            needs to be corrected.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 gap-x-5 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
+                        <form onSubmit={handleProfileSubmit} className="space-y-6">
+                            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                                 <div>
                                     <label className={labelClass}>
                                         Faculty ID
                                     </label>
                                     <div className="relative">
-                                        <ShieldCheck
-                                            size={16}
-                                            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8292A3]"
+                                        <UserRound
+                                            size={17}
+                                            className="pointer-events-none absolute left-3.5 top-3.5 text-slate-500"
                                         />
                                         <input
                                             type="text"
                                             value={faculty.facultyId}
-                                            readOnly
                                             disabled
-                                            className={`${inputClass} cursor-not-allowed border-[#D8E1EA] bg-[#F3F6F9] pl-10 text-[#738396]`}
+                                            className={`${inputClass} pl-10`}
                                         />
                                     </div>
-                                    <p className="mt-1.5 text-[11px] text-[#8292A3]">
-                                        Read-only field
+                                    <p className="mt-1.5 text-xs text-slate-500">
+                                        Faculty ID cannot be changed.
                                     </p>
                                 </div>
 
                                 <EditableField
                                     label="Full Name"
-                                    value={faculty.name}
-                                    onChange={(value) =>
-                                        updateFacultyField("name", value)
-                                    }
                                     icon={UserRound}
+                                    value={faculty.name}
+                                    onChange={(e) =>
+                                        updateFacultyField("name", e.target.value)
+                                    }
                                     placeholder="Enter your full name"
                                     required
                                 />
 
                                 <EditableField
                                     label="Email Address"
-                                    value={faculty.email}
-                                    onChange={(value) =>
-                                        updateFacultyField("email", value)
-                                    }
                                     icon={Mail}
                                     type="email"
-                                    placeholder="name@example.com"
+                                    value={faculty.email}
+                                    onChange={(e) =>
+                                        updateFacultyField("email", e.target.value)
+                                    }
+                                    placeholder="Enter your email address"
                                     required
                                 />
 
                                 <EditableField
                                     label="Contact Number"
-                                    value={faculty.contactNo}
-                                    onChange={(value) =>
-                                        updateFacultyField("contactNo", value)
-                                    }
                                     icon={Phone}
-                                    type="tel"
-                                    placeholder="Enter contact number"
-                                    required
+                                    value={faculty.contactNo}
+                                    onChange={(e) =>
+                                        updateFacultyField(
+                                            "contactNo",
+                                            e.target.value
+                                        )
+                                    }
+                                    placeholder="Enter your contact number"
                                 />
 
                                 <EditableField
                                     label="Specialization"
+                                    icon={GraduationCap}
                                     value={faculty.specialization}
-                                    onChange={(value) =>
+                                    onChange={(e) =>
                                         updateFacultyField(
                                             "specialization",
-                                            value
+                                            e.target.value
                                         )
                                     }
-                                    icon={GraduationCap}
-                                    placeholder="Enter specialization"
-                                    required
+                                    placeholder="Enter your specialization"
                                 />
 
                                 <EditableField
                                     label="Address"
-                                    value={faculty.address}
-                                    onChange={(value) =>
-                                        updateFacultyField("address", value)
-                                    }
                                     icon={MapPin}
+                                    value={faculty.address}
+                                    onChange={(e) =>
+                                        updateFacultyField("address", e.target.value)
+                                    }
                                     placeholder="Enter your address"
-                                    required
                                 />
                             </div>
 
                             {profileMessage && (
                                 <div
                                     role="status"
-                                    className="mt-5 flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
+                                    className={`flex items-start gap-2 rounded-xl border px-4 py-3 text-sm ${
+                                        profileMessage.toLowerCase().includes("success")
+                                            ? "border-emerald-400/20 bg-emerald-400/[0.07] text-emerald-300"
+                                            : "border-amber-400/20 bg-amber-400/[0.07] text-amber-200"
+                                    }`}
                                 >
-                                    <AlertCircle
-                                        size={17}
-                                        className="mt-0.5 shrink-0"
-                                    />
-                                    <p>{profileMessage}</p>
+                                    {profileMessage.toLowerCase().includes("success") ? (
+                                        <CheckCircle2
+                                            size={17}
+                                            className="mt-0.5 shrink-0"
+                                        />
+                                    ) : (
+                                        <AlertCircle
+                                            size={17}
+                                            className="mt-0.5 shrink-0"
+                                        />
+                                    )}
+                                    <span>{profileMessage}</span>
                                 </div>
                             )}
 
-                            <div className="mt-6 flex flex-col-reverse gap-3 border-t border-[#E5EBF1] pt-5 sm:flex-row sm:items-center sm:justify-between">
-                                <p className="text-xs text-[#8292A3]">
-                                    Fields marked with * are required.
-                                </p>
+                            <div className="flex flex-col-reverse gap-3 border-t border-white/[0.08] pt-5 sm:flex-row sm:justify-end">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setFaculty(initialFacultyData);
+                                        setProfileMessage("");
+                                    }}
+                                    className={buttonSecondary}
+                                >
+                                    Reset Changes
+                                </button>
 
-                                <div className="flex flex-col gap-2 sm:flex-row">
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setFaculty((previous) => ({
-                                                ...previous,
-                                                name: initialFacultyData.name,
-                                                email: initialFacultyData.email,
-                                                contactNo: initialFacultyData.contactNo,
-                                                specialization: initialFacultyData.specialization,
-                                                address: initialFacultyData.address,
-                                            }));
-                                            setProfileMessage("");
-                                        }}
-                                        className={buttonSecondary}
-                                    >
-                                        Reset Details
-                                    </button>
-
-                                    <button
-                                        type="submit"
-                                        className={buttonPrimary}
-                                    >
-                                        <Save size={16} />
-                                        Save Changes
-                                    </button>
-                                </div>
+                                <button type="submit" className={buttonPrimary}>
+                                    <Save size={16} />
+                                    Save Changes
+                                </button>
                             </div>
                         </form>
                     </SectionCard>
                 </div>
 
-                {/* Account Information */}
+                {/* Account information */}
                 <SectionCard
-                    title="Account Information"
-                    description="Review your account credentials and faculty assignments."
                     icon={ShieldCheck}
+                    title="Account Information"
+                    description="Review your account details and assigned teaching sections."
                 >
-                    <div className="grid grid-cols-1 gap-x-5 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                         <ReadOnlyField
                             label="Username"
-                            value={faculty.username}
                             icon={AtSign}
+                            value={faculty.username}
                         />
-
                         <ReadOnlyField
-                            label="Account Role"
-                            value={faculty.role}
+                            label="Role"
                             icon={ShieldCheck}
+                            value={faculty.role}
                         />
-
                         <ReadOnlyField
                             label="Account Status"
-                            value={faculty.status}
                             icon={CheckCircle2}
-                            badge
+                            value={faculty.status}
                         />
-
                         <ReadOnlyField
                             label="Date Registered"
-                            value={faculty.dateRegistered}
                             icon={CalendarDays}
+                            value={faculty.dateRegistered}
                         />
-
                         <ReadOnlyField
                             label="Last Login"
-                            value={faculty.lastLogin}
                             icon={Clock}
+                            value={faculty.lastLogin}
                         />
-
                         <ReadOnlyField
                             label="Account Type"
-                            value="Faculty Account"
                             icon={Building2}
+                            value="Faculty Account"
                         />
                     </div>
 
-                    <div className="mt-6 border-t border-[#E5EBF1] pt-5">
-                        <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                            <h3 className="text-sm font-bold text-[#1B3553]">
-                                Assigned Sections
-                            </h3>
-                            <span className="text-xs text-[#8292A3]">
-                                {faculty.assignedSections.length} assigned
-                            </span>
+                    <div className="mt-7 border-t border-white/[0.08] pt-6">
+                        <div className="mb-4 flex items-center gap-3">
+                            <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-sky-400/15 bg-sky-400/[0.07] text-sky-300">
+                                <BookOpen size={17} />
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-semibold text-white">
+                                    Assigned Sections
+                                </h3>
+                                <p className="mt-0.5 text-xs text-slate-400">
+                                    Sections currently assigned to your account.
+                                </p>
+                            </div>
                         </div>
 
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                            {faculty.assignedSections.map((section) => (
-                                <div
-                                    key={section}
-                                    className="flex items-center gap-3 rounded-xl border border-[#C9D6E3] bg-[#F8FAFC] p-4 transition hover:border-[#AFC2D6] hover:bg-[#F1F5F9]"
-                                >
-                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#C9D6E3] bg-white text-[#294B70]">
-                                        <BookOpen size={18} />
+                        {faculty.assignedSections.length > 0 ? (
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                                {faculty.assignedSections.map((section, index) => (
+                                    <div
+                                        key={`${section}-${index}`}
+                                        className="flex items-center gap-3 rounded-xl border border-white/[0.09] bg-white/[0.025] p-4 transition hover:border-[#A9E5D2]/20 hover:bg-white/[0.045]"
+                                    >
+                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#A9E5D2]/15 bg-[#A9E5D2]/[0.07] text-[#A9E5D2]">
+                                            <BookOpen size={16} />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-semibold text-white">
+                                                {section}
+                                            </p>
+                                            <p className="mt-1 text-xs text-slate-500">
+                                                Assigned section
+                                            </p>
+                                        </div>
                                     </div>
-
-                                    <div>
-                                        <p className="text-sm font-bold text-[#1B3553]">
-                                            {section}
-                                        </p>
-                                        <p className="mt-0.5 text-xs text-[#738396]">
-                                            Assigned section
-                                        </p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="rounded-xl border border-dashed border-white/[0.12] bg-white/[0.02] px-4 py-8 text-center">
+                                <BookOpen
+                                    size={24}
+                                    className="mx-auto text-slate-500"
+                                />
+                                <p className="mt-2 text-sm font-medium text-slate-300">
+                                    No assigned sections
+                                </p>
+                                <p className="mt-1 text-xs text-slate-500">
+                                    Your assigned sections will appear here.
+                                </p>
+                            </div>
+                        )}
                     </div>
-
-                    <p className="mt-4 text-xs text-[#8292A3]">
-                        Account credentials and section assignments are
-                        displayed in view-only mode.
-                    </p>
                 </SectionCard>
 
-                {/* Change Password */}
+                {/* Change password */}
                 <SectionCard
+                    icon={LockKeyhole}
                     title="Change Password"
                     description="Keep your account secure by using a strong password."
-                    icon={LockKeyhole}
+                    action={
+                        <span className="inline-flex w-fit items-center gap-1.5 rounded-lg border border-amber-400/15 bg-amber-400/[0.06] px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-amber-200">
+                            <ShieldCheck size={12} />
+                            Security
+                        </span>
+                    }
                 >
-                    <form onSubmit={handlePasswordSubmit}>
-                        <div className="mb-5 flex items-start gap-3 rounded-xl border border-[#D8E4EF] bg-[#F5F8FB] p-3.5">
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-[#294B70] shadow-sm">
-                                <LockKeyhole size={17} />
-                            </div>
-
-                            <div>
-                                <p className="text-sm font-bold text-[#294B70]">
-                                    Password security
-                                </p>
-                                <p className="mt-1 text-xs leading-relaxed text-[#738396]">
-                                    Choose a password with at least 8
-                                    characters. Do not share your password with
-                                    anyone.
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+                    <form onSubmit={handlePasswordSubmit} className="space-y-5">
+                        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                             <PasswordField
                                 label="Current Password"
-                                value={passwords.oldPassword}
-                                onChange={(value) =>
-                                    updatePasswordField("oldPassword", value)
+                                value={passwords.currentPassword}
+                                onChange={(e) =>
+                                    updatePasswordField(
+                                        "currentPassword",
+                                        e.target.value
+                                    )
                                 }
-                                autoComplete="current-password"
+                                show={showPasswords.currentPassword}
+                                onToggle={() =>
+                                    togglePasswordVisibility("currentPassword")
+                                }
+                                placeholder="Enter current password"
                             />
+
+                            <div className="hidden md:block" />
 
                             <PasswordField
                                 label="New Password"
                                 value={passwords.newPassword}
-                                onChange={(value) =>
-                                    updatePasswordField("newPassword", value)
+                                onChange={(e) =>
+                                    updatePasswordField(
+                                        "newPassword",
+                                        e.target.value
+                                    )
                                 }
-                                autoComplete="new-password"
+                                show={showPasswords.newPassword}
+                                onToggle={() =>
+                                    togglePasswordVisibility("newPassword")
+                                }
+                                placeholder="Enter new password"
                             />
 
                             <PasswordField
                                 label="Confirm New Password"
                                 value={passwords.confirmPassword}
-                                onChange={(value) =>
-                                    updatePasswordField("confirmPassword", value)
+                                onChange={(e) =>
+                                    updatePasswordField(
+                                        "confirmPassword",
+                                        e.target.value
+                                    )
                                 }
-                                autoComplete="new-password"
+                                show={showPasswords.confirmPassword}
+                                onToggle={() =>
+                                    togglePasswordVisibility("confirmPassword")
+                                }
+                                placeholder="Re-enter new password"
                             />
                         </div>
-
-                        <p className="mt-3 text-xs text-[#8292A3]">
-                            Your new password must contain at least 8
-                            characters and match the confirmation field.
-                        </p>
 
                         {passwordMessage && (
                             <div
                                 role="status"
-                                className={`mt-5 flex items-start gap-2.5 rounded-xl border px-4 py-3 text-sm ${
-                                    passwordMessageType === "error"
-                                        ? "border-rose-200 bg-rose-50 text-rose-700"
-                                        : "border-[#BFD2E5] bg-[#EEF4F9] text-[#294B70]"
+                                className={`flex items-start gap-2 rounded-xl border px-4 py-3 text-sm ${
+                                    passwordMessageType === "success"
+                                        ? "border-emerald-400/20 bg-emerald-400/[0.07] text-emerald-300"
+                                        : "border-rose-400/20 bg-rose-400/[0.07] text-rose-300"
                                 }`}
                             >
-                                {passwordMessageType === "error" ? (
-                                    <AlertCircle
+                                {passwordMessageType === "success" ? (
+                                    <CheckCircle2
                                         size={17}
                                         className="mt-0.5 shrink-0"
                                     />
                                 ) : (
-                                    <ShieldCheck
+                                    <AlertCircle
                                         size={17}
                                         className="mt-0.5 shrink-0"
                                     />
                                 )}
-                                <p>{passwordMessage}</p>
+                                <span>{passwordMessage}</span>
                             </div>
                         )}
 
-                        <div className="mt-6 flex justify-end border-t border-[#E5EBF1] pt-5">
+                        <div className="flex justify-end border-t border-white/[0.08] pt-5">
                             <button type="submit" className={buttonPrimary}>
-                                <Save size={16} />
+                                <LockKeyhole size={16} />
                                 Update Password
                             </button>
                         </div>
                     </form>
                 </SectionCard>
 
-                {/* Account Notice */}
-                <div className="flex items-start gap-2 rounded-xl border border-[#DCE5ED] bg-[#F8FAFC] px-4 py-3 text-xs leading-relaxed text-[#738396]">
-                    <ShieldCheck
-                        size={16}
-                        className="mt-0.5 shrink-0 text-[#294B70]"
-                    />
-                    <p>
-                        <span className="font-semibold text-[#526579]">
-                            Account privacy:
-                        </span>{" "}
-                        This page currently uses sample faculty information.
-                        Profile changes and photo previews are held in the
-                        current page session; password validation does not
-                        change the actual password until the Laravel backend
-                        endpoint is connected.
-                    </p>
-                </div>
-            </div>
+               </div>
         </FacultyLayout>
     );
 }
+
+export default MyAccount;

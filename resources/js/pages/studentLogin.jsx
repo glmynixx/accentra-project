@@ -1,9 +1,8 @@
 import { useState } from "react";
 
 import { Head, useForm } from "@inertiajs/react";
+
 import SystemLogo from "../components/common/systemLogo";
-
-
 
 function FieldIcon({ type }) {
 
@@ -41,8 +40,6 @@ function FieldIcon({ type }) {
 
     }
 
-
-
     return (
 
         <svg
@@ -73,13 +70,9 @@ function FieldIcon({ type }) {
 
 }
 
-
-
 export default function StudentLogin({ status }) {
 
     const [showPassword, setShowPassword] = useState(false);
-
-
 
     const { data, setData, post, processing, errors, reset } = useForm({
 
@@ -91,31 +84,25 @@ export default function StudentLogin({ status }) {
 
     });
 
-
-
     const handleSubmit = (e) => {
 
         e.preventDefault();
 
-
-
         post("/student/login", {
+
             preserveScroll: true,
+
             onFinish: () => reset("password"),
 
         });
 
     };
 
-
-
     return (
 
         <>
 
             <Head title="Student Log In | ACCENTRA" />
-
-
 
             <main className="relative min-h-screen overflow-hidden bg-[#101F30] font-sans text-white selection:bg-[#8FD6BF]/30">
 
@@ -133,8 +120,6 @@ export default function StudentLogin({ status }) {
 
                 />
 
-
-
                 {/* Cinematic overlays */}
 
                 <div className="absolute inset-0 bg-[#10243A]/55" />
@@ -143,15 +128,11 @@ export default function StudentLogin({ status }) {
 
                 <div className="absolute inset-0 bg-gradient-to-t from-[#071522]/70 via-transparent to-[#071522]/20" />
 
-
-
                 {/* Ambient green lighting */}
 
                 <div className="pointer-events-none absolute -left-40 top-1/4 h-[450px] w-[450px] rounded-full bg-[#477F73]/25 blur-[140px]" />
 
                 <div className="pointer-events-none absolute -right-40 bottom-0 h-[500px] w-[500px] rounded-full bg-[#75B8A6]/15 blur-[150px]" />
-
-
 
                 {/* Subtle decorative grid */}
 
@@ -171,8 +152,6 @@ export default function StudentLogin({ status }) {
 
                 />
 
-
-
                 <div className="relative z-10 mx-auto grid min-h-screen max-w-[1600px] grid-cols-1 items-center gap-12 px-6 py-10 sm:px-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:px-16 xl:px-24">
 
                     {/* Left branding */}
@@ -189,13 +168,9 @@ export default function StudentLogin({ status }) {
 
                         >
 
-                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/25 bg-white/10 shadow-lg backdrop-blur-xl">
-
-                                <SystemLogo className="h-9 w-9 object-contain" />
-
-                            </div>
-
-
+<div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-white/20 bg-white/10 transition duration-300 hover:scale-110">
+    <SystemLogo className="h-9 w-9 object-contain" />
+</div>
 
                             <span className="text-2xl font-semibold tracking-[0.2em] sm:text-3xl">
 
@@ -204,8 +179,6 @@ export default function StudentLogin({ status }) {
                             </span>
 
                         </a>
-
-
 
                         <div className="mb-5 flex items-center gap-3">
 
@@ -219,8 +192,6 @@ export default function StudentLogin({ status }) {
 
                         </div>
 
-
-
                         <h1 className="max-w-2xl text-5xl font-bold leading-[1.08] tracking-tight sm:text-6xl xl:text-7xl">
 
                             Learn accounting
@@ -232,8 +203,6 @@ export default function StudentLogin({ status }) {
                             </span>
 
                         </h1>
-
-
 
                         <p className="mt-6 max-w-xl text-base leading-8 text-white/75 sm:text-lg">
 
@@ -247,8 +216,6 @@ export default function StudentLogin({ status }) {
 
                     </section>
 
-
-
                     {/* Login card */}
 
                     <section className="mx-auto w-full max-w-[500px] lg:ml-auto">
@@ -260,8 +227,6 @@ export default function StudentLogin({ status }) {
                             <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/70 to-transparent" />
 
                             <div className="pointer-events-none absolute -right-20 -top-24 h-52 w-52 rounded-full bg-[#75B8A6]/10 blur-[70px]" />
-
-
 
                             <div className="relative mb-8">
 
@@ -293,23 +258,17 @@ export default function StudentLogin({ status }) {
 
                                 </div>
 
-
-
                                 <p className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#A9E5D2]">
 
                                     Student Portal
 
                                 </p>
 
-
-
                                 <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
 
                                     Welcome Back
 
                                 </h2>
-
-
 
                                 <p className="mt-3 text-sm leading-6 text-white/65">
 
@@ -320,8 +279,6 @@ export default function StudentLogin({ status }) {
                                 </p>
 
                             </div>
-
-
 
                             {status && (
 
@@ -339,8 +296,6 @@ export default function StudentLogin({ status }) {
 
                             )}
 
-
-
                             <form
 
                                 onSubmit={handleSubmit}
@@ -354,6 +309,7 @@ export default function StudentLogin({ status }) {
                                 <div>
 
                                     <label
+
                                         htmlFor="email"
 
                                         className="mb-2.5 block text-sm font-medium text-white/90"
@@ -363,8 +319,6 @@ export default function StudentLogin({ status }) {
                                         Student ID or Email:
 
                                     </label>
-
-
 
                                     <div
 
@@ -385,8 +339,6 @@ export default function StudentLogin({ status }) {
                                             <FieldIcon type="email" />
 
                                         </span>
-
-
 
                                         <input
 
@@ -430,8 +382,6 @@ export default function StudentLogin({ status }) {
 
                                     </div>
 
-
-
                                     {errors.email && (
 
                                         <p
@@ -452,8 +402,6 @@ export default function StudentLogin({ status }) {
 
                                 </div>
 
-
-
                                 {/* Password */}
 
                                 <div>
@@ -469,8 +417,6 @@ export default function StudentLogin({ status }) {
                                         Password:
 
                                     </label>
-
-
 
                                     <div
 
@@ -491,8 +437,6 @@ export default function StudentLogin({ status }) {
                                             <FieldIcon type="password" />
 
                                         </span>
-
-
 
                                         <input
 
@@ -549,8 +493,6 @@ export default function StudentLogin({ status }) {
                                             className="w-full border-0 bg-transparent px-3.5 py-4 text-sm text-white outline-none placeholder:text-white/35 focus:ring-0"
 
                                         />
-
-
 
                                         <button
 
@@ -648,8 +590,6 @@ export default function StudentLogin({ status }) {
 
                                     </div>
 
-
-
                                     {errors.password && (
 
                                         <p
@@ -669,8 +609,6 @@ export default function StudentLogin({ status }) {
                                     )}
 
                                 </div>
-
-
 
                                 {/* Remember and forgot password */}
 
@@ -706,8 +644,6 @@ export default function StudentLogin({ status }) {
 
                                     </label>
 
-
-
                                     <a
 
                                         href="/student/forgot-password"
@@ -721,8 +657,6 @@ export default function StudentLogin({ status }) {
                                     </a>
 
                                 </div>
-
-
 
                                 {/* Submit */}
 
@@ -745,8 +679,6 @@ export default function StudentLogin({ status }) {
                                             : "Log In"}
 
                                     </span>
-
-
 
                                     {!processing && (
 
@@ -778,8 +710,6 @@ export default function StudentLogin({ status }) {
 
                             </form>
 
-
-
                             {/* Card footer */}
 
                             <div className="mt-8 border-t border-white/15 pt-6">
@@ -808,8 +738,6 @@ export default function StudentLogin({ status }) {
 
                                     </svg>
 
-
-
                                     <span>
 
                                         This portal is exclusively for
@@ -823,8 +751,6 @@ export default function StudentLogin({ status }) {
                             </div>
 
                         </div>
-
-
 
                         <p className="mt-6 text-center text-xs text-white/50">
 
@@ -843,4 +769,5 @@ export default function StudentLogin({ status }) {
         </>
 
         );
+
 }

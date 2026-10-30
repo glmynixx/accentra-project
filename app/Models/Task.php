@@ -8,22 +8,25 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Task extends Model
 {
     protected $fillable = [
-        'faculty_id',
-        'section_id',
-        'title',
-        'topic',
-        'due_date',
-        'points',
-        'description',
-        'instructions',
-        'status',
-        'attachment_path',
-        'attachment_name',
-    ];
+    'faculty_id',
+    'section_id',
+    'subject_name',
+    'title',
+    'topic',
+    'due_date',
+    'points',
+    'description',
+    'instructions',
+    'status',
+    'attachment_path',
+    'attachment_name',
+    'subjects',
+];
 
     protected $casts = [
         'due_date' => 'date',
         'points' => 'integer',
+        'subjects' => 'array',
     ];
 
     public function faculty(): BelongsTo
