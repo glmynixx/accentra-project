@@ -328,6 +328,19 @@ function TaskModal({
                   url: `/faculty/tasks/${task.id}/attachment`,
               }
             : null);
+    const assignedSubject = subjects.find(
+        (subject) => String(subject.id) === String(formData.subject_id),
+    );
+    const assignedSubjectName = assignedSubject
+        ? [
+              getSubjectCode(assignedSubject),
+              getSubjectName(assignedSubject),
+          ]
+              .filter(Boolean)
+              .join(" — ")
+        : task
+          ? getTaskSubjectName(task)
+          : "No subject selected";
 
     const handleSubmit = (event) => {
         event.preventDefault();
@@ -531,30 +544,11 @@ function TaskModal({
                                     <label className={labelClass}>
                                         Assigned Subject *
                                     </label>
-                                    <select
-                                        required
-                                        className={inputClass}
-                                        value={formData.subject_id}
-                                        onChange={(e) =>
-                                            updateField(
-                                                "subject_id",
-                                                e.target.value,
-                                            )
-                                        }
+                                    <div
+                                        className={`${inputClass} flex min-h-10.5 items-center`}
                                     >
-                                        <option value="">Select subject</option>
-                                        {subjects.map((subject) => (
-                                            <option
-                                                key={subject.id}
-                                                value={subject.id}
-                                            >
-                                                {getSubjectCode(subject)
-                                                    ? `${getSubjectCode(subject)} — `
-                                                    : ""}
-                                                {getSubjectName(subject)}
-                                            </option>
-                                        ))}
-                                    </select>
+                                        {assignedSubjectName}
+                                    </div>
                                 </div>
 
                                 <div className="rounded-xl border border-[#A9E5D2]/15 bg-[#A9E5D2]/[0.05] p-3 sm:col-span-2">
