@@ -25,34 +25,9 @@ export default function StudentForgotPassword() {
                 <div className="pointer-events-none absolute inset-0 opacity-[0.06]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.4) 1px, transparent 1px)', backgroundSize: '80px 80px' }} />
 
                 <header className="relative z-10 flex items-center justify-between px-6 py-6 sm:px-10 lg:px-16">
-<<<<<<< HEAD
                     <a href="/student/login" aria-label="ACCENTRA student login" className="flex w-fit items-center gap-3">
                         <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl border border-white/25 bg-white/10 p-1 shadow-lg backdrop-blur-xl"><SystemLogo /></div>
                         <div><span className="text-xl font-semibold tracking-[0.2em] sm:text-2xl">ACCENTRA</span><p className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-white/50">Accounting Information System</p></div>
-=======
-                    <a
-                        href="/student/login"
-                        aria-label="ACCENTRA student login"
-                        className="flex w-fit items-center gap-3"
-                    >
-                       <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-white/20 bg-white/10 transition duration-300 hover:scale-110">
-                            <img
-                                src="/images/accentra-logoo.png"
-                                alt="ACCENTRA Logo"
-                                className="h-full w-full object-contain"
-                                
-                            />
-                        </div>
-
-                        <div>
-                            <span className="text-xl font-semibold tracking-[0.2em] text-white sm:text-2xl">
-                                ACCENTRA
-                            </span>
-                            <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-white/50">
-                                Accounting Information System
-                            </p>
-                        </div>
->>>>>>> origin/updated-UI
                     </a>
                     <div className="hidden items-center gap-2 text-xs font-medium text-white/60 sm:flex"><LockKeyhole size={15} className="text-[#A9E5D2]" /> Secure Account Recovery</div>
                 </header>

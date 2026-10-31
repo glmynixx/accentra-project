@@ -114,19 +114,8 @@ const inputClass = `w-full rounded-xl border bg-[#071522]/25 py-4 pl-12 pr-4
                         className="flex w-fit items-center gap-3"
 
                     >
-<<<<<<< HEAD
-
                         <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl border border-white/25 bg-white/10 p-1 shadow-lg backdrop-blur-xl">
                             <SystemLogo />
-=======
-                        <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-white/20 bg-white/10 transition duration-300 hover:scale-110">
-                            <img
-                                src="/images/accentra-logoo.png"
-                                alt="ACCENTRA Logo"
-                                className="h-full w-full object-contain"
-                                
-                            />
->>>>>>> origin/updated-UI
                         </div>
 
                         <div>
