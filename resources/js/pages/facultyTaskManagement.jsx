@@ -57,7 +57,6 @@ const emptyForm = {
     title: "",
     topic: "",
     subject_id: "",
-    section_id: "",
     due: "",
     points: "100",
     status: "Draft",
@@ -83,12 +82,14 @@ const getTaskSubjectName = (task) =>
     task?.subject_name ??
     "Unassigned subject";
 
-const getTaskSectionName = (task) =>
-    typeof task?.section === "string"
+const getTaskSectionName = (task) => {
+    if (task?.section_id == null) return "All Enrolled Students";
+    return typeof task?.section === "string"
         ? task.section
         : task?.section?.section_name ??
           task?.section_name ??
           "Unassigned section";
+};
 
 const getDisplayId = (task) => task?.displayId ?? task?.display_id ?? "";
 
@@ -141,8 +142,31 @@ const getStudentSectionName = (student, sections) => {
 };
 
 
-const studentHasSubject = (student, subjectId) => {
-    if (!student || subjectId == null) return false;
+const normalizeSubjectValue = (value) =>
+    String(value ?? "")
+        .trim()
+        .toLowerCase()
+        .replace(/\\s+/g, " ");
+
+const studentHasSubject = (student, subject) => {
+    if (!student || subject == null) return false;
+
+    // A student's subjects may be stored as IDs, subject names, or objects.
+    // Compare against every known identifier for the selected subject.
+    const subjectValues = [
+        typeof subject === "object" ? subject.id : subject,
+        typeof subject === "object"
+            ? subject.subject_id ?? subject.subject_name ?? subject.name ?? subject.title
+            : null,
+        typeof subject === "object"
+            ? subject.subject_name ?? subject.name ?? subject.title
+            : null,
+        typeof subject === "object"
+            ? subject.subject_code ?? subject.code
+            : null,
+    ]
+        .map(normalizeSubjectValue)
+        .filter(Boolean);
 
     const assignmentValues = [
         student.subject_ids,
@@ -154,22 +178,37 @@ const studentHasSubject = (student, subjectId) => {
 
     const hasArrayAssignment = assignmentValues.some((items) =>
         items.some((item) => {
-            const id =
+            const values =
                 typeof item === "object" && item !== null
-                    ? item.id ?? item.subject_id
-                    : item;
+                    ? [
+                          item.id,
+                          item.subject_id,
+                          item.subject_name,
+                          item.name,
+                          item.title,
+                          item.subject_code,
+                          item.code,
+                      ]
+                    : [item];
 
-            return String(id) === String(subjectId);
+            return values.some((value) => {
+                const normalized = normalizeSubjectValue(value);
+                return normalized && subjectValues.includes(normalized);
+            });
         }),
     );
 
-    const singleSubjectId =
-        student.subject_id ?? student.assigned_subject_id;
+    const singleSubjectValues = [
+        student.subject_id,
+        student.assigned_subject_id,
+        student.subject_name,
+    ]
+        .map(normalizeSubjectValue)
+        .filter(Boolean);
 
     return (
         hasArrayAssignment ||
-        (singleSubjectId != null &&
-            String(singleSubjectId) === String(subjectId))
+        singleSubjectValues.some((value) => subjectValues.includes(value))
     );
 };
 
@@ -518,35 +557,13 @@ function TaskModal({
                                     </select>
                                 </div>
 
-                                <div>
-                                    <label className={labelClass}>
-                                        Assigned Section
-                                    </label>
-                                    <select
-                                        className={inputClass}
-                                        required
-                                        value={formData.section_id}
-                                        onChange={(e) =>
-                                            updateField(
-                                                "section_id",
-                                                e.target.value,
-                                            )
-                                        }
-                                    >
-                                        <option value="">
-                                            Select section
-                                        </option>
-                                        {sections.map((section) => (
-                                            <option
-                                                key={section.id}
-                                                value={section.id}
-                                            >
-                                                {section.section_name ??
-                                                    section.name ??
-                                                    `Section ${section.id}`}
-                                            </option>
-                                        ))}
-                                    </select>
+                                <div className="rounded-xl border border-[#A9E5D2]/15 bg-[#A9E5D2]/[0.05] p-3 sm:col-span-2">
+                                    <p className="text-xs font-semibold text-[#A9E5D2]">
+                                        All Enrolled Students
+                                    </p>
+                                    <p className="mt-1 text-xs leading-5 text-slate-400">
+                                        This task will be available to every student enrolled in the selected subject, regardless of section.
+                                    </p>
                                 </div>
 
                                 <div>
@@ -912,7 +929,9 @@ const selectedSubject = selectedSubjectId
                     String(value ?? "").toLowerCase().includes(query),
                 );
 
-            return matchesSection && matchesSearch;
+            const matchesSubject = studentHasSubject(student, selectedSubject);
+
+            return matchesSubject && matchesSection && matchesSearch;
         });
     }, [
         students,
@@ -962,6 +981,7 @@ const selectedSubject = selectedSubjectId
 
             const matchesSection =
                 sectionFilter === "All Sections" ||
+                task.section_id == null ||
                 String(task.section_id ?? task.section?.id ?? "") ===
                     sectionFilter ||
                 getTaskSectionName(task) ===
@@ -1009,8 +1029,7 @@ const selectedSubject = selectedSubjectId
             ...emptyForm,
             title: task.title ?? "",
             topic: task.topic ?? "",
-            subject_id: String(task.subject_id ?? task.subject?.id ?? ""),
-            section_id: String(task.section_id ?? task.section?.id ?? ""),
+            subject_id: String(task.subject_id ?? task.subject?.id ?? task.subject_name ?? ""),
             due: String(task.due ?? task.due_date ?? "").slice(0, 10),
             points: String(task.points ?? 100),
             status: task.status ?? "Draft",
@@ -1048,7 +1067,8 @@ const selectedSubject = selectedSubjectId
         payload.append("title", formData.title.trim());
         payload.append("topic", formData.topic.trim());
         payload.append("subject_name", String(formData.subject_id));
-        payload.append("section_id", String(formData.section_id));
+        // Empty section_id is converted to null by Laravel; tasks are subject-wide.
+        payload.append("section_id", "");
         payload.append("due_date", formData.due);
         payload.append("points", String(formData.points));
         payload.append("description", formData.description.trim());
@@ -1174,9 +1194,8 @@ const selectedSubject = selectedSubjectId
                                     String(task.subject_id) === String(subject.id),
                             ).length;
 
-                            const subjectStudentCount = students.filter(
-                                (student) =>
-                                    sections.some((section) => String(section.id) === String(getStudentSectionId(student))),
+                            const subjectStudentCount = students.filter((student) =>
+                                studentHasSubject(student, subject),
                             ).length;
 
                             const subjectColors = [

@@ -1525,8 +1525,22 @@ export default function StudentTasks() {
             ),
         );
 
+        sessionStorage.setItem(
+            "accentra_active_task",
+            JSON.stringify({
+                id: updatedTask.id,
+                title: updatedTask.title,
+                submissionStatus: "In Progress",
+            }),
+        );
+
         setSelectedTask(null);
-        setWorkspaceTask(updatedTask);
+
+        router.visit(
+            `/student/accounting/chart-of-accounts?openAddAccount=1&taskId=${encodeURIComponent(
+                updatedTask.id,
+            )}`,
+        );
     };
 
     const handleSubmitTask = (task, answerFile, callbacks = {}) => {
