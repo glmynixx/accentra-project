@@ -25,6 +25,11 @@ const userManagementItems = [
         icon: "layout-list",
         path: "/sections",
     },
+    {
+    label: "Subject",
+    icon: "book-open",
+    path: "/subjects",
+    },
 ];
 
 const settingsItems = [
@@ -256,7 +261,7 @@ export default function Sidebar({
                                             : "text-white/40 group-hover:text-[#A9E5D2]"
                                     }`}
                                 />
-                                <span>User Management</span>
+                                <span>Management</span>
                             </span>
 
                             <span

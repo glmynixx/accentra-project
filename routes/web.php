@@ -102,6 +102,9 @@ Route::inertia('/settings/academic', 'academicSettings')
 Route::inertia('/settings/information', 'systemInformation')
     ->name('settings.information');
 
+Route::inertia('/subjects', 'subjectManagement')
+    ->name('subjects');
+
  Route::get('/', function () {
     return Inertia::render('landingPage');
 });   
